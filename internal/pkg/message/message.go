@@ -9,3 +9,7 @@ type SimpleMessage struct {
 type GossipPacket struct {
 	Simple *SimpleMessage
 }
+
+type ClientPacket struct {
+	Message string
+}

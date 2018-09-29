@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/dedis/protobuf"
+	"fmt"
 )
 
 func main() {
@@ -13,7 +16,7 @@ func main() {
 	)
 	msg := flag.String(
 		"msg",
-		"",
+		"Leo",
 		"message to be sent",
 	)
 	flag.Parse()
@@ -21,5 +24,18 @@ func main() {
 	println(*msg)
 	destinationAddr := "127.0.0.1:" + *uiPort
 	conn, _ := net.Dial("udp4", destinationAddr)
+
+	clientPacket := &message.ClientPacket{Message: *msg}
+	bytes, err := protobuf.Encode(clientPacket)
+	if err != nil {
+		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
+		return
+	}
+
+	_, sendErr := conn.Write(bytes)
+	if sendErr != nil {
+		fmt.Println("Error while sending packet from client", err)
+	}
+
 	defer conn.Close()
 }
