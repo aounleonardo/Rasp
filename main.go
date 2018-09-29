@@ -15,22 +15,31 @@ type Gossiper struct {
 	Name    string
 	conn    *net.UDPConn
 	address *net.UDPAddr
+	peers []*net.UDPAddr
 }
 
 func NewGossiper(
 	name,
 	uiPort,
 	gossipAddr string,
-	peerList []string,
+	PeerList []string,
 	simple bool,
 ) *Gossiper {
-	udpAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:" + uiPort)
+	udpAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
 	udpConn, _ := net.ListenUDP("udp4", udpAddr)
+
+	var peerAddrs []*net.UDPAddr
+	for _, peer := range PeerList {
+		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
+		peerAddrs = append(peerAddrs, peerAddr)
+	}
+
 
 	gossiper := &Gossiper{
 		Name:    name,
 		conn:    udpConn,
 		address: udpAddr,
+		peers: peerAddrs,
 	}
 	go gossiper.listenForClientMessages()
 
@@ -71,7 +80,18 @@ func (gossiper *Gossiper) listenForClientMessages() {
 func (gossiper *Gossiper) ProcessMessages() {
 	for msg := range SimpleMessages {
 		fmt.Println("Received message: ", msg.Contents)
-
+		gossipPacket := &message.GossipPacket{
+			Simple: &msg,
+		}
+		bytes, err := protobuf.Encode(gossipPacket)
+		if err != nil {
+			fmt.Println("Error encoding gossip packet:", err, "for", msg)
+			continue
+		}
+		for _, peer := range gossiper.peers {
+			fmt.Println(peer.String())
+			gossiper.conn.WriteToUDP(bytes, peer)
+		}
 	}
 }
 
