@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"net"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/protobuf"
 	"fmt"
+	"net"
 )
 
 func main() {
@@ -21,9 +21,11 @@ func main() {
 	)
 	flag.Parse()
 
-	println(*msg)
-	destinationAddr := "127.0.0.1:" + *uiPort
-	conn, _ := net.Dial("udp4", destinationAddr)
+	destinationAddr, _ := net.ResolveUDPAddr(
+		"udp4",
+		"127.0.0.1:" + *uiPort,
+	)
+	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
 	clientPacket := &message.ClientPacket{Message: *msg}
 	bytes, err := protobuf.Encode(clientPacket)
@@ -36,6 +38,7 @@ func main() {
 	if sendErr != nil {
 		fmt.Println("Error while sending packet from client", err)
 	}
+	fmt.Println("Sent:", clientPacket.Message)
 
 	defer conn.Close()
 }

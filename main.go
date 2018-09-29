@@ -4,7 +4,12 @@ import (
 	"flag"
 	"strings"
 	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"fmt"
+	"github.com/dedis/protobuf"
 )
+
+var SimpleMessages chan message.SimpleMessage
 
 type Gossiper struct {
 	Name    string
@@ -19,15 +24,59 @@ func NewGossiper(
 	peerList []string,
 	simple bool,
 ) *Gossiper {
-	udpAddr, _ := net.ResolveUDPAddr("udp4", gossipAddr)
+	udpAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:" + uiPort)
 	udpConn, _ := net.ListenUDP("udp4", udpAddr)
-	println("Creating New Gossiper")
-	defer udpConn.Close()
-	return &Gossiper{
+
+	gossiper := &Gossiper{
 		Name:    name,
 		conn:    udpConn,
 		address: udpAddr,
 	}
+	go gossiper.listenForClientMessages()
+
+	SimpleMessages = make(chan message.SimpleMessage)
+	go gossiper.ProcessMessages()
+	return gossiper
+}
+
+func (gossiper *Gossiper) listenForClientMessages() {
+	for {
+		packet := &message.ClientPacket{}
+		// TODO could make this length an attribute of the Gossiper
+		bytes := make([]byte, 1024)
+		length, _, err := gossiper.conn.ReadFromUDP(bytes)
+		if err != nil {
+			fmt.Println("Error reading Client Message from UDP: ", err)
+			continue
+		}
+		if length > 1024 {
+			fmt.Println(
+				"Sent message of size",
+				length,
+				"is too big, limit is",
+				1024,
+			)
+			continue
+		}
+		protobuf.Decode(bytes, packet)
+		SimpleMessages <- message.SimpleMessage{
+			OriginalName: gossiper.Name,
+			RelayPeerAddr: gossiper.address.IP.String() + ":" +
+				string(gossiper.address.Port),
+			Contents: packet.Message,
+		}
+	}
+}
+
+func (gossiper *Gossiper) ProcessMessages() {
+	for msg := range SimpleMessages {
+		fmt.Println("Received message: ", msg.Contents)
+
+	}
+}
+
+func (gossiper *Gossiper) ShutUp() {
+	gossiper.conn.Close()
 }
 
 func main() {
@@ -63,5 +112,14 @@ func main() {
 		peerList = strings.Split(*peers, ",")
 	}
 
-	var _ = NewGossiper(*name, *uiPort, *gossipAddr, peerList, *simple)
+	gossiper := NewGossiper(*name, *uiPort, *gossipAddr, peerList, *simple)
+	defer gossiper.ShutUp()
+
+	for {
+		var input string
+		fmt.Scanln(&input)
+		if input == "quit" {
+			return
+		}
+	}
 }
