@@ -16,7 +16,7 @@ func NewGossiper(
 	name,
 	uiPort,
 	gossipAddr string,
-	peer_list []string,
+	peerList []string,
 	simple bool,
 ) *Gossiper {
 	udpAddr, _ := net.ResolveUDPAddr("udp4", gossipAddr)
@@ -57,10 +57,10 @@ func main() {
 	)
 	flag.Parse()
 
-	var peer_list []string
+	var peerList []string
 	if len(*peers) > 0 {
-		peer_list = strings.Split(*peers, ",")
+		peerList = strings.Split(*peers, ",")
 	}
 
-	var _ = NewGossiper(*name, *uiPort, *gossipAddr, peer_list, *simple)
+	var _ = NewGossiper(*name, *uiPort, *gossipAddr, peerList, *simple)
 }
