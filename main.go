@@ -22,6 +22,7 @@ func NewGossiper(
 	udpAddr, _ := net.ResolveUDPAddr("udp4", gossipAddr)
 	udpConn, _ := net.ListenUDP("udp4", udpAddr)
 	println("Creating New Gossiper")
+	defer udpConn.Close()
 	return &Gossiper{
 		Name:    name,
 		conn:    udpConn,
