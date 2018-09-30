@@ -249,8 +249,15 @@ func (gossiper *Gossiper) rumormonger(
 	gossiper.gossipConn.WriteToUDP(bytes, selectedPeerAddr)
 
 	for {
-		ack := <-acks[selectedPeerAddr.String()]
-		operation, missing := gossiper.compareStatuses(ack)
+		var operation int
+		var missing message.PeerStatus
+		timer := time.NewTimer(time.Second)
+		select {
+		case ack := <-acks[selectedPeerAddr.String()]:
+			operation, missing = gossiper.compareStatuses(ack)
+		case timer.C:
+			operation, missing = NOP, message.PeerStatus{}
+		}
 		switch operation {
 		case SEND:
 			rumor := gossiper.rumors[missing.Identifier][missing.NextID]
@@ -277,6 +284,7 @@ func (gossiper *Gossiper) rumormonger(
 				return
 			}
 			gossiper.gossipConn.WriteToUDP(bytes, selectedPeerAddr)
+			return
 		case NOP:
 			if rand.Intn(2) == 0 {
 				gossiper.rumormonger(msg, sender)
