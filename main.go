@@ -17,14 +17,14 @@ type Gossiper struct {
 	uiAddr *net.UDPAddr
 	gossipConn *net.UDPConn
 	gossipAddr *net.UDPAddr
-	peers []*net.UDPAddr
+	peers map[string]*net.UDPAddr
 }
 
 func NewGossiper(
 	name,
 	uiPort,
 	gossipAddress string,
-	PeerList []string,
+	Peers []string,
 	simple bool,
 ) *Gossiper {
 	uiAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
@@ -33,12 +33,11 @@ func NewGossiper(
 	gossipAddr, _ := net.ResolveUDPAddr("udp4", gossipAddress)
 	gossipConn, _ := net.ListenUDP("udp4", gossipAddr)
 
-	var peerAddrs []*net.UDPAddr
-	for _, peer := range PeerList {
+	peerAddrs := make(map[string]*net.UDPAddr)
+	for _, peer := range Peers {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
-		peerAddrs = append(peerAddrs, peerAddr)
+		peerAddrs[peer] = peerAddr
 	}
-
 
 	gossiper := &Gossiper{
 		Name:    name,
@@ -104,7 +103,7 @@ func (gossiper *Gossiper) listenForGossip() {
 		protobuf.Decode(bytes, packet)
 		oldRelay := packet.Simple.RelayPeerAddr
 		oldRelayAddr, _ := net.ResolveUDPAddr("udp4", oldRelay)
-		gossiper.peers = append(gossiper.peers, oldRelayAddr)
+		gossiper.peers[oldRelay] = oldRelayAddr
 		SimpleMessages <- *packet.Simple
 	}
 }
@@ -122,9 +121,11 @@ func (gossiper *Gossiper) ForwardMessages() {
 			fmt.Println("Error encoding gossip packet:", err, "for", msg)
 			continue
 		}
-		for _, peer := range gossiper.peers {
-			if peer.String() != relay {
-				gossiper.gossipConn.WriteToUDP(bytes, peer)
+
+		fmt.Println(gossiper.peers)
+		for peer, addr := range gossiper.peers {
+			if peer != relay {
+				gossiper.gossipConn.WriteToUDP(bytes, addr)
 			}
 		}
 	}
