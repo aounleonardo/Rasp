@@ -13,20 +13,25 @@ var SimpleMessages chan message.SimpleMessage
 
 type Gossiper struct {
 	Name    string
-	conn    *net.UDPConn
-	address *net.UDPAddr
+	uiConn    *net.UDPConn
+	uiAddr *net.UDPAddr
+	gossipConn *net.UDPConn
+	gossipAddr *net.UDPAddr
 	peers []*net.UDPAddr
 }
 
 func NewGossiper(
 	name,
 	uiPort,
-	gossipAddr string,
+	gossipAddress string,
 	PeerList []string,
 	simple bool,
 ) *Gossiper {
-	udpAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
-	udpConn, _ := net.ListenUDP("udp4", udpAddr)
+	uiAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
+	uiConn, _ := net.ListenUDP("udp4", uiAddr)
+
+	gossipAddr, _ := net.ResolveUDPAddr("udp4", gossipAddress)
+	gossipConn, _ := net.ListenUDP("udp4", gossipAddr)
 
 	var peerAddrs []*net.UDPAddr
 	for _, peer := range PeerList {
@@ -37,23 +42,25 @@ func NewGossiper(
 
 	gossiper := &Gossiper{
 		Name:    name,
-		conn:    udpConn,
-		address: udpAddr,
+		uiConn:    uiConn,
+		uiAddr: uiAddr,
+		gossipConn: gossipConn,
+		gossipAddr: gossipAddr,
 		peers: peerAddrs,
 	}
-	go gossiper.listenForClientMessages()
+	go gossiper.listenForGossip()
 
 	SimpleMessages = make(chan message.SimpleMessage)
-	go gossiper.ProcessMessages()
+	go gossiper.ForwardMessages()
 	return gossiper
 }
 
-func (gossiper *Gossiper) listenForClientMessages() {
+func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
 		// TODO could make this length an attribute of the Gossiper
 		bytes := make([]byte, 1024)
-		length, _, err := gossiper.conn.ReadFromUDP(bytes)
+		length, _, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
 			continue
@@ -70,33 +77,62 @@ func (gossiper *Gossiper) listenForClientMessages() {
 		protobuf.Decode(bytes, packet)
 		SimpleMessages <- message.SimpleMessage{
 			OriginalName: gossiper.Name,
-			RelayPeerAddr: gossiper.address.IP.String() + ":" +
-				string(gossiper.address.Port),
+			RelayPeerAddr: gossiper.gossipAddr.String(),
 			Contents: packet.Message,
 		}
 	}
 }
 
-func (gossiper *Gossiper) ProcessMessages() {
+func (gossiper *Gossiper) listenForGossip() {
+	for {
+		packet := &message.GossipPacket{}
+		bytes := make([]byte, 1024)
+		length, _, err := gossiper.gossipConn.ReadFromUDP(bytes)
+		if err != nil {
+			fmt.Println("Error reading Client Message from UDP: ", err)
+			continue
+		}
+		if length > 1024 {
+			fmt.Println(
+				"Sent message of size",
+				length,
+				"is too big, limit is",
+				1024,
+			)
+			continue
+		}
+		protobuf.Decode(bytes, packet)
+		oldRelay := packet.Simple.RelayPeerAddr
+		oldRelayAddr, _ := net.ResolveUDPAddr("udp4", oldRelay)
+		gossiper.peers = append(gossiper.peers, oldRelayAddr)
+		SimpleMessages <- *packet.Simple
+	}
+}
+
+func (gossiper *Gossiper) ForwardMessages() {
 	for msg := range SimpleMessages {
+		relay := msg.RelayPeerAddr
 		fmt.Println("Received message: ", msg.Contents)
 		gossipPacket := &message.GossipPacket{
 			Simple: &msg,
 		}
+		gossipPacket.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
 		bytes, err := protobuf.Encode(gossipPacket)
 		if err != nil {
 			fmt.Println("Error encoding gossip packet:", err, "for", msg)
 			continue
 		}
 		for _, peer := range gossiper.peers {
-			fmt.Println(peer.String())
-			gossiper.conn.WriteToUDP(bytes, peer)
+			if peer.String() != relay {
+				gossiper.gossipConn.WriteToUDP(bytes, peer)
+			}
 		}
 	}
 }
 
 func (gossiper *Gossiper) ShutUp() {
-	gossiper.conn.Close()
+	gossiper.gossipConn.Close()
+	gossiper.uiConn.Close()
 }
 
 func main() {
@@ -135,11 +171,5 @@ func main() {
 	gossiper := NewGossiper(*name, *uiPort, *gossipAddr, peerList, *simple)
 	defer gossiper.ShutUp()
 
-	for {
-		var input string
-		fmt.Scanln(&input)
-		if input == "quit" {
-			return
-		}
-	}
+	gossiper.ListenForClientMessages()
 }
