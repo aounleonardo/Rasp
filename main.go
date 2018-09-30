@@ -9,13 +9,15 @@ import (
 	"github.com/dedis/protobuf"
 )
 
+const maxMsgSize = 1024
+
 type Gossiper struct {
-	Name    string
-	uiConn    *net.UDPConn
-	uiAddr *net.UDPAddr
+	Name       string
+	uiConn     *net.UDPConn
+	uiAddr     *net.UDPAddr
 	gossipConn *net.UDPConn
 	gossipAddr *net.UDPAddr
-	peers map[string]*net.UDPAddr
+	peers      map[string]*net.UDPAddr
 }
 
 func NewGossiper(
@@ -38,12 +40,12 @@ func NewGossiper(
 	}
 
 	gossiper := &Gossiper{
-		Name:    name,
-		uiConn:    uiConn,
-		uiAddr: uiAddr,
+		Name:       name,
+		uiConn:     uiConn,
+		uiAddr:     uiAddr,
 		gossipConn: gossipConn,
 		gossipAddr: gossipAddr,
-		peers: peerAddrs,
+		peers:      peerAddrs,
 	}
 	go gossiper.listenForGossip()
 
@@ -54,18 +56,18 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
 		// TODO could make this length an attribute of the Gossiper
-		bytes := make([]byte, 1024)
+		bytes := make([]byte, maxMsgSize)
 		length, _, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
 			continue
 		}
-		if length > 1024 {
+		if length > maxMsgSize {
 			fmt.Println(
 				"Sent message of size",
 				length,
 				"is too big, limit is",
-				1024,
+				maxMsgSize,
 			)
 			continue
 		}
@@ -73,9 +75,9 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 		fmt.Println("CLIENT MESSAGE", packet.Message)
 		fmt.Println(gossiper.listPeers())
 		msg := message.SimpleMessage{
-			OriginalName: gossiper.Name,
+			OriginalName:  gossiper.Name,
 			RelayPeerAddr: gossiper.gossipAddr.String(),
-			Contents: packet.Message,
+			Contents:      packet.Message,
 		}
 		gossiper.ForwardMessage(
 			&message.GossipPacket{Simple: &msg},
@@ -87,18 +89,18 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 func (gossiper *Gossiper) listenForGossip() {
 	for {
 		packet := &message.GossipPacket{}
-		bytes := make([]byte, 1024)
+		bytes := make([]byte, maxMsgSize)
 		length, sender, err := gossiper.gossipConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
 			continue
 		}
-		if length > 1024 {
+		if length > maxMsgSize {
 			fmt.Println(
 				"Sent message of size",
 				length,
 				"is too big, limit is",
-				1024,
+				maxMsgSize,
 			)
 			continue
 		}
