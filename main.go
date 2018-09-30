@@ -18,6 +18,8 @@ type Gossiper struct {
 	gossipConn *net.UDPConn
 	gossipAddr *net.UDPAddr
 	peers      map[string]*net.UDPAddr
+	status     *message.StatusPacket
+	simple     bool
 }
 
 func NewGossiper(
@@ -46,6 +48,7 @@ func NewGossiper(
 		gossipConn: gossipConn,
 		gossipAddr: gossipAddr,
 		peers:      peerAddrs,
+		simple:     simple,
 	}
 	go gossiper.listenForGossip()
 
@@ -74,15 +77,24 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 		protobuf.Decode(bytes, packet)
 		fmt.Println("CLIENT MESSAGE", packet.Message)
 		fmt.Println(gossiper.listPeers())
-		msg := message.SimpleMessage{
-			OriginalName:  gossiper.Name,
-			RelayPeerAddr: gossiper.gossipAddr.String(),
-			Contents:      packet.Message,
+		msg := gossiper.buildClientMessage(packet.Message)
+		gossiper.ForwardMessage(msg, gossiper.gossipAddr)
+	}
+}
+
+func (gossiper *Gossiper) buildClientMessage(
+	content string,
+) *message.GossipPacket {
+	if gossiper.simple {
+		return &message.GossipPacket{
+			Simple: &message.SimpleMessage{
+				OriginalName:  gossiper.Name,
+				RelayPeerAddr: gossiper.gossipAddr.String(),
+				Contents:      content,
+			},
 		}
-		gossiper.ForwardMessage(
-			&message.GossipPacket{Simple: &msg},
-			gossiper.gossipAddr,
-		)
+	} else {
+		return nil
 	}
 }
 
@@ -105,7 +117,20 @@ func (gossiper *Gossiper) listenForGossip() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
-		gossiper.peers[sender.String()] = sender
+		gossiper.ReceiveMessage(packet, sender)
+	}
+}
+
+func (gossiper *Gossiper) ReceiveMessage(
+	packet *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	gossiper.peers[sender.String()] = sender
+	if packet.Rumor != nil {
+
+	} else if packet.Status != nil {
+
+	} else if packet.Simple != nil {
 		fmt.Printf(
 			"SIMPLE MESSAGE origin %s from %s contents %s\n",
 			packet.Simple.OriginalName,
@@ -113,8 +138,8 @@ func (gossiper *Gossiper) listenForGossip() {
 			packet.Simple.Contents,
 		)
 		fmt.Println(gossiper.listPeers())
-		gossiper.ForwardMessage(packet, sender)
 	}
+	gossiper.ForwardMessage(packet, sender)
 }
 
 func (gossiper *Gossiper) listPeers() string {
@@ -131,13 +156,33 @@ func (gossiper *Gossiper) ForwardMessage(
 	msg *message.GossipPacket,
 	sender *net.UDPAddr,
 ) {
-	msg.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
+	if msg.Rumor != nil {
+
+	} else if msg.Status != nil {
+
+	} else if msg.Simple != nil {
+		gossiper.forwardSimpleMessage(msg, sender)
+	}
+}
+
+func encodeMessage(msg *message.GossipPacket) []byte {
 	bytes, err := protobuf.Encode(msg)
 	if err != nil {
 		fmt.Println("Error encoding gossip packet:", err, "for", msg)
+		return nil
+	}
+	return bytes
+}
+
+func (gossiper *Gossiper) forwardSimpleMessage(
+	msg *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	msg.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
+	bytes := encodeMessage(msg)
+	if bytes == nil {
 		return
 	}
-
 	for peer, addr := range gossiper.peers {
 		if peer != sender.String() {
 			gossiper.gossipConn.WriteToUDP(bytes, addr)
