@@ -12,6 +12,7 @@ import (
 const maxMsgSize = 1024
 
 type Gossiper struct {
+	ID         uint32
 	Name       string
 	uiConn     *net.UDPConn
 	uiAddr     *net.UDPAddr
@@ -23,6 +24,7 @@ type Gossiper struct {
 }
 
 func NewGossiper(
+	id uint32,
 	name,
 	uiPort,
 	gossipAddress string,
@@ -42,6 +44,7 @@ func NewGossiper(
 	}
 
 	gossiper := &Gossiper{
+		ID:         id,
 		Name:       name,
 		uiConn:     uiConn,
 		uiAddr:     uiAddr,
@@ -94,7 +97,13 @@ func (gossiper *Gossiper) buildClientMessage(
 			},
 		}
 	} else {
-		return nil
+		return &message.GossipPacket{
+			Rumor: &message.RumorMessage{
+				Origin: gossiper.Name,
+				ID:     gossiper.ID,
+				Text:   content,
+			},
+		}
 	}
 }
 
@@ -196,6 +205,11 @@ func (gossiper *Gossiper) ShutUp() {
 }
 
 func main() {
+	var id = flag.Int(
+		"id",
+		249498,
+		"Unique identifier of the gossiper",
+	)
 	var uiPort = flag.String(
 		"UIPort",
 		"8080",
@@ -228,7 +242,14 @@ func main() {
 		peerList = strings.Split(*peers, ",")
 	}
 
-	gossiper := NewGossiper(*name, *uiPort, *gossipAddr, peerList, *simple)
+	gossiper := NewGossiper(
+		uint32(*id),
+		*name,
+		*uiPort,
+		*gossipAddr,
+		peerList,
+		*simple,
+	)
 	defer gossiper.ShutUp()
 
 	gossiper.ListenForClientMessages()
