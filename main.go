@@ -74,6 +74,8 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
+		fmt.Println("CLIENT MESSAGE", packet.Message)
+		fmt.Println(gossiper.listPeers())
 		SimpleMessages <- message.SimpleMessage{
 			OriginalName: gossiper.Name,
 			RelayPeerAddr: gossiper.gossipAddr.String(),
@@ -104,14 +106,30 @@ func (gossiper *Gossiper) listenForGossip() {
 		oldRelay := packet.Simple.RelayPeerAddr
 		oldRelayAddr, _ := net.ResolveUDPAddr("udp4", oldRelay)
 		gossiper.peers[oldRelay] = oldRelayAddr
+		fmt.Printf(
+			"SIMPLE MESSAGE origin %s from %s contents %s\n",
+			packet.Simple.OriginalName,
+			packet.Simple.RelayPeerAddr,
+			packet.Simple.Contents,
+		)
+		fmt.Println(gossiper.listPeers())
 		SimpleMessages <- *packet.Simple
 	}
+}
+
+func (gossiper *Gossiper) listPeers() string {
+	keys := make([]string, len(gossiper.peers))
+	i := 0
+	for peer := range gossiper.peers {
+		keys[i] = peer
+		i++
+	}
+	return strings.Join(keys, ",")
 }
 
 func (gossiper *Gossiper) ForwardMessages() {
 	for msg := range SimpleMessages {
 		relay := msg.RelayPeerAddr
-		fmt.Println("Received message: ", msg.Contents)
 		gossipPacket := &message.GossipPacket{
 			Simple: &msg,
 		}
@@ -122,7 +140,6 @@ func (gossiper *Gossiper) ForwardMessages() {
 			continue
 		}
 
-		fmt.Println(gossiper.peers)
 		for peer, addr := range gossiper.peers {
 			if peer != relay {
 				gossiper.gossipConn.WriteToUDP(bytes, addr)

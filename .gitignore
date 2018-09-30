@@ -13,3 +13,8 @@
 
 # Goland shit
 .idea
+
+# Tests and Executables
+test_*.sh
+Peerster
+client/client
