@@ -9,8 +9,6 @@ import (
 	"github.com/dedis/protobuf"
 )
 
-var SimpleMessages chan message.SimpleMessage
-
 type Gossiper struct {
 	Name    string
 	uiConn    *net.UDPConn
@@ -49,8 +47,6 @@ func NewGossiper(
 	}
 	go gossiper.listenForGossip()
 
-	SimpleMessages = make(chan message.SimpleMessage)
-	go gossiper.ForwardMessages()
 	return gossiper
 }
 
@@ -76,11 +72,15 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 		protobuf.Decode(bytes, packet)
 		fmt.Println("CLIENT MESSAGE", packet.Message)
 		fmt.Println(gossiper.listPeers())
-		SimpleMessages <- message.SimpleMessage{
+		msg := message.SimpleMessage{
 			OriginalName: gossiper.Name,
 			RelayPeerAddr: gossiper.gossipAddr.String(),
 			Contents: packet.Message,
 		}
+		gossiper.ForwardMessage(
+			&message.GossipPacket{Simple: &msg},
+			gossiper.gossipAddr,
+		)
 	}
 }
 
@@ -88,7 +88,7 @@ func (gossiper *Gossiper) listenForGossip() {
 	for {
 		packet := &message.GossipPacket{}
 		bytes := make([]byte, 1024)
-		length, _, err := gossiper.gossipConn.ReadFromUDP(bytes)
+		length, sender, err := gossiper.gossipConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
 			continue
@@ -103,9 +103,7 @@ func (gossiper *Gossiper) listenForGossip() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
-		oldRelay := packet.Simple.RelayPeerAddr
-		oldRelayAddr, _ := net.ResolveUDPAddr("udp4", oldRelay)
-		gossiper.peers[oldRelay] = oldRelayAddr
+		gossiper.peers[sender.String()] = sender
 		fmt.Printf(
 			"SIMPLE MESSAGE origin %s from %s contents %s\n",
 			packet.Simple.OriginalName,
@@ -113,7 +111,7 @@ func (gossiper *Gossiper) listenForGossip() {
 			packet.Simple.Contents,
 		)
 		fmt.Println(gossiper.listPeers())
-		SimpleMessages <- *packet.Simple
+		gossiper.ForwardMessage(packet, sender)
 	}
 }
 
@@ -127,23 +125,20 @@ func (gossiper *Gossiper) listPeers() string {
 	return strings.Join(keys, ",")
 }
 
-func (gossiper *Gossiper) ForwardMessages() {
-	for msg := range SimpleMessages {
-		relay := msg.RelayPeerAddr
-		gossipPacket := &message.GossipPacket{
-			Simple: &msg,
-		}
-		gossipPacket.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
-		bytes, err := protobuf.Encode(gossipPacket)
-		if err != nil {
-			fmt.Println("Error encoding gossip packet:", err, "for", msg)
-			continue
-		}
+func (gossiper *Gossiper) ForwardMessage(
+	msg *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	msg.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
+	bytes, err := protobuf.Encode(msg)
+	if err != nil {
+		fmt.Println("Error encoding gossip packet:", err, "for", msg)
+		return
+	}
 
-		for peer, addr := range gossiper.peers {
-			if peer != relay {
-				gossiper.gossipConn.WriteToUDP(bytes, addr)
-			}
+	for peer, addr := range gossiper.peers {
+		if peer != sender.String() {
+			gossiper.gossipConn.WriteToUDP(bytes, addr)
 		}
 	}
 }
