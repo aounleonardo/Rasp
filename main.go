@@ -159,16 +159,9 @@ func (gossiper *Gossiper) ReceiveMessage(
 
 	} else if packet.Status != nil {
 
-	} else if packet.Simple != nil {
-		fmt.Printf(
-			"SIMPLE MESSAGE origin %s from %s contents %s\n",
-			packet.Simple.OriginalName,
-			packet.Simple.RelayPeerAddr,
-			packet.Simple.Contents,
-		)
-		fmt.Println(gossiper.listPeers())
+	} else if packet.Simple != nil && gossiper.simple {
+		gossiper.receiveSimplePacket(packet, sender)
 	}
-	gossiper.ForwardMessage(packet, sender)
 }
 
 func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
@@ -187,19 +180,6 @@ func (gossiper *Gossiper) listPeers() string {
 	return strings.Join(keys, ",")
 }
 
-func (gossiper *Gossiper) ForwardMessage(
-	msg *message.GossipPacket,
-	sender *net.UDPAddr,
-) {
-	if msg.Rumor != nil {
-
-	} else if msg.Status != nil {
-
-	} else if msg.Simple != nil {
-		gossiper.forwardSimpleMessage(msg, sender)
-	}
-}
-
 func encodeMessage(msg *message.GossipPacket) []byte {
 	bytes, err := protobuf.Encode(msg)
 	if err != nil {
@@ -209,12 +189,26 @@ func encodeMessage(msg *message.GossipPacket) []byte {
 	return bytes
 }
 
-func (gossiper *Gossiper) forwardSimpleMessage(
-	msg *message.GossipPacket,
+func (gossiper *Gossiper) receiveSimplePacket(
+	packet *message.GossipPacket,
 	sender *net.UDPAddr,
 ) {
-	msg.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
-	bytes := encodeMessage(msg)
+	fmt.Printf(
+		"SIMPLE MESSAGE origin %s from %s contents %s\n",
+		packet.Simple.OriginalName,
+		packet.Simple.RelayPeerAddr,
+		packet.Simple.Contents,
+	)
+	fmt.Println(gossiper.listPeers())
+	gossiper.forwardSimplePacket(packet, sender)
+}
+
+func (gossiper *Gossiper) forwardSimplePacket(
+	packet *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	packet.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
+	bytes := encodeMessage(packet)
 	if bytes == nil {
 		return
 	}
