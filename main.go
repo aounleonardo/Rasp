@@ -317,7 +317,7 @@ func (gossiper *Gossiper) rumormongerWith(
 		select {
 		case ack := <-acks[peer.String()]:
 			operation, missing = gossiper.compareStatuses(ack)
-		case timer.C:
+		case <-timer.C:
 			operation, missing = NOP, message.PeerStatus{}
 		}
 		switch operation {
