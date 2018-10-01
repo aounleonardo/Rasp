@@ -99,7 +99,12 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 		fmt.Println("CLIENT MESSAGE", packet.Message)
 		fmt.Println(gossiper.listPeers())
 		msg := gossiper.buildClientMessage(packet.Message)
-		gossiper.ForwardMessage(msg, gossiper.gossipAddr)
+
+		if gossiper.simple {
+			gossiper.forwardSimplePacket(msg, gossiper.gossipAddr)
+		} else {
+			go gossiper.rumormonger(msg, gossiper.gossipAddr)
+		}
 	}
 }
 
@@ -156,7 +161,7 @@ func (gossiper *Gossiper) ReceiveMessage(
 ) {
 	gossiper.upsertPeer(sender)
 	if packet.Rumor != nil {
-
+		gossiper.receiveRumorPacket(packet, sender)
 	} else if packet.Status != nil {
 
 	} else if packet.Simple != nil && gossiper.simple {
@@ -165,6 +170,10 @@ func (gossiper *Gossiper) ReceiveMessage(
 }
 
 func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
+	_, hasPeer := gossiper.peers[sender.String()]
+	if hasPeer {
+		return
+	}
 	gossiper.peers[sender.String()] = sender
 	gossiper.rumors[sender.String()] = make(map[uint32]*message.RumorMessage)
 	gossiper.wants[sender.String()] = 1
@@ -217,6 +226,20 @@ func (gossiper *Gossiper) forwardSimplePacket(
 			gossiper.gossipConn.WriteToUDP(bytes, addr)
 		}
 	}
+}
+
+func (gossiper *Gossiper) receiveRumorPacket(
+	packet *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	if packet.Rumor.ID != gossiper.nextIdForPeer(packet.Rumor.Origin) {
+		return
+	}
+
+	gossiper.rumors[packet.Rumor.Origin][packet.Rumor.ID] = packet.Rumor
+	gossiper.wants[packet.Rumor.Origin] = packet.Rumor.ID + 1
+
+	go gossiper.rumormonger(packet, sender)
 }
 
 func (gossiper *Gossiper) rumormonger(
