@@ -14,6 +14,7 @@ import (
 const maxMsgSize = 1024
 
 var acks map[string]chan *message.StatusPacket
+var expectedAcks map[string]int
 var nameToAddr map[string]string
 
 const (
@@ -163,7 +164,7 @@ func (gossiper *Gossiper) ReceiveMessage(
 	if packet.Rumor != nil {
 		gossiper.receiveRumorPacket(packet, sender)
 	} else if packet.Status != nil {
-
+		gossiper.receiveStatusPacket(packet, sender)
 	} else if packet.Simple != nil && gossiper.simple {
 		gossiper.receiveSimplePacket(packet, sender)
 	}
@@ -177,6 +178,8 @@ func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
 	gossiper.peers[sender.String()] = sender
 	gossiper.rumors[sender.String()] = make(map[uint32]*message.RumorMessage)
 	gossiper.wants[sender.String()] = 1
+	acks[sender.String()] = make(chan *message.StatusPacket)
+	expectedAcks[sender.String()] = 0
 }
 
 func (gossiper *Gossiper) listPeers() string {
@@ -232,6 +235,10 @@ func (gossiper *Gossiper) receiveRumorPacket(
 	packet *message.GossipPacket,
 	sender *net.UDPAddr,
 ) {
+	status := gossiper.constructStatusPacket()
+	bytes := encodeMessage(&message.GossipPacket{Status: status})
+	gossiper.gossipConn.WriteToUDP(bytes, sender)
+
 	if packet.Rumor.ID != gossiper.nextIdForPeer(packet.Rumor.Origin) {
 		return
 	}
@@ -264,6 +271,7 @@ func (gossiper *Gossiper) rumormonger(
 		return
 	}
 	gossiper.gossipConn.WriteToUDP(bytes, selectedPeerAddr)
+	expectedAcks[selectedPeerAddr.String()] ++
 
 	for {
 		var operation int
@@ -277,24 +285,9 @@ func (gossiper *Gossiper) rumormonger(
 		}
 		switch operation {
 		case SEND:
-			rumor := gossiper.rumors[missing.Identifier][missing.NextID]
-			packet := &message.GossipPacket{Rumor: rumor}
-			bytes := encodeMessage(packet)
-			if bytes == nil {
-				return
-			}
-			gossiper.gossipConn.WriteToUDP(bytes, selectedPeerAddr)
+			gossiper.sendMissingRumor(&missing, selectedPeerAddr)
 		case REQUEST:
-			peerStatus := make([]message.PeerStatus, len(nameToAddr))
-			i := 0
-			for name, addr := range nameToAddr {
-				peerStatus[i] = message.PeerStatus{
-					Identifier: name,
-					NextID:     gossiper.wants[addr],
-				}
-				i++
-			}
-			status := &message.StatusPacket{Want: peerStatus}
+			status := gossiper.constructStatusPacket()
 			packet := &message.GossipPacket{Status: status}
 			bytes := encodeMessage(packet)
 			if bytes == nil {
@@ -311,30 +304,72 @@ func (gossiper *Gossiper) rumormonger(
 	}
 }
 
+func (gossiper *Gossiper) receiveStatusPacket(
+	packet *message.GossipPacket,
+	sender *net.UDPAddr,
+) {
+	if expectedAcks[sender.String()] > 0 {
+		acks[sender.String()] <- packet.Status
+		expectedAcks[sender.String()] --
+		return
+	}
+	operation, missing := gossiper.compareStatuses(packet.Status)
+	if operation == SEND {
+		gossiper.sendMissingRumor(&missing, sender)
+	}
+}
+
+func (gossiper *Gossiper) constructStatusPacket() *message.StatusPacket {
+	peerStatus := make([]message.PeerStatus, len(nameToAddr))
+	i := 0
+	for name, addr := range nameToAddr {
+		peerStatus[i] = message.PeerStatus{
+			Identifier: name,
+			NextID:     gossiper.wants[addr],
+		}
+		i++
+	}
+	return &message.StatusPacket{Want: peerStatus}
+}
+
 func (gossiper *Gossiper) compareStatuses(
 	packet *message.StatusPacket,
 ) (int, message.PeerStatus) {
-	var needs = false
+	var needsToRequest = false
 	var needed = message.PeerStatus{}
 	for _, status := range packet.Want {
 		nextID := gossiper.nextIdForPeer(status.Identifier)
 		if status.NextID > nextID {
-			needs = true
+			needsToRequest = true
 			needed = message.PeerStatus{
-				status.Identifier,
-				nextID,
+				Identifier: status.Identifier,
+				NextID:     nextID,
 			}
 		} else if status.NextID < nextID {
 			return SEND, message.PeerStatus{
-				status.Identifier,
-				status.NextID,
+				Identifier: status.Identifier,
+				NextID:     status.NextID,
 			}
 		}
 	}
-	if needs {
+	if needsToRequest {
 		return REQUEST, needed
 	}
 	return NOP, needed
+}
+
+func (gossiper *Gossiper) sendMissingRumor(
+	missing *message.PeerStatus,
+	recipient *net.UDPAddr,
+) {
+	rumor := gossiper.rumors[missing.Identifier][missing.NextID]
+	packet := &message.GossipPacket{Rumor: rumor}
+	bytes := encodeMessage(packet)
+	if bytes == nil {
+		return
+	}
+	gossiper.gossipConn.WriteToUDP(bytes, recipient)
+	expectedAcks[recipient.String()] ++
 }
 
 // Returns the next id the gossiper wants for a certain peer identifier (name)
