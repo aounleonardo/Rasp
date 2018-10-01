@@ -51,14 +51,19 @@ func NewGossiper(
 
 	peerAddrs := make(map[string]*net.UDPAddr)
 	rumors := make(map[string]map[uint32]*message.RumorMessage)
+	rumors[gossipAddr.String()] = make(map[uint32]*message.RumorMessage)
 	wants := map[string]uint32{gossipAddr.String(): 1}
 	nameToAddr = map[string]string{name: gossipAddr.String()}
+	acks = make(map[string]chan *message.StatusPacket)
+	expectedAcks = make(map[string]int)
 
 	for _, peer := range Peers {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
 		peerAddrs[peer] = peerAddr
 		rumors[peer] = make(map[uint32]*message.RumorMessage)
 		wants[peer] = 1
+		acks[peer] = make(chan *message.StatusPacket)
+		expectedAcks[peer] = 0
 	}
 
 	gossiper := &Gossiper{
@@ -276,6 +281,9 @@ func (gossiper *Gossiper) rumormonger(
 	selectedPeerAddr := gossiper.pickRumormongeringPartner(
 		map[string]struct{}{sender.String(): {}},
 	)
+	if selectedPeerAddr == nil {
+		return
+	}
 	gossiper.rumormongerWith(msg, selectedPeerAddr, sender)
 }
 
