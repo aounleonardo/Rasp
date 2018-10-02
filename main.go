@@ -15,7 +15,6 @@ const maxMsgSize = 1024
 
 var acks map[string]chan *message.StatusPacket
 var expectedAcks map[string]int
-var nameToAddr map[string]string
 
 const (
 	SEND    = iota
@@ -24,7 +23,6 @@ const (
 )
 
 type Gossiper struct {
-	ID         uint32
 	Name       string
 	uiConn     *net.UDPConn
 	uiAddr     *net.UDPAddr
@@ -51,17 +49,14 @@ func NewGossiper(
 
 	peerAddrs := make(map[string]*net.UDPAddr)
 	rumors := make(map[string]map[uint32]*message.RumorMessage)
-	rumors[gossipAddr.String()] = make(map[uint32]*message.RumorMessage)
-	wants := map[string]uint32{gossipAddr.String(): 1}
-	nameToAddr = map[string]string{name: gossipAddr.String()}
+	rumors[name] = make(map[uint32]*message.RumorMessage)
+	wants := map[string]uint32{name: 1}
 	acks = make(map[string]chan *message.StatusPacket)
 	expectedAcks = make(map[string]int)
 
 	for _, peer := range Peers {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
 		peerAddrs[peer] = peerAddr
-		rumors[peer] = make(map[uint32]*message.RumorMessage)
-		wants[peer] = 1
 		acks[peer] = make(chan *message.StatusPacket)
 		expectedAcks[peer] = 0
 	}
@@ -126,14 +121,14 @@ func (gossiper *Gossiper) buildClientMessage(
 			},
 		}
 	} else {
-		id := gossiper.wants[gossiper.gossipAddr.String()]
+		id := gossiper.wants[gossiper.Name]
 		msg := &message.RumorMessage{
 			Origin: gossiper.Name,
 			ID:     id,
 			Text:   content,
 		}
-		gossiper.wants[gossiper.gossipAddr.String()] = id + 1
-		gossiper.rumors[gossiper.gossipAddr.String()][id] = msg
+		gossiper.wants[gossiper.Name] = id + 1
+		gossiper.rumors[gossiper.Name][id] = msg
 		return &message.GossipPacket{Rumor: msg}
 	}
 }
@@ -166,6 +161,7 @@ func (gossiper *Gossiper) ReceiveMessage(
 	sender *net.UDPAddr,
 ) {
 	gossiper.upsertPeer(sender)
+	gossiper.upsertIdentifiers(packet)
 	fmt.Printf("PEERS %s\n", gossiper.listPeers())
 	if packet.Rumor != nil {
 		gossiper.receiveRumorPacket(packet, sender)
@@ -182,10 +178,28 @@ func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
 		return
 	}
 	gossiper.peers[sender.String()] = sender
-	gossiper.rumors[sender.String()] = make(map[uint32]*message.RumorMessage)
-	gossiper.wants[sender.String()] = 1
+
 	acks[sender.String()] = make(chan *message.StatusPacket)
 	expectedAcks[sender.String()] = 0
+}
+
+func (gossiper *Gossiper) upsertIdentifiers(packet *message.GossipPacket) {
+	if packet.Rumor != nil {
+		gossiper.upsertOrigin(packet.Rumor.Origin)
+	} else if packet.Status != nil {
+		for _, peerStatus := range packet.Status.Want {
+			gossiper.upsertOrigin(peerStatus.Identifier)
+		}
+	}
+}
+
+func (gossiper *Gossiper) upsertOrigin(origin string) {
+	_, hasOrigin := gossiper.rumors[origin]
+	if hasOrigin {
+		return
+	}
+	gossiper.rumors[origin] = make(map[uint32]*message.RumorMessage)
+	gossiper.wants[origin] = 1
 }
 
 func (gossiper *Gossiper) listPeers() string {
@@ -199,15 +213,15 @@ func (gossiper *Gossiper) listPeers() string {
 }
 
 func describeStatusPacket(packet *message.StatusPacket) string {
-	ret := ""
-	for _, peer := range packet.Want {
-		ret += fmt.Sprintf(
+	ret := make([]string, len(packet.Want))
+	for i, peer := range packet.Want {
+		ret[i] = fmt.Sprintf(
 			"peer %s nextID %d",
 			peer.Identifier,
 			peer.NextID,
 		)
 	}
-	return ret
+	return strings.Join(ret, " ")
 }
 
 func encodeMessage(msg *message.GossipPacket) []byte {
@@ -260,18 +274,15 @@ func (gossiper *Gossiper) receiveRumorPacket(
 		packet.Rumor.Text,
 	)
 
+	if packet.Rumor.ID == gossiper.nextIdForPeer(packet.Rumor.Origin) {
+		gossiper.rumors[packet.Rumor.Origin][packet.Rumor.ID] = packet.Rumor
+		gossiper.wants[packet.Rumor.Origin] = packet.Rumor.ID + 1
+		go gossiper.rumormonger(packet, sender)
+	}
+
 	status := gossiper.constructStatusPacket()
 	bytes := encodeMessage(&message.GossipPacket{Status: status})
 	gossiper.gossipConn.WriteToUDP(bytes, sender)
-
-	if packet.Rumor.ID != gossiper.nextIdForPeer(packet.Rumor.Origin) {
-		return
-	}
-
-	gossiper.rumors[packet.Rumor.Origin][packet.Rumor.ID] = packet.Rumor
-	gossiper.wants[packet.Rumor.Origin] = packet.Rumor.ID + 1
-
-	go gossiper.rumormonger(packet, sender)
 }
 
 func (gossiper *Gossiper) rumormonger(
@@ -327,6 +338,9 @@ func (gossiper *Gossiper) rumormongerWith(
 			operation, missing = gossiper.compareStatuses(ack)
 		case <-timer.C:
 			operation, missing = NOP, message.PeerStatus{}
+			if expectedAcks[peer.String()] > 0 {
+				expectedAcks[peer.String()] --
+			}
 		}
 		switch operation {
 		case SEND:
@@ -352,7 +366,8 @@ func (gossiper *Gossiper) rumormongerWith(
 						"FLIPPED COIN sending rumor to %s\n",
 						newPartner.String(),
 					)
-					gossiper.rumormonger(msg, sender)
+					gossiper.rumormongerWith(msg, newPartner, sender)
+				} else {
 				}
 			}
 			return
@@ -385,12 +400,12 @@ func (gossiper *Gossiper) receiveStatusPacket(
 }
 
 func (gossiper *Gossiper) constructStatusPacket() *message.StatusPacket {
-	peerStatus := make([]message.PeerStatus, len(nameToAddr))
+	peerStatus := make([]message.PeerStatus, len(gossiper.wants))
 	i := 0
-	for name, addr := range nameToAddr {
+	for name, nextID := range gossiper.wants {
 		peerStatus[i] = message.PeerStatus{
 			Identifier: name,
-			NextID:     gossiper.wants[addr],
+			NextID:     nextID,
 		}
 		i++
 	}
@@ -437,17 +452,10 @@ func (gossiper *Gossiper) sendMissingRumor(
 	expectedAcks[recipient.String()] ++
 }
 
-// Returns the next id the gossiper wants for a certain peer identifier (name)
-// If the gossiper doesn't know yet what address is associated with the name,
-// or if it still hasn't received any message from it, it will return 0
 func (gossiper *Gossiper) nextIdForPeer(identifier string) uint32 {
-	peerAddr, ok := nameToAddr[identifier]
+	nextID, ok := gossiper.wants[identifier]
 	if !ok {
-		return 0
-	}
-	nextID, ok := gossiper.wants[peerAddr]
-	if !ok {
-		return 0
+		return 1
 	}
 	return nextID
 }
