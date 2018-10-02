@@ -139,7 +139,7 @@ func (gossiper *Gossiper) listenForGossip() {
 		bytes := make([]byte, maxMsgSize)
 		length, sender, err := gossiper.gossipConn.ReadFromUDP(bytes)
 		if err != nil {
-			fmt.Println("Error reading Client Message from UDP: ", err)
+			fmt.Println("Error reading Peer Message from UDP: ", err)
 			continue
 		}
 		if length > maxMsgSize {
@@ -350,7 +350,7 @@ func (gossiper *Gossiper) rumormongerWith(
 		case NOP:
 			if rand.Intn(2) == 0 {
 				newPartner := gossiper.pickRumormongeringPartner(
-					map[string]struct{}{sender.String(): {}, peer.String(): {}},
+					map[string]struct{}{peer.String(): {}},
 				)
 				if newPartner != nil {
 					fmt.Printf(
