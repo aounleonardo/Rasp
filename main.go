@@ -73,6 +73,7 @@ func NewGossiper(
 		wants:      wants,
 	}
 	go gossiper.listenForGossip()
+	go gossiper.breakEntropy()
 
 	return gossiper
 }
@@ -80,7 +81,6 @@ func NewGossiper(
 func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
-		// TODO could make this length an attribute of the Gossiper
 		bytes := make([]byte, maxMsgSize)
 		length, _, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
@@ -280,9 +280,7 @@ func (gossiper *Gossiper) receiveRumorPacket(
 		go gossiper.rumormonger(packet, sender)
 	}
 
-	status := gossiper.constructStatusPacket()
-	bytes := encodeMessage(&message.GossipPacket{Status: status})
-	gossiper.gossipConn.WriteToUDP(bytes, sender)
+	gossiper.sendStatusPacket(sender)
 }
 
 func (gossiper *Gossiper) rumormonger(
@@ -326,6 +324,7 @@ func (gossiper *Gossiper) rumormongerWith(
 	if bytes == nil {
 		return
 	}
+	fmt.Printf("MONGERING with %s\n", peer.String())
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
 	expectedAcks[peer.String()] ++
 
@@ -344,20 +343,12 @@ func (gossiper *Gossiper) rumormongerWith(
 		}
 		switch operation {
 		case SEND:
-			fmt.Printf("MONGERING with %s\n", peer.String())
 			gossiper.sendMissingRumor(&missing, peer)
 		case REQUEST:
-			status := gossiper.constructStatusPacket()
-			packet := &message.GossipPacket{Status: status}
-			bytes := encodeMessage(packet)
-			if bytes == nil {
-				return
-			}
-			gossiper.gossipConn.WriteToUDP(bytes, peer)
+			gossiper.sendStatusPacket(peer)
 			return
 		case NOP:
 			if rand.Intn(2) == 0 {
-
 				newPartner := gossiper.pickRumormongeringPartner(
 					map[string]struct{}{sender.String(): {}, peer.String(): {}},
 				)
@@ -367,7 +358,6 @@ func (gossiper *Gossiper) rumormongerWith(
 						newPartner.String(),
 					)
 					gossiper.rumormongerWith(msg, newPartner, sender)
-				} else {
 				}
 			}
 			return
@@ -397,6 +387,25 @@ func (gossiper *Gossiper) receiveStatusPacket(
 	if operation == NOP {
 		fmt.Printf("IN SYNC WITH %s\n", sender.String())
 	}
+}
+
+func (gossiper *Gossiper) breakEntropy() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		_ = <-ticker.C
+		neighbour := gossiper.pickRumormongeringPartner(map[string]struct{}{})
+		gossiper.sendStatusPacket(neighbour)
+	}
+}
+
+func (gossiper *Gossiper) sendStatusPacket(to *net.UDPAddr) {
+	status := gossiper.constructStatusPacket()
+	bytes := encodeMessage(&message.GossipPacket{Status: status})
+	if bytes == nil {
+		return
+	}
+	gossiper.gossipConn.WriteToUDP(bytes, to)
 }
 
 func (gossiper *Gossiper) constructStatusPacket() *message.StatusPacket {
@@ -448,6 +457,7 @@ func (gossiper *Gossiper) sendMissingRumor(
 	if bytes == nil {
 		return
 	}
+	fmt.Printf("MONGERING with %s\n", recipient.String())
 	gossiper.gossipConn.WriteToUDP(bytes, recipient)
 	expectedAcks[recipient.String()] ++
 }
