@@ -112,12 +112,12 @@ func (gossiper *Gossiper) handleClientPacket(
 		msg := gossiper.buildClientMessage(packet.Rumor.Contents)
 
 		if gossiper.simple {
-			gossiper.forwardSimplePacket(msg, gossiper.gossipAddr)
+			gossiper.forwardSimplePacket(msg.Simple, gossiper.gossipAddr)
 		} else {
-			go gossiper.rumormonger(msg, gossiper.gossipAddr)
+			go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 		}
 	} else if packet.Identifier != nil {
-		response := &requests.IdentifierResponse{Identifier:gossiper.Name}
+		response := &requests.IdentifierResponse{Identifier: gossiper.Name}
 		bytes, err := protobuf.Encode(response)
 		if err != nil || bytes == nil {
 			return
@@ -181,11 +181,11 @@ func (gossiper *Gossiper) ReceiveMessage(
 	gossiper.upsertIdentifiers(packet)
 	fmt.Printf("PEERS %s\n", gossiper.listPeers())
 	if packet.Rumor != nil {
-		gossiper.receiveRumorPacket(packet, sender)
+		gossiper.receiveRumorPacket(packet.Rumor, sender)
 	} else if packet.Status != nil {
-		gossiper.receiveStatusPacket(packet, sender)
+		gossiper.receiveStatusPacket(packet.Status, sender)
 	} else if packet.Simple != nil && gossiper.simple {
-		gossiper.receiveSimplePacket(packet, sender)
+		gossiper.receiveSimplePacket(packet.Simple, sender)
 	}
 }
 
@@ -251,24 +251,24 @@ func encodeMessage(msg *message.GossipPacket) []byte {
 }
 
 func (gossiper *Gossiper) receiveSimplePacket(
-	packet *message.GossipPacket,
+	msg *message.SimpleMessage,
 	sender *net.UDPAddr,
 ) {
 	fmt.Printf(
 		"SIMPLE MESSAGE origin %s from %s contents %s\n",
-		packet.Simple.OriginalName,
-		packet.Simple.RelayPeerAddr,
-		packet.Simple.Contents,
+		msg.OriginalName,
+		msg.RelayPeerAddr,
+		msg.Contents,
 	)
-	gossiper.forwardSimplePacket(packet, sender)
+	gossiper.forwardSimplePacket(msg, sender)
 }
 
 func (gossiper *Gossiper) forwardSimplePacket(
-	packet *message.GossipPacket,
+	msg *message.SimpleMessage,
 	sender *net.UDPAddr,
 ) {
-	packet.Simple.RelayPeerAddr = gossiper.gossipAddr.String()
-	bytes := encodeMessage(packet)
+	msg.RelayPeerAddr = gossiper.gossipAddr.String()
+	bytes := encodeMessage(&message.GossipPacket{Simple: msg})
 	if bytes == nil {
 		return
 	}
@@ -280,28 +280,28 @@ func (gossiper *Gossiper) forwardSimplePacket(
 }
 
 func (gossiper *Gossiper) receiveRumorPacket(
-	packet *message.GossipPacket,
+	rumor *message.RumorMessage,
 	sender *net.UDPAddr,
 ) {
 	fmt.Printf(
 		"RUMOR origin %s from %s ID %d contents %s\n",
-		packet.Rumor.Origin,
+		rumor.Origin,
 		sender.String(),
-		packet.Rumor.ID,
-		packet.Rumor.Text,
+		rumor.ID,
+		rumor.Text,
 	)
 
-	if packet.Rumor.ID == gossiper.nextIdForPeer(packet.Rumor.Origin) {
-		gossiper.rumors[packet.Rumor.Origin][packet.Rumor.ID] = packet.Rumor
-		gossiper.wants[packet.Rumor.Origin] = packet.Rumor.ID + 1
-		go gossiper.rumormonger(packet, sender)
+	if rumor.ID == gossiper.nextIdForPeer(rumor.Origin) {
+		gossiper.rumors[rumor.Origin][rumor.ID] = rumor
+		gossiper.wants[rumor.Origin] = rumor.ID + 1
+		go gossiper.rumormonger(rumor, sender)
 	}
 
 	gossiper.sendStatusPacket(sender)
 }
 
 func (gossiper *Gossiper) rumormonger(
-	msg *message.GossipPacket,
+	rumor *message.RumorMessage,
 	sender *net.UDPAddr,
 ) {
 	selectedPeerAddr := gossiper.pickRumormongeringPartner(
@@ -310,7 +310,7 @@ func (gossiper *Gossiper) rumormonger(
 	if selectedPeerAddr == nil {
 		return
 	}
-	gossiper.rumormongerWith(msg, selectedPeerAddr, sender)
+	gossiper.rumormongerWith(rumor, selectedPeerAddr, sender)
 }
 
 func (gossiper *Gossiper) pickRumormongeringPartner(
@@ -333,11 +333,11 @@ func (gossiper *Gossiper) pickRumormongeringPartner(
 }
 
 func (gossiper *Gossiper) rumormongerWith(
-	msg *message.GossipPacket,
+	rumor *message.RumorMessage,
 	peer *net.UDPAddr,
 	sender *net.UDPAddr,
 ) {
-	bytes := encodeMessage(msg)
+	bytes := encodeMessage(&message.GossipPacket{Rumor: rumor})
 	if bytes == nil {
 		return
 	}
@@ -374,7 +374,7 @@ func (gossiper *Gossiper) rumormongerWith(
 						"FLIPPED COIN sending rumor to %s\n",
 						newPartner.String(),
 					)
-					gossiper.rumormongerWith(msg, newPartner, sender)
+					gossiper.rumormongerWith(rumor, newPartner, sender)
 				}
 			}
 			return
@@ -383,21 +383,21 @@ func (gossiper *Gossiper) rumormongerWith(
 }
 
 func (gossiper *Gossiper) receiveStatusPacket(
-	packet *message.GossipPacket,
+	status *message.StatusPacket,
 	sender *net.UDPAddr,
 ) {
 	fmt.Printf(
 		"STATUS from %s %s\n",
 		sender.String(),
-		describeStatusPacket(packet.Status),
+		describeStatusPacket(status),
 	)
 
 	if expectedAcks[sender.String()] > 0 {
-		acks[sender.String()] <- packet.Status
+		acks[sender.String()] <- status
 		expectedAcks[sender.String()] --
 		return
 	}
-	operation, missing := gossiper.compareStatuses(packet.Status)
+	operation, missing := gossiper.compareStatuses(status)
 	if operation == SEND {
 		gossiper.sendMissingRumor(&missing, sender)
 	}
