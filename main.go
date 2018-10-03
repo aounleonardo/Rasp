@@ -97,9 +97,9 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
-		fmt.Println("CLIENT MESSAGE", packet.Message)
+		fmt.Println("CLIENT MESSAGE", packet.Rumor.Contents)
 		fmt.Printf("PEERS %s\n", gossiper.listPeers())
-		msg := gossiper.buildClientMessage(packet.Message)
+		msg := gossiper.buildClientMessage(packet.Rumor.Contents)
 
 		if gossiper.simple {
 			gossiper.forwardSimplePacket(msg, gossiper.gossipAddr)

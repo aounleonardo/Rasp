@@ -6,6 +6,7 @@ import (
 	"github.com/dedis/protobuf"
 	"fmt"
 	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/requests"
 )
 
 func main() {
@@ -27,7 +28,9 @@ func main() {
 	)
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
-	clientPacket := &message.ClientPacket{Message: *msg}
+	clientPacket := &message.ClientPacket{
+		Rumor: &requests.RumorRequest{Contents: *msg},
+	}
 	bytes, err := protobuf.Encode(clientPacket)
 	if err != nil {
 		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
@@ -38,7 +41,7 @@ func main() {
 	if sendErr != nil {
 		fmt.Println("Error while sending packet from client", err)
 	}
-	fmt.Println("Sent:", clientPacket.Message)
+	fmt.Println("Sent:", clientPacket.Rumor.Contents)
 
 	defer conn.Close()
 }
