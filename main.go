@@ -9,6 +9,7 @@ import (
 	"github.com/dedis/protobuf"
 	"math/rand"
 	"time"
+	"github.com/aounleonardo/Peerster/internal/pkg/requests"
 )
 
 const maxMsgSize = 1024
@@ -82,7 +83,7 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
 		bytes := make([]byte, maxMsgSize)
-		length, _, err := gossiper.uiConn.ReadFromUDP(bytes)
+		length, sender, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
 			continue
@@ -97,6 +98,15 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
+		gossiper.handleClientPacket(packet, sender)
+	}
+}
+
+func (gossiper *Gossiper) handleClientPacket(
+	packet *message.ClientPacket,
+	clientAddr *net.UDPAddr,
+) {
+	if packet.Rumor != nil {
 		fmt.Println("CLIENT MESSAGE", packet.Rumor.Contents)
 		fmt.Printf("PEERS %s\n", gossiper.listPeers())
 		msg := gossiper.buildClientMessage(packet.Rumor.Contents)
@@ -106,6 +116,13 @@ func (gossiper *Gossiper) ListenForClientMessages() {
 		} else {
 			go gossiper.rumormonger(msg, gossiper.gossipAddr)
 		}
+	} else if packet.Identifier != nil {
+		response := &requests.IdentifierResponse{Identifier:gossiper.Name}
+		bytes, err := protobuf.Encode(response)
+		if err != nil || bytes == nil {
+			return
+		}
+		gossiper.uiConn.WriteToUDP(bytes, clientAddr)
 	}
 }
 
