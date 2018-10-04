@@ -109,6 +109,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleIdentifierRequest(packet.Identifier, clientAddr)
 	} else if packet.Peers != nil {
 		gossiper.handlePeersRequest(packet.Peers, clientAddr)
+	} else if packet.Messages != nil {
+		gossiper.handleMessagesRequest(packet.Messages, clientAddr)
 	}
 }
 

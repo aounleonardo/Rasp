@@ -20,3 +20,16 @@ type PeersRequest struct {}
 type PeersResponse struct {
 	Peers []string
 }
+
+type MessagesRequest struct {
+	Status StatusPacket
+}
+
+type PeerMessages struct {
+	Peer string
+	Messages []RumorMessage
+}
+
+type MessagesResponse struct {
+	Messages []PeerMessages
+}

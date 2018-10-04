@@ -47,6 +47,10 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isPeerRequest {
 		return json.Marshal(waitForPeers(conn))
 	}
+	isMessagesRequest, _ := regexp.MatchString("/message/", r.RequestURI)
+	if isMessagesRequest {
+		return json.Marshal(waitForMessages(conn))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -72,6 +76,16 @@ func waitForPeers(conn *net.UDPConn) []string {
 		response,
 	)
 	return response.Peers
+}
+
+func waitForMessages(conn *net.UDPConn) []message.PeerMessages {
+	response := &message.MessagesResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{Messages: &message.MessagesRequest{Status:message.StatusPacket{Want: nil}}},
+		response,
+	)
+	return response.Messages
 }
 
 func contactGossiper(

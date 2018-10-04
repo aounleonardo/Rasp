@@ -6,7 +6,6 @@ import (
 	"github.com/dedis/protobuf"
 	"fmt"
 	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/requests"
 )
 
 func main() {
@@ -29,7 +28,7 @@ func main() {
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
 	clientPacket := &message.ClientPacket{
-		Rumor: &requests.RumorRequest{Contents: *msg},
+		Rumor: &message.RumorRequest{Contents: *msg},
 	}
 	bytes, err := protobuf.Encode(clientPacket)
 	if err != nil {

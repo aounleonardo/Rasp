@@ -22,6 +22,7 @@ type ClientPacket struct {
 	Rumor *RumorRequest
 	Identifier *IdentifierRequest
 	Peers *PeersRequest
+	Messages *MessagesRequest
 }
 
 type PeerStatus struct {

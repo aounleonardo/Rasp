@@ -42,12 +42,63 @@ func (gossiper *Gossiper) handlePeersRequest(
 	gossiper.sendToClient(&message.PeersResponse{Peers: peers}, clientAddr)
 }
 
+func (gossiper *Gossiper) handleMessagesRequest(
+	request *message.MessagesRequest,
+	clientAddr *net.UDPAddr,
+) {
+	clientStatus := buildStatusMap(request.Status.Want)
+	for peer := range gossiper.wants {
+		_, clientHas := clientStatus[peer]
+		if !clientHas && gossiper.wants[peer] > 1 {
+			clientStatus[peer] = 1
+		}
+	}
+	gossiper.sendToClient(
+		&message.MessagesResponse{Messages: gossiper.getMessages(clientStatus)},
+		clientAddr,
+	)
+}
+
+func buildStatusMap(status []message.PeerStatus) map[string]uint32 {
+	statusMap := make(map[string]uint32)
+	for _, peer := range status {
+		statusMap[peer.Identifier] = peer.NextID
+	}
+	return statusMap
+}
+
+func (gossiper *Gossiper) getMessages(
+	status map[string]uint32,
+) []message.PeerMessages {
+	peerMessages := make([]message.PeerMessages, len(status))
+	i := 0
+	for peer, next := range status {
+		peerMessages[i] = gossiper.buildPeerMessages(peer, next)
+		i++
+	}
+	return peerMessages
+}
+
+func (gossiper *Gossiper) buildPeerMessages(
+	peer string,
+	start uint32,
+) message.PeerMessages {
+	length := gossiper.wants[peer] - start
+	messages := make([]message.RumorMessage, length)
+	for i := start; i < gossiper.wants[peer]; i++ {
+		messages[i-1] = *gossiper.rumors[peer][uint32(i)]
+	}
+	return message.PeerMessages{Peer: peer, Messages: messages}
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,
 ) {
 	bytes, err := protobuf.Encode(response)
-	if err != nil || bytes == nil {
+	if err != nil {
+		bytes, _ = protobuf.Encode(err.Error())
+		gossiper.uiConn.WriteToUDP(bytes, clientAddr)
 		return
 	}
 	gossiper.uiConn.WriteToUDP(bytes, clientAddr)
