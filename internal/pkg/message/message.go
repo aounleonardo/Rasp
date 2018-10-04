@@ -1,7 +1,5 @@
 package message
 
-import "github.com/aounleonardo/Peerster/internal/pkg/requests"
-
 type SimpleMessage struct {
 	OriginalName  string
 	RelayPeerAddr string
@@ -21,8 +19,8 @@ type GossipPacket struct {
 }
 
 type ClientPacket struct {
-	Rumor *requests.RumorRequest
-	Identifier *requests.IdentifierRequest
+	Rumor *RumorRequest
+	Identifier *IdentifierRequest
 }
 
 type PeerStatus struct {

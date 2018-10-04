@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/requests"
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 )
@@ -28,13 +27,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func waitForIdentifier(conn *net.UDPConn) string {
-	request := &message.ClientPacket{Identifier:&requests.IdentifierRequest{}}
+	request := &message.ClientPacket{Identifier:&message.IdentifierRequest{}}
 	bytes, _ := protobuf.Encode(request)
 	conn.Write(bytes)
 	for {
 		bytes := make([]byte, 1024)
 		_, _ = conn.Read(bytes)
-		response := &requests.IdentifierResponse{}
+		response := &message.IdentifierResponse{}
 		protobuf.Decode(bytes, response)
 		fmt.Println(response.Identifier)
 		return response.Identifier

@@ -1,4 +1,4 @@
-package requests
+package message
 
 type Operation struct {
 	Rumor *RumorRequest
