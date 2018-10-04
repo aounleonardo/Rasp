@@ -25,7 +25,27 @@ func (gossiper *Gossiper) handleIdentifierRequest(
 	request *message.IdentifierRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	response := &message.IdentifierResponse{Identifier: gossiper.Name}
+	gossiper.sendToClient(
+		&message.IdentifierResponse{Identifier: gossiper.Name},
+		clientAddr,
+	)
+}
+
+func (gossiper *Gossiper) handlePeersRequest(
+	request *message.PeersRequest,
+	clientAddr *net.UDPAddr,
+) {
+	var peers []string
+	for peer := range gossiper.peers {
+		peers = append(peers, peer)
+	}
+	gossiper.sendToClient(&message.PeersResponse{Peers: peers}, clientAddr)
+}
+
+func (gossiper *Gossiper) sendToClient(
+	response interface{},
+	clientAddr *net.UDPAddr,
+) {
 	bytes, err := protobuf.Encode(response)
 	if err != nil || bytes == nil {
 		return

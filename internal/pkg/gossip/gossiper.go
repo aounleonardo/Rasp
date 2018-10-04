@@ -106,12 +106,9 @@ func (gossiper *Gossiper) handleClientPacket(
 	if packet.Rumor != nil {
 		gossiper.handleRumorRequest(packet.Rumor)
 	} else if packet.Identifier != nil {
-		response := &message.IdentifierResponse{Identifier: gossiper.Name}
-		bytes, err := protobuf.Encode(response)
-		if err != nil || bytes == nil {
-			return
-		}
-		gossiper.uiConn.WriteToUDP(bytes, clientAddr)
+		gossiper.handleIdentifierRequest(packet.Identifier, clientAddr)
+	} else if packet.Peers != nil {
+		gossiper.handlePeersRequest(packet.Peers, clientAddr)
 	}
 }
 

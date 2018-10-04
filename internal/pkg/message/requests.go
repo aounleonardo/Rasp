@@ -14,3 +14,9 @@ type IdentifierRequest struct {}
 type IdentifierResponse struct {
 	Identifier string
 }
+
+type PeersRequest struct {}
+
+type PeersResponse struct {
+	Peers []string
+}
