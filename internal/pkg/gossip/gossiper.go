@@ -27,7 +27,7 @@ type Gossiper struct {
 	gossipConn *net.UDPConn
 	gossipAddr *net.UDPAddr
 	simple     bool
-	peers      map[string]*net.UDPAddr
+	peers      Peers
 	wants      map[string]uint32
 	rumors     map[string]map[uint32]*message.RumorMessage
 }
@@ -36,7 +36,7 @@ func NewGossiper(
 	name,
 	uiPort,
 	gossipAddress string,
-	Peers []string,
+	PeerList []string,
 	simple bool,
 ) *Gossiper {
 	uiAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
@@ -52,7 +52,7 @@ func NewGossiper(
 	acks = make(map[string]chan *message.StatusPacket)
 	expectedAcks = make(map[string]int)
 
-	for _, peer := range Peers {
+	for _, peer := range PeerList {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
 		peerAddrs[peer] = peerAddr
 		acks[peer] = make(chan *message.StatusPacket)
@@ -65,7 +65,7 @@ func NewGossiper(
 		uiAddr:     uiAddr,
 		gossipConn: gossipConn,
 		gossipAddr: gossipAddr,
-		peers:      peerAddrs,
+		peers:      Peers{m: peerAddrs},
 		simple:     simple,
 		rumors:     rumors,
 		wants:      wants,
@@ -178,11 +178,13 @@ func (gossiper *Gossiper) ReceiveMessage(
 }
 
 func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
-	_, hasPeer := gossiper.peers[sender.String()]
+	gossiper.peers.Lock()
+	defer gossiper.peers.Unlock()
+	_, hasPeer := gossiper.peers.m[sender.String()]
 	if hasPeer {
 		return
 	}
-	gossiper.peers[sender.String()] = sender
+	gossiper.peers.m[sender.String()] = sender
 
 	acks[sender.String()] = make(chan *message.StatusPacket)
 	expectedAcks[sender.String()] = 0
@@ -208,12 +210,14 @@ func (gossiper *Gossiper) upsertOrigin(origin string) {
 }
 
 func (gossiper *Gossiper) listPeers() string {
-	keys := make([]string, len(gossiper.peers))
+	keys := make([]string, len(gossiper.peers.m))
 	i := 0
-	for peer := range gossiper.peers {
+	gossiper.peers.RLock()
+	for peer := range gossiper.peers.m {
 		keys[i] = peer
 		i++
 	}
+	gossiper.peers.RUnlock()
 	return strings.Join(keys, ",")
 }
 

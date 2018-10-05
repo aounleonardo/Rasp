@@ -36,9 +36,11 @@ func (gossiper *Gossiper) handlePeersRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	var peers []string
-	for peer := range gossiper.peers {
+	gossiper.peers.RLock()
+	for peer := range gossiper.peers.m {
 		peers = append(peers, peer)
 	}
+	gossiper.peers.RUnlock()
 	gossiper.sendToClient(&message.PeersResponse{Peers: peers}, clientAddr)
 }
 

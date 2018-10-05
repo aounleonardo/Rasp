@@ -28,9 +28,11 @@ func (gossiper *Gossiper) forwardSimplePacket(
 	if bytes == nil {
 		return
 	}
-	for peer, addr := range gossiper.peers {
+	gossiper.peers.RLock()
+	for peer, addr := range gossiper.peers.m {
 		if peer != sender.String() {
 			gossiper.gossipConn.WriteToUDP(bytes, addr)
 		}
 	}
+	gossiper.peers.RUnlock()
 }

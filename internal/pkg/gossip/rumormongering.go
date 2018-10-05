@@ -46,7 +46,9 @@ func (gossiper *Gossiper) pickRumormongeringPartner(
 	except map[string]struct{},
 ) *net.UDPAddr {
 	var filteredPeers []string
-	for peer := range gossiper.peers {
+	gossiper.peers.RLock()
+	defer gossiper.peers.RUnlock()
+	for peer := range gossiper.peers.m {
 		_, shouldFilter := except[peer]
 		if !shouldFilter {
 			filteredPeers = append(filteredPeers, peer)
@@ -58,7 +60,7 @@ func (gossiper *Gossiper) pickRumormongeringPartner(
 	}
 
 	n := rand.Intn(len(filteredPeers))
-	return gossiper.peers[filteredPeers[n]]
+	return gossiper.peers.m[filteredPeers[n]]
 }
 
 func (gossiper *Gossiper) rumormongerWith(
