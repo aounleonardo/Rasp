@@ -28,8 +28,8 @@ type Gossiper struct {
 	gossipAddr *net.UDPAddr
 	simple     bool
 	peers      Peers
-	wants      map[string]uint32
-	rumors     map[string]map[uint32]*message.RumorMessage
+	wants      Needs
+	rumors     Rumors
 }
 
 func NewGossiper(
@@ -67,8 +67,8 @@ func NewGossiper(
 		gossipAddr: gossipAddr,
 		peers:      Peers{m: peerAddrs},
 		simple:     simple,
-		rumors:     rumors,
-		wants:      wants,
+		rumors:     Rumors{m: rumors},
+		wants:      Needs{m: wants},
 	}
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
@@ -126,14 +126,18 @@ func (gossiper *Gossiper) buildClientMessage(
 			},
 		}
 	} else {
-		id := gossiper.wants[gossiper.Name]
+		gossiper.wants.Lock()
+		gossiper.rumors.Lock()
+		id := gossiper.wants.m[gossiper.Name]
 		msg := &message.RumorMessage{
 			Origin: gossiper.Name,
 			ID:     id,
 			Text:   content,
 		}
-		gossiper.wants[gossiper.Name] = id + 1
-		gossiper.rumors[gossiper.Name][id] = msg
+		gossiper.wants.m[gossiper.Name] = id + 1
+		gossiper.rumors.m[gossiper.Name][id] = msg
+		gossiper.wants.Unlock()
+		gossiper.rumors.Unlock()
 		return &message.GossipPacket{Rumor: msg}
 	}
 }
@@ -201,12 +205,18 @@ func (gossiper *Gossiper) upsertIdentifiers(packet *message.GossipPacket) {
 }
 
 func (gossiper *Gossiper) upsertOrigin(origin string) {
-	_, hasOrigin := gossiper.rumors[origin]
+	gossiper.rumors.RLock()
+	_, hasOrigin := gossiper.rumors.m[origin]
+	gossiper.rumors.RUnlock()
 	if hasOrigin {
 		return
 	}
-	gossiper.rumors[origin] = make(map[uint32]*message.RumorMessage)
-	gossiper.wants[origin] = 1
+	gossiper.wants.Lock()
+	gossiper.rumors.Lock()
+	gossiper.rumors.m[origin] = make(map[uint32]*message.RumorMessage)
+	gossiper.wants.m[origin] = 1
+	gossiper.wants.Unlock()
+	gossiper.rumors.Unlock()
 }
 
 func (gossiper *Gossiper) listPeers() string {
@@ -241,7 +251,9 @@ func (gossiper *Gossiper) breakEntropy() {
 }
 
 func (gossiper *Gossiper) nextIdForPeer(identifier string) uint32 {
-	nextID, ok := gossiper.wants[identifier]
+	gossiper.wants.RLock()
+	nextID, ok := gossiper.wants.m[identifier]
+	gossiper.wants.RUnlock()
 	if !ok {
 		return 1
 	}

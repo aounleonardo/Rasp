@@ -49,26 +49,32 @@ func (gossiper *Gossiper) handleMessagesRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	clientStatus := gossiper.buildStatusMap(request.Status.Want)
-	for peer := range gossiper.wants {
+	gossiper.wants.RLock()
+	for peer := range gossiper.wants.m {
 		_, clientHas := clientStatus[peer]
-		if !clientHas && gossiper.wants[peer] > 1 {
+		if !clientHas && gossiper.wants.m[peer] > 1 {
 			clientStatus[peer] = 1
 		}
 	}
+	gossiper.wants.RUnlock()
 	gossiper.sendToClient(
 		&message.MessagesResponse{Messages: gossiper.getMessages(clientStatus)},
 		clientAddr,
 	)
 }
 
-func (gossiper *Gossiper) buildStatusMap(status []message.PeerStatus) map[string]uint32 {
+func (gossiper *Gossiper) buildStatusMap(
+	status []message.PeerStatus,
+) map[string]uint32 {
 	statusMap := make(map[string]uint32)
+	gossiper.wants.RLock()
 	for _, peer := range status {
-		_, hasOrigin := gossiper.wants[peer.Identifier]
+		_, hasOrigin := gossiper.wants.m[peer.Identifier]
 		if hasOrigin {
 			statusMap[peer.Identifier] = peer.NextID
 		}
 	}
+	gossiper.wants.RUnlock()
 	return statusMap
 }
 
@@ -88,12 +94,14 @@ func (gossiper *Gossiper) buildPeerMessages(
 	peer string,
 	start uint32,
 ) message.PeerMessages {
-	length := gossiper.wants[peer] - start
+	gossiper.wants.RLock()
+	length := gossiper.wants.m[peer] - start
 	messages := make([]message.RumorMessage, length)
-	for i := start; i < gossiper.wants[peer]; i++ {
-		fmt.Println("loop", i, start, gossiper.wants[peer])
-		messages[i - start] = *gossiper.rumors[peer][uint32(i)]
+	for i := start; i < gossiper.wants.m[peer]; i++ {
+		fmt.Println("loop", i, start, gossiper.wants.m[peer])
+		messages[i - start] = *gossiper.rumors.m[peer][uint32(i)]
 	}
+	gossiper.wants.RUnlock()
 	return message.PeerMessages{Peer: peer, Messages: messages}
 }
 

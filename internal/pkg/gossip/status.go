@@ -54,15 +54,17 @@ func (gossiper *Gossiper) sendStatusPacket(to *net.UDPAddr) {
 }
 
 func (gossiper *Gossiper) constructStatusPacket() *message.StatusPacket {
-	peerStatus := make([]message.PeerStatus, len(gossiper.wants))
+	gossiper.wants.RLock()
+	peerStatus := make([]message.PeerStatus, len(gossiper.wants.m))
 	i := 0
-	for name, nextID := range gossiper.wants {
+	for name, nextID := range gossiper.wants.m {
 		peerStatus[i] = message.PeerStatus{
 			Identifier: name,
 			NextID:     nextID,
 		}
 		i++
 	}
+	gossiper.wants.RUnlock()
 	return &message.StatusPacket{Want: peerStatus}
 }
 
@@ -96,7 +98,9 @@ func (gossiper *Gossiper) sendMissingRumor(
 	missing *message.PeerStatus,
 	recipient *net.UDPAddr,
 ) {
-	rumor := gossiper.rumors[missing.Identifier][missing.NextID]
+	gossiper.rumors.RLock()
+	rumor := gossiper.rumors.m[missing.Identifier][missing.NextID]
+	gossiper.rumors.RUnlock()
 	packet := &message.GossipPacket{Rumor: rumor}
 	bytes := encodeMessage(packet)
 	if bytes == nil {
