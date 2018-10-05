@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"encoding/json"
 	"errors"
+	"strings"
+	"strconv"
 )
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +51,8 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	}
 	isMessagesRequest, _ := regexp.MatchString("/message/", r.RequestURI)
 	if isMessagesRequest {
-		return json.Marshal(waitForMessages(conn))
+		statusPacket := constructStatusPacket(r.RequestURI)
+		return json.Marshal(waitForMessages(conn, statusPacket))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -78,14 +81,43 @@ func waitForPeers(conn *net.UDPConn) []string {
 	return response.Peers
 }
 
-func waitForMessages(conn *net.UDPConn) []message.PeerMessages {
+func waitForMessages(
+	conn *net.UDPConn,
+	status message.StatusPacket,
+) []message.PeerMessages {
 	response := &message.MessagesResponse{}
 	contactGossiper(
 		conn,
-		&message.ClientPacket{Messages: &message.MessagesRequest{Status:message.StatusPacket{Want: nil}}},
+		&message.ClientPacket{
+			Messages: &message.MessagesRequest{Status: status},
+		},
 		response,
 	)
 	return response.Messages
+}
+
+func constructStatusPacket(uri string) message.StatusPacket {
+	status := strings.TrimSuffix(
+		strings.TrimPrefix(uri, "/message/"),
+		"/",
+	)
+	if len(status) == 0 {
+		return message.StatusPacket{Want: nil}
+	}
+	wants := strings.Split(status, ";")
+	statusPacket := make([]message.PeerStatus, len(wants))
+	for index, peer := range wants {
+		want := strings.Split(peer, ":")
+		nextID, err := strconv.Atoi(want[1])
+		if err != nil {
+			nextID = 1
+		}
+		statusPacket[index] = message.PeerStatus{
+			Identifier: want[0],
+			NextID:     uint32(nextID),
+		}
+	}
+	return message.StatusPacket{Want: statusPacket}
 }
 
 func contactGossiper(

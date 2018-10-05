@@ -46,7 +46,7 @@ func (gossiper *Gossiper) handleMessagesRequest(
 	request *message.MessagesRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	clientStatus := buildStatusMap(request.Status.Want)
+	clientStatus := gossiper.buildStatusMap(request.Status.Want)
 	for peer := range gossiper.wants {
 		_, clientHas := clientStatus[peer]
 		if !clientHas && gossiper.wants[peer] > 1 {
@@ -59,10 +59,13 @@ func (gossiper *Gossiper) handleMessagesRequest(
 	)
 }
 
-func buildStatusMap(status []message.PeerStatus) map[string]uint32 {
+func (gossiper *Gossiper) buildStatusMap(status []message.PeerStatus) map[string]uint32 {
 	statusMap := make(map[string]uint32)
 	for _, peer := range status {
-		statusMap[peer.Identifier] = peer.NextID
+		_, hasOrigin := gossiper.wants[peer.Identifier]
+		if hasOrigin {
+			statusMap[peer.Identifier] = peer.NextID
+		}
 	}
 	return statusMap
 }
@@ -86,7 +89,8 @@ func (gossiper *Gossiper) buildPeerMessages(
 	length := gossiper.wants[peer] - start
 	messages := make([]message.RumorMessage, length)
 	for i := start; i < gossiper.wants[peer]; i++ {
-		messages[i-1] = *gossiper.rumors[peer][uint32(i)]
+		fmt.Println("loop", i, start, gossiper.wants[peer])
+		messages[i - start] = *gossiper.rumors[peer][uint32(i)]
 	}
 	return message.PeerMessages{Peer: peer, Messages: messages}
 }
