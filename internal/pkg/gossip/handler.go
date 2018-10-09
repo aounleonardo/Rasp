@@ -98,7 +98,6 @@ func (gossiper *Gossiper) buildPeerMessages(
 	length := gossiper.wants.m[peer] - start
 	messages := make([]message.RumorMessage, length)
 	for i := start; i < gossiper.wants.m[peer]; i++ {
-		fmt.Println("loop", i, start, gossiper.wants.m[peer])
 		messages[i - start] = *gossiper.rumors.m[peer][uint32(i)]
 	}
 	gossiper.wants.RUnlock()

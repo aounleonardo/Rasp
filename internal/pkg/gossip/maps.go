@@ -20,3 +20,9 @@ type Rumors struct {
 	sync.RWMutex
 	m map[string]map[uint32]*message.RumorMessage
 }
+
+type Acks struct {
+	sync.RWMutex
+	queue map[string]chan *message.StatusPacket
+	expected map[string]int
+}

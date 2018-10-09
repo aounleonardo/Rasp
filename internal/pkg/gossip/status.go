@@ -29,11 +29,15 @@ func (gossiper *Gossiper) receiveStatusPacket(
 		describeStatusPacket(status),
 	)
 
-	if expectedAcks[sender.String()] > 0 {
-		acks[sender.String()] <- status
-		expectedAcks[sender.String()] --
+	acks.Lock()
+	if acks.expected[sender.String()] > 0 {
+		acks.queue[sender.String()] <- status
+		acks.expected[sender.String()] --
+		acks.Unlock()
 		return
 	}
+	acks.Unlock()
+
 	operation, missing := gossiper.compareStatuses(status)
 	if operation == SEND {
 		gossiper.sendMissingRumor(&missing, sender)
@@ -108,5 +112,7 @@ func (gossiper *Gossiper) sendMissingRumor(
 	}
 	fmt.Printf("MONGERING with %s\n", recipient.String())
 	gossiper.gossipConn.WriteToUDP(bytes, recipient)
-	expectedAcks[recipient.String()] ++
+	acks.Lock()
+	acks.expected[recipient.String()] ++
+	acks.Unlock()
 }

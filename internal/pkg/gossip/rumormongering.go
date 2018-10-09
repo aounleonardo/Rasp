@@ -78,20 +78,25 @@ func (gossiper *Gossiper) rumormongerWith(
 	}
 	fmt.Printf("MONGERING with %s\n", peer.String())
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
-	expectedAcks[peer.String()] ++
+	acks.Lock()
+	acks.expected[peer.String()] ++
+	acks.Unlock()
 
 	for {
 		var operation int
 		var missing message.PeerStatus
 		timer := time.NewTimer(time.Second)
 		select {
-		case ack := <-acks[peer.String()]:
+		// TODO should I lock here?
+		case ack := <-acks.queue[peer.String()]:
 			operation, missing = gossiper.compareStatuses(ack)
 		case <-timer.C:
 			operation, missing = NOP, message.PeerStatus{}
-			if expectedAcks[peer.String()] > 0 {
-				expectedAcks[peer.String()] --
+			acks.Lock()
+			if acks.expected[peer.String()] > 0 {
+				acks.expected[peer.String()] --
 			}
+			acks.Unlock()
 		}
 		switch operation {
 		case SEND:

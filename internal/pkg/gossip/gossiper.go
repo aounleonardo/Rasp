@@ -11,8 +11,7 @@ import (
 
 const maxMsgSize = 1024
 
-var acks map[string]chan *message.StatusPacket
-var expectedAcks map[string]int
+var acks Acks
 
 const (
 	SEND    = iota
@@ -47,17 +46,22 @@ func NewGossiper(
 
 	peerAddrs := make(map[string]*net.UDPAddr)
 	rumors := make(map[string]map[uint32]*message.RumorMessage)
-	rumors[name] = make(map[uint32]*message.RumorMessage)
-	wants := map[string]uint32{name: 1}
-	acks = make(map[string]chan *message.StatusPacket)
-	expectedAcks = make(map[string]int)
+	// rumors[name] = make(map[uint32]*message.RumorMessage)
+	// wants := map[string]uint32{name: 1}
+	wants := make(map[string]uint32)
+	queue := make(map[string]chan *message.StatusPacket)
+	expected := make(map[string]int)
 
+	acks = Acks{queue: queue, expected: expected}
+
+	acks.Lock()
 	for _, peer := range PeerList {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
 		peerAddrs[peer] = peerAddr
-		acks[peer] = make(chan *message.StatusPacket)
-		expectedAcks[peer] = 0
+		acks.queue[peer] = make(chan *message.StatusPacket, maxMsgSize)
+		acks.expected[peer] = 0
 	}
+	acks.Unlock()
 
 	gossiper := &Gossiper{
 		Name:       name,
@@ -70,8 +74,9 @@ func NewGossiper(
 		rumors:     Rumors{m: rumors},
 		wants:      Needs{m: wants},
 	}
+
 	go gossiper.listenForGossip()
-	go gossiper.breakEntropy()
+	// go gossiper.breakEntropy()
 
 	return gossiper
 }
@@ -126,6 +131,7 @@ func (gossiper *Gossiper) buildClientMessage(
 			},
 		}
 	} else {
+		gossiper.upsertOrigin(gossiper.Name)
 		gossiper.wants.Lock()
 		gossiper.rumors.Lock()
 		id := gossiper.wants.m[gossiper.Name]
@@ -190,8 +196,10 @@ func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
 	}
 	gossiper.peers.m[sender.String()] = sender
 
-	acks[sender.String()] = make(chan *message.StatusPacket)
-	expectedAcks[sender.String()] = 0
+	acks.Lock()
+	acks.queue[sender.String()] = make(chan *message.StatusPacket, maxMsgSize)
+	acks.expected[sender.String()] = 0
+	acks.Unlock()
 }
 
 func (gossiper *Gossiper) upsertIdentifiers(packet *message.GossipPacket) {
