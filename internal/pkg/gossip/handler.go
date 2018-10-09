@@ -50,9 +50,8 @@ func (gossiper *Gossiper) handleMessagesRequest(
 ) {
 	clientStatus := gossiper.buildStatusMap(request.Status.Want)
 	gossiper.wants.RLock()
-	for peer := range gossiper.wants.m {
-		_, clientHas := clientStatus[peer]
-		if !clientHas && gossiper.wants.m[peer] > 1 {
+	for peer, wants := range gossiper.wants.m {
+		if _, clientHas := clientStatus[peer]; !clientHas && wants > 1 {
 			clientStatus[peer] = 1
 		}
 	}
@@ -69,8 +68,8 @@ func (gossiper *Gossiper) buildStatusMap(
 	statusMap := make(map[string]uint32)
 	gossiper.wants.RLock()
 	for _, peer := range status {
-		_, hasOrigin := gossiper.wants.m[peer.Identifier]
-		if hasOrigin {
+		if _, hasOrigin := gossiper.wants.m[peer.Identifier];
+			hasOrigin && peer.NextID > 0 {
 			statusMap[peer.Identifier] = peer.NextID
 		}
 	}
@@ -96,9 +95,12 @@ func (gossiper *Gossiper) buildPeerMessages(
 ) message.PeerMessages {
 	gossiper.wants.RLock()
 	length := gossiper.wants.m[peer] - start
+	if int32(length) < 0 {
+		length = 0
+	}
 	messages := make([]message.RumorMessage, length)
 	for i := start; i < gossiper.wants.m[peer]; i++ {
-		messages[i - start] = *gossiper.rumors.m[peer][uint32(i)]
+		messages[i-start] = *gossiper.rumors.m[peer][uint32(i)]
 	}
 	gossiper.wants.RUnlock()
 	return message.PeerMessages{Peer: peer, Messages: messages}

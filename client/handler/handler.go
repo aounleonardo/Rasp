@@ -104,7 +104,7 @@ func constructStatusPacket(uri string) message.StatusPacket {
 	if len(status) == 0 {
 		return message.StatusPacket{Want: nil}
 	}
-	wants := strings.Split(status, ";")
+	wants := strings.Split(status, ",")
 	statusPacket := make([]message.PeerStatus, len(wants))
 	for index, peer := range wants {
 		want := strings.Split(peer, ":")
