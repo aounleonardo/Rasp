@@ -46,8 +46,6 @@ func NewGossiper(
 
 	peerAddrs := make(map[string]*net.UDPAddr)
 	rumors := make(map[string]map[uint32]*message.RumorMessage)
-	// rumors[name] = make(map[uint32]*message.RumorMessage)
-	// wants := map[string]uint32{name: 1}
 	wants := make(map[string]uint32)
 	queue := make(map[string]chan *message.StatusPacket)
 	expected := make(map[string]int)
@@ -76,7 +74,7 @@ func NewGossiper(
 	}
 
 	go gossiper.listenForGossip()
-	// go gossiper.breakEntropy()
+	go gossiper.breakEntropy()
 
 	return gossiper
 }
