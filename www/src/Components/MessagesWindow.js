@@ -5,12 +5,14 @@ export default class MessagesWindow extends Component {
     render() {
         return(
             <Col>
-                {Object.keys(this.props.messages).map((key) => this.createRows(key, this.props.messages[key]))}
+                {this.props.messages.map((message) => this.createRow(message))}
             </Col>
         )
     }
 
-    createRows = (peer, msgs) => {
-        return <Row key={peer}>{msgs.map((msg) => <Row key={msg}><Label>{peer}: {msg}</Label></Row>)}</Row>
+    createRow = (msg) => {
+        return <Row key={`${msg["Origin"]}:${msg["ID"]}`}>
+            <Label>{msg["Origin"]}: {msg["Text"]}</Label>
+        </Row>
     }
 }

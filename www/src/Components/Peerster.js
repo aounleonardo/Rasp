@@ -12,15 +12,15 @@ export default class Peerster extends Component {
         this.state = {
             identifier: '',
             peers: [],
-            messages: {},
-            wants: {},
+            messages: [],
+            wants: 0,
         };
         this.getGossiperIdentifier =
             this.getGossiperIdentifier.bind(this);
         this.getGossiperIdentifier();
         this.getGossiperPeers();
+        setInterval(this.getGossiperPeers, 5000);
 
-        this.buildWantsString = this.buildWantsString.bind(this);
         this.getGossiperMessages = this.getGossiperMessages.bind(this);
         this.getGossiperMessages();
         setInterval(this.getGossiperMessages, 3000);
@@ -57,45 +57,26 @@ export default class Peerster extends Component {
         this.getGossiper('/peers/', (body) => this.setState({peers: body}));
     };
 
-    // [{"Peer":"249498","Messages":[{"Origin":"249498","ID":1,"Text":"Leo"},{"Origin":"249498","ID":2,"Text":"M0v3f4st"}]}]
-
     getGossiperMessages = async () => {
-        this.getGossiper('/message/' + this.buildWantsString(), (body) => {
-            if(body === null) {
+        this.getGossiper('/message/' + this.state.wants + '/', (body) => {
+            if (body === null) {
                 return
             }
-            const messages = Object.assign({}, this.state.messages);
-            const wants = Object.assign({}, this.state.wants);
-            body.forEach((peer) => {
-                if (!(peer['Peer'] in messages)) {
-                    messages[peer['Peer']] = [];
-                    wants[peer['Peer']] = 1;
-                }
-                if(peer['Messages'] === null) {
-                    return
-                }
-                    peer['Messages'].forEach((msg) => {
-                        if (msg['ID'] >= wants[peer['Peer']]) {
-                            messages[peer['Peer']].push(msg['Text']);
-                            wants[peer['Peer']] = msg['ID'] + 1;
-                        }
-                    })
-            });
-            this.setState({messages: messages, wants: wants});
-        });
-    };
+            const startIndex = body["StartIndex"];
+            const receivedMessages = body["Messages"];
+            if (receivedMessages === null) {
+                return
+            }
+            const toDrop = Math.max(this.state.wants - startIndex, 0);
+            receivedMessages.slice(toDrop, receivedMessages.length);
+            const newMessages = [
+                ... this.state.messages,
+                ... receivedMessages,
+            ];
+            const nextID = newMessages.length;
 
-    buildWantsString = () => {
-        let ret = '';
-        Object.keys(this.state.wants).forEach((peer) => {
-            ret += peer + ':' + this.state.wants[peer] + ';';
+            this.setState({messages: newMessages, wants: nextID})
         });
-        if(ret.length > 0) {
-            ret = ret.slice(0, -1);
-            ret += '/';
-        }
-        console.log('wants string', ret);
-        return ret;
     };
 
     getGossiper = async (api, callback) => {
