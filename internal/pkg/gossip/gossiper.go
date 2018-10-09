@@ -129,20 +129,7 @@ func (gossiper *Gossiper) buildClientMessage(
 			},
 		}
 	} else {
-		gossiper.upsertOrigin(gossiper.Name)
-		gossiper.wants.Lock()
-		gossiper.rumors.Lock()
-		id := gossiper.wants.m[gossiper.Name]
-		msg := &message.RumorMessage{
-			Origin: gossiper.Name,
-			ID:     id,
-			Text:   content,
-		}
-		gossiper.wants.m[gossiper.Name] = id + 1
-		gossiper.rumors.m[gossiper.Name][id] = msg
-		gossiper.wants.Unlock()
-		gossiper.rumors.Unlock()
-		return &message.GossipPacket{Rumor: msg}
+		return &message.GossipPacket{Rumor: gossiper.createClientRumor(content)}
 	}
 }
 

@@ -21,12 +21,7 @@ func (gossiper *Gossiper) receiveRumorPacket(
 	)
 
 	if rumor.ID == gossiper.nextIdForPeer(rumor.Origin) {
-		gossiper.wants.Lock()
-		gossiper.rumors.Lock()
-		gossiper.rumors.m[rumor.Origin][rumor.ID] = rumor
-		gossiper.wants.m[rumor.Origin] = rumor.ID + 1
-		gossiper.wants.Unlock()
-		gossiper.rumors.Unlock()
+		gossiper.memorizeRumor(rumor)
 		go gossiper.rumormonger(rumor, sender)
 	}
 
