@@ -49,10 +49,10 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isPeerRequest {
 		return json.Marshal(waitForPeers(conn))
 	}
-	isMessagesRequest, _ := regexp.MatchString("/message/", r.RequestURI)
+	isMessagesRequest, _ := regexp.MatchString("/message/*", r.RequestURI)
 	if isMessagesRequest {
-		statusPacket := constructStatusPacket(r.RequestURI)
-		return json.Marshal(waitForMessages(conn, statusPacket))
+		start := getStartIndex(r.RequestURI)
+		return json.Marshal(waitForMessages(conn, start))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -83,41 +83,32 @@ func waitForPeers(conn *net.UDPConn) []string {
 
 func waitForMessages(
 	conn *net.UDPConn,
-	status message.StatusPacket,
-) []message.PeerMessages {
+	start int,
+) message.MessagesResponse {
 	response := &message.MessagesResponse{}
 	contactGossiper(
 		conn,
 		&message.ClientPacket{
-			Messages: &message.MessagesRequest{Status: status},
+			Messages: &message.MessagesRequest{StartIndex: start},
 		},
 		response,
 	)
-	return response.Messages
+	return *response
 }
 
-func constructStatusPacket(uri string) message.StatusPacket {
-	status := strings.TrimSuffix(
+func getStartIndex(uri string) int {
+	start := strings.TrimSuffix(
 		strings.TrimPrefix(uri, "/message/"),
 		"/",
 	)
-	if len(status) == 0 {
-		return message.StatusPacket{Want: nil}
+	if len(start) == 0 {
+		return 0
 	}
-	wants := strings.Split(status, ",")
-	statusPacket := make([]message.PeerStatus, len(wants))
-	for index, peer := range wants {
-		want := strings.Split(peer, ":")
-		nextID, err := strconv.Atoi(want[1])
-		if err != nil {
-			nextID = 1
-		}
-		statusPacket[index] = message.PeerStatus{
-			Identifier: want[0],
-			NextID:     uint32(nextID),
-		}
+	nextID, err := strconv.Atoi(start)
+	if err != nil {
+		return 0
 	}
-	return message.StatusPacket{Want: statusPacket}
+	return nextID
 }
 
 func contactGossiper(

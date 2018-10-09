@@ -52,3 +52,25 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 	gossiper.rumors.Unlock()
 	messageOrdering.Unlock()
 }
+
+func (gossiper *Gossiper) getMessagesSince(
+	startIndex int,
+) []message.RumorMessage {
+	messageOrdering.RLock()
+	gossiper.rumors.RLock()
+	defer messageOrdering.RUnlock()
+	defer gossiper.rumors.RUnlock()
+
+	if startIndex < 0 || startIndex > len(messageOrdering.l) {
+		return nil
+	}
+
+	length := len(messageOrdering.l) - startIndex
+	messages := make([]message.RumorMessage, length)
+	for index := 0; index < length; index++ {
+		origin := messageOrdering.l[startIndex + index].origin
+		id := messageOrdering.l[startIndex + index].messageID
+		messages[index] = *gossiper.rumors.m[origin][id]
+	}
+	return messages
+}

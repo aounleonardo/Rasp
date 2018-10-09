@@ -22,7 +22,7 @@ type PeersResponse struct {
 }
 
 type MessagesRequest struct {
-	Status StatusPacket
+	StartIndex int
 }
 
 type PeerMessages struct {
@@ -31,5 +31,6 @@ type PeerMessages struct {
 }
 
 type MessagesResponse struct {
-	Messages []PeerMessages
+	StartIndex int
+	Messages []RumorMessage
 }
