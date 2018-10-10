@@ -4,6 +4,7 @@ import IDBox from "./IDBox";
 import PeersList from "./PeersList";
 import MessagesWindow from "./MessagesWindow";
 import Chatbox from "./Chatbox";
+import PeerAdder from "./PeerAdder";
 
 const endPoint = 'http://127.0.0.1:8000';
 
@@ -26,7 +27,8 @@ export default class Peerster extends Component {
         this.getGossiperMessages();
         setInterval(this.getGossiperMessages, 3000);
 
-        this.sendMessage = this.sendMessage.bind(this)
+        this.sendMessage = this.sendMessage.bind(this);
+        this.addPeer = this.addPeer.bind(this);
     }
 
     render() {
@@ -48,7 +50,7 @@ export default class Peerster extends Component {
                     </Row>
                     <Row>
                         <PeersList peers={this.state.peers}/>
-                        Add Peer
+                        <PeerAdder onAdd={this.addPeer}/>
                     </Row>
                 </Col>
             </Col>
@@ -107,5 +109,18 @@ export default class Peerster extends Component {
                 // TODO this is not working, probably because it is a bool
                 console.log("Error occurred while posting") :
                 console.log(`Message ${message} sent.`));
+    };
+
+    addPeer = async (address, port) => {
+        const request = endPoint + '/peers/';
+        fetch(request, {
+            method: 'post',
+            body: JSON.stringify({address: address, port: port}),
+        })
+            .then(res => res.json())
+            .then(res => (res === false) ?
+                // TODO this is not working, probably because it is a bool
+                console.log("Error occurred while adding peer") :
+                console.log(`Peer ${address}:${port} added.`));
     }
 }

@@ -62,6 +62,10 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isMessagesRequest {
 		return json.Marshal(readMessage(conn, r))
 	}
+	isPeerRequest, _ := regexp.MatchString("/peers/", r.RequestURI)
+	if isPeerRequest {
+		return json.Marshal(addPeer(conn, r))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -115,17 +119,41 @@ func getStartIndex(uri string) int {
 	return nextID
 }
 
-func readMessage(conn *net.UDPConn, r *http.Request) message.RumorResponse {
+func readMessage(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
 	decoder := json.NewDecoder(r.Body)
 	var s string
 	err := decoder.Decode(&s)
 	if err != nil {
-		panic(err)
+		return message.ValidationResponse{Success: false}
 	}
-	response := &message.RumorResponse{}
+	response := &message.ValidationResponse{}
 	contactGossiper(
 		conn,
 		&message.ClientPacket{Rumor: &message.RumorRequest{Contents: s}},
+		response,
+	)
+	return *response
+}
+
+func addPeer(conn *net.UDPConn, r *http.Request) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var s struct {
+		Address string
+		Port    string
+	}
+	err := decoder.Decode(&s)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			AddPeer: &message.AddPeerRequest{Address: s.Address, Port: s.Port},
+		},
 		response,
 	)
 	return *response

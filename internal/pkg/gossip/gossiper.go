@@ -107,13 +107,15 @@ func (gossiper *Gossiper) handleClientPacket(
 	clientAddr *net.UDPAddr,
 ) {
 	if packet.Rumor != nil {
-		gossiper.handleRumorRequest(packet.Rumor)
+		gossiper.handleRumorRequest(packet.Rumor, clientAddr)
 	} else if packet.Identifier != nil {
 		gossiper.handleIdentifierRequest(packet.Identifier, clientAddr)
 	} else if packet.Peers != nil {
 		gossiper.handlePeersRequest(packet.Peers, clientAddr)
 	} else if packet.Messages != nil {
 		gossiper.handleMessagesRequest(packet.Messages, clientAddr)
+	} else if packet.AddPeer != nil {
+		gossiper.handleAddPeersRequest(packet.AddPeer, clientAddr)
 	}
 }
 

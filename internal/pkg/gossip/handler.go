@@ -9,6 +9,7 @@ import (
 
 func (gossiper *Gossiper) handleRumorRequest(
 	request *message.RumorRequest,
+	clientAddr *net.UDPAddr,
 ) {
 	fmt.Println("CLIENT MESSAGE", request.Contents)
 	fmt.Printf("PEERS %s\n", gossiper.listPeers())
@@ -19,6 +20,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	} else {
 		go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 	}
+	gossiper.sendToClient(&message.ValidationResponse{Success:true}, clientAddr)
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
@@ -56,6 +58,29 @@ func (gossiper *Gossiper) handleMessagesRequest(
 		},
 		clientAddr,
 	)
+}
+
+func (gossiper *Gossiper) handleAddPeersRequest(
+	request *message.AddPeerRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	defer func(){
+		gossiper.sendToClient(
+			&message.ValidationResponse{Success:success},
+			clientAddr,
+		)
+	}()
+	address, err := net.ResolveUDPAddr(
+		"udp4",
+		fmt.Sprintf("%s:%s", request.Address, request.Port),
+	)
+
+	if err != nil {
+		success = false
+		return
+	}
+	gossiper.upsertPeer(address)
 }
 
 func (gossiper *Gossiper) sendToClient(

@@ -23,6 +23,7 @@ type ClientPacket struct {
 	Identifier *IdentifierRequest
 	Peers *PeersRequest
 	Messages *MessagesRequest
+	AddPeer *AddPeerRequest
 }
 
 type PeerStatus struct {

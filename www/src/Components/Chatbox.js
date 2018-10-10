@@ -11,7 +11,7 @@ export default class Chatbox extends Component {
     render() {
         return(
             <form onSubmit={this.send}>
-                <input type={"text"} ref={"message"}/>
+                <input type={"text"} ref={"message"} placeholder={"Type a message..."}/>
                 <Button type={"submit"}>Send</Button>
             </form>
         )

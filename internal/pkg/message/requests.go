@@ -35,6 +35,11 @@ type MessagesResponse struct {
 	Messages []RumorMessage
 }
 
-type RumorResponse struct {
+type ValidationResponse struct {
 	Success bool
+}
+
+type AddPeerRequest struct {
+	Address string
+	Port string
 }
