@@ -1,25 +1,59 @@
 import React, {Component} from 'react';
-import {Button} from 'react-bootstrap';
+import {Button, Col, Form, FormControl, FormGroup} from 'react-bootstrap';
 
 export default class Chatbox extends Component {
     constructor(props) {
         super(props);
 
         this.send = this.send.bind(this);
+        this.textChange = this.textChange.bind(this);
+
+        this.state = {
+            value: '',
+        };
     }
 
     render() {
-        return(
-            <form onSubmit={this.send}>
-                <input type={"text"} ref={"message"} placeholder={"Type a message..."}/>
-                <Button type={"submit"}>Send</Button>
-            </form>
+        return (
+            <Col>
+                <Form inline onSubmit={this.send}>
+                    <FormGroup
+                        controlId={"chatText"}
+                        validationState={this.validationState()}
+                    >
+                        <FormControl
+                            type={"text"}
+                            value={this.state.value}
+                            placeholder={"Type a message..."}
+                            onChange={this.textChange}
+                            bsSize={"lg"}
+                        />
+                        <Button type={"submit"}>Send</Button>
+                    </FormGroup>
+                </Form>
+            </Col>
         )
     }
 
+    validationState = () => {
+        if (this.state.value.length > 0) {
+            return 'success';
+        }
+        return null;
+    };
+
+    textChange = (event) => {
+        this.setState({value: event.target.value});
+    };
+
     send = (event) => {
         event.preventDefault();
-        this.props.onSend(this.refs.message.value);
-        this.refs.message.value = "";
-    }
+        if (this.validationState() === 'success') {
+            this.props.onSend(this.state.value);
+            console.log(this.state.value);
+        } else {
+            console.log('incomplete');
+        }
+        this.setState({value: ''});
+    };
 }
