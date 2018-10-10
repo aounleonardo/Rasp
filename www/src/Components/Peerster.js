@@ -3,6 +3,7 @@ import {Col, Row} from 'react-bootstrap';
 import IDBox from "./IDBox";
 import PeersList from "./PeersList";
 import MessagesWindow from "./MessagesWindow";
+import Chatbox from "./Chatbox";
 
 const endPoint = 'http://127.0.0.1:8000';
 
@@ -24,6 +25,8 @@ export default class Peerster extends Component {
         this.getGossiperMessages = this.getGossiperMessages.bind(this);
         this.getGossiperMessages();
         setInterval(this.getGossiperMessages, 3000);
+
+        this.sendMessage = this.sendMessage.bind(this)
     }
 
     render() {
@@ -32,7 +35,12 @@ export default class Peerster extends Component {
                 <Col md={2}>
                 </Col>
                 <Col md={6}>
-                    <MessagesWindow messages={this.state.messages}/>
+                    <Row>
+                        <MessagesWindow messages={this.state.messages}/>
+                    </Row>
+                    <Row>
+                        <Chatbox onSend={this.sendMessage}/>
+                    </Row>
                 </Col>
                 <Col md={4}>
                     <Row>
@@ -40,6 +48,7 @@ export default class Peerster extends Component {
                     </Row>
                     <Row>
                         <PeersList peers={this.state.peers}/>
+                        Add Peer
                     </Row>
                 </Col>
             </Col>
@@ -70,8 +79,8 @@ export default class Peerster extends Component {
             const toDrop = Math.max(this.state.wants - startIndex, 0);
             receivedMessages.slice(toDrop, receivedMessages.length);
             const newMessages = [
-                ... this.state.messages,
-                ... receivedMessages,
+                ...this.state.messages,
+                ...receivedMessages,
             ];
             const nextID = newMessages.length;
 
@@ -85,5 +94,18 @@ export default class Peerster extends Component {
         const body = await response.json();
         if (response.status !== 200) throw Error(body.message);
         callback(body);
+    };
+
+    sendMessage = async (message) => {
+        const request = endPoint + '/message/';
+        fetch(request, {
+            method: 'post',
+            body: JSON.stringify(message),
+        })
+            .then(res => res.json())
+            .then(res => (res === false) ?
+                // TODO this is not working, probably because it is a bool
+                console.log("Error occurred while posting") :
+                console.log(`Message ${message} sent.`));
     }
 }

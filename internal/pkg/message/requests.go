@@ -34,3 +34,7 @@ type MessagesResponse struct {
 	StartIndex int
 	Messages []RumorMessage
 }
+
+type RumorResponse struct {
+	Success bool
+}

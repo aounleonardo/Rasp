@@ -58,6 +58,10 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 }
 
 func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
+	isMessagesRequest, _ := regexp.MatchString("/message/", r.RequestURI)
+	if isMessagesRequest {
+		return json.Marshal(readMessage(conn, r))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -109,6 +113,22 @@ func getStartIndex(uri string) int {
 		return 0
 	}
 	return nextID
+}
+
+func readMessage(conn *net.UDPConn, r *http.Request) message.RumorResponse {
+	decoder := json.NewDecoder(r.Body)
+	var s string
+	err := decoder.Decode(&s)
+	if err != nil {
+		panic(err)
+	}
+	response := &message.RumorResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{Rumor: &message.RumorRequest{Contents: s}},
+		response,
+	)
+	return *response
 }
 
 func contactGossiper(

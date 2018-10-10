@@ -50,7 +50,10 @@ func (gossiper *Gossiper) handleMessagesRequest(
 ) {
 	messages := gossiper.getMessagesSince(request.StartIndex)
 	gossiper.sendToClient(
-		&message.MessagesResponse{StartIndex:request.StartIndex, Messages:messages},
+		&message.MessagesResponse{
+			StartIndex: request.StartIndex,
+			Messages:   messages,
+		},
 		clientAddr,
 	)
 }
