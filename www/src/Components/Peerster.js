@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Col, Row} from 'react-bootstrap';
+import {Col, Grid, Row} from 'react-bootstrap';
 import IDBox from "./IDBox";
 import PeersList from "./PeersList";
 import MessagesWindow from "./MessagesWindow";
@@ -31,29 +31,52 @@ export default class Peerster extends Component {
         this.addPeer = this.addPeer.bind(this);
     }
 
+    style = {
+        messagesWindow: {
+            backgroundColor: "dodgerblue",
+            overflowY: "auto",
+            height: "calc(80vh - 200px)",
+        },
+        chatbox: {
+            height: "calc(20vh + 20px)",
+            backgroundColor: "dodgerblue",
+        },
+        gossipInfo: {
+            height: "calc(80vh - 200px)",
+            backgroundColor: "dodgerblue",
+            paddingLeft: "8%",
+        },
+        peerAdder: {
+            height: "calc(20vh + 20px)",
+            backgroundColor: "dodgerblue",
+        },
+    };
+
     render() {
         return (
-            <Col>
-                <Col md={2}>
-                </Col>
-                <Col md={6}>
-                    <Row>
-                        <MessagesWindow messages={this.state.messages}/>
+            <Grid>
+                <Col md={8}>
+                    <Row style={this.style.messagesWindow}>
+                        <MessagesWindow identifier={this.state.identifier} messages={this.state.messages}/>
                     </Row>
-                    <Row>
+                    <Row style={this.style.chatbox}>
                         <Chatbox onSend={this.sendMessage}/>
                     </Row>
                 </Col>
                 <Col md={4}>
-                    <Row>
-                        <IDBox identifier={this.state.identifier}/>
+                    <Row style={this.style.gossipInfo}>
+                        <Row>
+                            <IDBox identifier={this.state.identifier}/>
+                        </Row>
+                        <Row>
+                            <PeersList peers={this.state.peers}/>
+                        </Row>
                     </Row>
-                    <Row>
-                        <PeersList peers={this.state.peers}/>
+                    <Row style={this.style.peerAdder}>
                         <PeerAdder onAdd={this.addPeer}/>
                     </Row>
                 </Col>
-            </Col>
+            </Grid>
         )
     }
 

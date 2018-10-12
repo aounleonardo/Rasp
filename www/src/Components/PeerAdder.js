@@ -30,10 +30,38 @@ export default class PeerAdder extends Component {
         return !(this.state.help !== nextState.help);
     }
 
+    style = {
+        form: {
+            height: '100%',
+            width: '90%',
+            backgroundColor: "red",
+        },
+        group: {
+            padding: '2vmin',
+            height: '100%',
+            width: '100%',
+            backgroundColor: "yellow",
+        },
+        text: {
+            height: '70%',
+            width: '100%',
+            maxLength: 5,
+            fontSize: '150%',
+            resize: "none",
+        },
+        button: {
+            height:'25%',
+            width: '100%',
+            color: 'dodgerblue',
+            fontSize: '150%',
+            fontWeight: 'bold',
+        }
+    };
+
     render() {
         return (
             <Col>
-                <Form inline onSubmit={this.add}>
+                <Form inline onSubmit={this.add} style={this.style.form}>
                     <FormGroup
                         controlId={"addPeer"}
                         validationState={this.validationState()}

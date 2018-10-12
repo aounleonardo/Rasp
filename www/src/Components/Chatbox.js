@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Button, Col, Form, FormControl, FormGroup} from 'react-bootstrap';
+import {Button, Form, FormControl, FormGroup} from 'react-bootstrap';
 
 export default class Chatbox extends Component {
     constructor(props) {
@@ -13,25 +13,56 @@ export default class Chatbox extends Component {
         };
     }
 
+    style = {
+        box: {
+            height: "calc(20vh + 20px)",
+            backgroundColor: "dodgerblue",
+        },
+        form: {
+            height: '100%',
+            width: '100%',
+        },
+        group: {
+            padding: '2vmin',
+            height: '100%',
+            width: '100%',
+        },
+        text: {
+            height: '70%',
+            width: '100%',
+            fontSize: '150%',
+            resize: "none",
+        },
+        button: {
+            height:'25%',
+            width: '100%',
+            color: 'dodgerblue',
+            fontSize: '150%',
+            fontWeight: 'bold',
+        }
+    };
+
     render() {
+
         return (
-            <Col>
-                <Form inline onSubmit={this.send}>
-                    <FormGroup
-                        controlId={"chatText"}
-                        validationState={this.validationState()}
-                    >
-                        <FormControl
-                            type={"text"}
-                            value={this.state.value}
-                            placeholder={"Type a message..."}
-                            onChange={this.textChange}
-                            bsSize={"lg"}
-                        />
-                        <Button type={"submit"}>Send</Button>
-                    </FormGroup>
-                </Form>
-            </Col>
+            <Form inline onSubmit={this.send} style={this.style.form}>
+                <FormGroup
+                    controlId={"chatText"}
+                    validationState={this.validationState()}
+                    style={this.style.group}
+                >
+                    <FormControl
+                        componentClass={"textarea"}
+                        value={this.state.value}
+                        placeholder={"Type a message..."}
+                        onChange={this.textChange}
+                        bsSize={"lg"}
+                        wrap={"hard"}
+                        style={this.style.text}
+                    />
+                    <Button type={"submit"} style={this.style.button}>Send</Button>
+                </FormGroup>
+            </Form>
         )
     }
 

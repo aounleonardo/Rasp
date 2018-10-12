@@ -1,13 +1,12 @@
 import React, {Component} from 'react';
-import {Col, Row, Label} from 'react-bootstrap';
+import {Col, Label, Row} from 'react-bootstrap';
 
 export default class PeersList extends Component {
     render() {
-        return(
-            <Col>
-                {this.props.peers.map((peer) => this.createRow(peer))}
-            </Col>
-        )
+        return <Col>
+            {this.props.peers.map((peer) => this.createRow(peer))}
+        </Col>
+
     }
 
     createRow = (peer) => {
