@@ -88,7 +88,7 @@ export default class Peerster extends Component {
     };
 
     getGossiperPeers = async () => {
-        this.getGossiper('/peers/', (body) => this.setState({peers: body}));
+        this.getGossiper('/peers/', (body) => this.setState({peers: (body !== null)? body : []}));
     };
 
     getGossiperMessages = async () => {
