@@ -60,7 +60,10 @@ export default class Peerster extends Component {
             <Grid>
                 <Col md={8}>
                     <Row style={this.style.messagesWindow}>
-                        <MessagesWindow identifier={this.state.identifier} messages={this.state.messages}/>
+                        <MessagesWindow
+                            identifier={this.state.identifier}
+                            messages={this.state.messages}
+                        />
                     </Row>
                     <Row style={this.style.chatbox}>
                         <Chatbox onSend={this.sendMessage}/>
@@ -91,7 +94,9 @@ export default class Peerster extends Component {
     };
 
     getGossiperPeers = async () => {
-        this.getGossiper('/peers/', (body) => this.setState({peers: (body !== null)? body : []}));
+        this.getGossiper('/peers/', (body) => this.setState(
+            {peers: (body !== null) ? body : []}
+        ));
     };
 
     getGossiperMessages = async () => {
@@ -132,7 +137,6 @@ export default class Peerster extends Component {
         })
             .then(res => res.json())
             .then(res => (res === false) ?
-                // TODO this is not working, probably because it is a bool
                 console.log("Error occurred while posting") :
                 console.log(`Message ${message} sent.`));
     };
@@ -145,7 +149,6 @@ export default class Peerster extends Component {
         })
             .then(res => res.json())
             .then(res => (res === false) ?
-                // TODO this is not working, probably because it is a bool
                 console.log("Error occurred while adding peer") :
                 console.log(`Peer ${address}:${port} added.`));
     }

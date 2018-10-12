@@ -43,7 +43,11 @@ export default class MessagesWindow extends Component {
             key={`${msg["Origin"]}:${msg["ID"]}`}
             style={this.styles.messageRow}
         >
-            <TextMessage origin={msg["Origin"]} text={msg["Text"]} color={this.getColor(msg["Origin"])}/>
+            <TextMessage
+                origin={msg["Origin"]}
+                text={msg["Text"]}
+                color={this.getColor(msg["Origin"])}
+            />
         </Row>
     };
 

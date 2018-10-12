@@ -41,7 +41,10 @@ func multiplexer(w http.ResponseWriter, r *http.Request) {
 }
 
 func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
-	isIdentifierRequest, _ := regexp.MatchString("/identifier/", r.RequestURI)
+	isIdentifierRequest, _ := regexp.MatchString(
+		"/identifier/",
+		r.RequestURI,
+	)
 	if isIdentifierRequest {
 		return json.Marshal(waitForIdentifier(conn))
 	}
@@ -49,7 +52,10 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isPeerRequest {
 		return json.Marshal(waitForPeers(conn))
 	}
-	isMessagesRequest, _ := regexp.MatchString("/message/*", r.RequestURI)
+	isMessagesRequest, _ := regexp.MatchString(
+		"/message/*",
+		r.RequestURI,
+	)
 	if isMessagesRequest {
 		start := getStartIndex(r.RequestURI)
 		return json.Marshal(waitForMessages(conn, start))

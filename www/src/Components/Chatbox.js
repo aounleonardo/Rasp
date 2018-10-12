@@ -61,7 +61,12 @@ export default class Chatbox extends Component {
                         wrap={"hard"}
                         style={this.style.text}
                     />
-                    <Button type={"submit"} style={this.style.button}>Send</Button>
+                    <Button
+                        type={"submit"}
+                        style={this.style.button}
+                    >
+                        Send
+                    </Button>
                 </FormGroup>
             </Form>
         )

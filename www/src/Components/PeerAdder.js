@@ -86,7 +86,12 @@ export default class PeerAdder extends Component {
                             />
                         </Row>
                         <Row>
-                            <Button type={"submit"} style={this.style.button}>Add peer</Button>
+                            <Button
+                                type={"submit"}
+                                style={this.style.button}
+                            >
+                                Add peer
+                            </Button>
                         </Row>
                         <HelpBlock>{this.state.help}</HelpBlock>
                     </FormGroup>
