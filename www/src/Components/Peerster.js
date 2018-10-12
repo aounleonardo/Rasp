@@ -35,6 +35,7 @@ export default class Peerster extends Component {
         messagesWindow: {
             backgroundColor: "dodgerblue",
             overflowY: "auto",
+            overflowX: "hidden",
             height: "calc(80vh - 200px)",
         },
         chatbox: {
@@ -43,11 +44,13 @@ export default class Peerster extends Component {
         },
         gossipInfo: {
             height: "calc(80vh - 200px)",
+            width: "80%",
             backgroundColor: "dodgerblue",
             paddingLeft: "8%",
         },
         peerAdder: {
             height: "calc(20vh + 20px)",
+            width: "80%",
             backgroundColor: "dodgerblue",
         },
     };

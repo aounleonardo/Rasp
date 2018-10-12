@@ -30,6 +30,7 @@ export default class Chatbox extends Component {
         text: {
             height: '70%',
             width: '100%',
+            color: 'MidnightBlue',
             fontSize: '150%',
             resize: "none",
         },

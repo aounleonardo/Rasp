@@ -1,14 +1,11 @@
 import React, {Component} from 'react';
-import {Col, Row, Label} from 'react-bootstrap';
+import {Label} from 'react-bootstrap';
 
 export default class IDBox extends Component {
     render() {
-        return(
-            <Col>
-                <Row>
-                    <Label>Gossiper:{this.props.identifier}</Label>
-                </Row>
-            </Col>
-        )
+        return <h1>
+            <Label bsStyle={"primary"}>{this.props.identifier}</Label>
+        </h1>
+
     }
 }

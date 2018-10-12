@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
 import {
     Button,
-    Col,
     Form,
     FormControl,
     FormGroup,
@@ -32,39 +31,39 @@ export default class PeerAdder extends Component {
 
     style = {
         form: {
-            height: '100%',
+            height: '90%',
             width: '90%',
-            backgroundColor: "red",
         },
         group: {
-            padding: '2vmin',
+            paddingTop: '2vmin',
+            paddingLeft: '3vmin',
             height: '100%',
             width: '100%',
-            backgroundColor: "yellow",
         },
         text: {
             height: '70%',
-            width: '100%',
-            maxLength: 5,
-            fontSize: '150%',
+            width: '60%',
+            color: 'MidnightBlue',
+            textAlign: "center",
+            fontSize: '130%',
             resize: "none",
         },
         button: {
             height:'25%',
-            width: '100%',
+            width: '60%',
             color: 'dodgerblue',
-            fontSize: '150%',
+            fontSize: '120%',
             fontWeight: 'bold',
         }
     };
 
     render() {
         return (
-            <Col>
                 <Form inline onSubmit={this.add} style={this.style.form}>
                     <FormGroup
                         controlId={"addPeer"}
                         validationState={this.validationState()}
+                        style={this.style.group}
                     >
                         <Row>
                             <FormControl
@@ -73,6 +72,7 @@ export default class PeerAdder extends Component {
                                 placeholder={"address"}
                                 onChange={this.addressChange}
                                 bsSize={"sm"}
+                                style={this.style.text}
                             />
                         </Row>
                         <Row>
@@ -82,15 +82,15 @@ export default class PeerAdder extends Component {
                                 placeholder={"port"}
                                 onChange={this.portChange}
                                 bsSize={"sm"}
+                                style={this.style.text}
                             />
                         </Row>
                         <Row>
-                            <Button type={"submit"}>Add peer</Button>
+                            <Button type={"submit"} style={this.style.button}>Add peer</Button>
                         </Row>
                         <HelpBlock>{this.state.help}</HelpBlock>
                     </FormGroup>
                 </Form>
-            </Col>
         )
     }
 

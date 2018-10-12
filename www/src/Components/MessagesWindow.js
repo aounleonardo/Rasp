@@ -54,5 +54,5 @@ export default class MessagesWindow extends Component {
         const index = parseInt(sha256.hex(author), 16)
             % (this.styles.messageColors.length - 1);
         return this.styles.messageColors[index + 1];
-    }
+    };
 }

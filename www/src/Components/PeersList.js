@@ -1,17 +1,19 @@
 import React, {Component} from 'react';
-import {Col, Label, Row} from 'react-bootstrap';
+import {Col, Label} from 'react-bootstrap';
 
 export default class PeersList extends Component {
     render() {
         return <Col>
-            {this.props.peers.map((peer) => this.createRow(peer))}
+            {this.props.peers.sort().map(
+                (peer) => this.createRow(peer),
+            )}
         </Col>
 
     }
 
     createRow = (peer) => {
-        return <Row key={peer}>
-            <Label>{peer}</Label>
-        </Row>
+        return <h4 key={peer}>
+            <Label bsStyle={"info"}>{peer}</Label>
+        </h4>
     }
 }
