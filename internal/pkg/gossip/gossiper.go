@@ -29,6 +29,7 @@ type Gossiper struct {
 	peers      Peers
 	wants      Needs
 	rumors     Rumors
+	routing    Routes
 }
 
 func NewGossiper(
@@ -71,6 +72,7 @@ func NewGossiper(
 		simple:     simple,
 		rumors:     Rumors{m: rumors},
 		wants:      Needs{m: wants},
+		routing:    Routes{m: make(map[string]RouteInfo)},
 	}
 
 	go gossiper.listenForGossip()

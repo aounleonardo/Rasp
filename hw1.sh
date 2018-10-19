@@ -9,7 +9,7 @@ cd ../..
 
 trap cleanup SIGINT SIGTERM
 
-./Peerster -UIPort=8080 -gossipAddr=0.0.0.0:5000 -name=249498 > A.out &
+./Peerster -UIPort=8080 -gossipAddr=0.0.0.0:5000 -name=Leo > A.out &
 
 ./client/handler/handler > H.out &
 (cd www/; yarn start > ../R.out &)

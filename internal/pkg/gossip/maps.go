@@ -26,3 +26,8 @@ type Acks struct {
 	queue map[string]chan *message.StatusPacket
 	expected map[string]int
 }
+
+type Routes struct {
+	sync.RWMutex
+	m map[string]RouteInfo
+}
