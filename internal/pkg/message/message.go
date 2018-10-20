@@ -16,14 +16,15 @@ type GossipPacket struct {
 	Simple *SimpleMessage
 	Rumor  *RumorMessage
 	Status *StatusPacket
+	Private *PrivateMessage
 }
 
 type ClientPacket struct {
-	Rumor *RumorRequest
+	Rumor      *RumorRequest
 	Identifier *IdentifierRequest
-	Peers *PeersRequest
-	Messages *MessagesRequest
-	AddPeer *AddPeerRequest
+	Peers      *PeersRequest
+	Messages   *MessagesRequest
+	AddPeer    *AddPeerRequest
 }
 
 type PeerStatus struct {
@@ -33,4 +34,12 @@ type PeerStatus struct {
 
 type StatusPacket struct {
 	Want []PeerStatus
+}
+
+type PrivateMessage struct {
+	Origin      string
+	ID          uint32
+	Text        string
+	Destination string
+	HopLimit    uint32
 }

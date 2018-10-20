@@ -73,3 +73,23 @@ func (gossiper *Gossiper) getMessagesSince(
 	}
 	return messages
 }
+
+func (gossiper *Gossiper) receivePrivateMessage(
+	private *message.PrivateMessage,
+) {
+	if private.Destination == gossiper.Name {
+		// TODO accept private message
+	}
+	relayed := *private
+	relayed.HopLimit -= 1
+	if relayed.HopLimit < 1 {
+		return
+	}
+	gossiper.relayPrivateMessage(&relayed)
+}
+
+func (gossiper *Gossiper) relayPrivateMessage(
+	private *message.PrivateMessage,
+) {
+
+}
