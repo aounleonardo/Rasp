@@ -85,11 +85,16 @@ func (gossiper *Gossiper) receivePrivateMessage(
 	if relayed.HopLimit < 1 {
 		return
 	}
-	gossiper.relayPrivateMessage(&relayed)
+	gossiper.sendPrivateMessage(&relayed)
 }
 
-func (gossiper *Gossiper) relayPrivateMessage(
+func (gossiper *Gossiper) sendPrivateMessage(
 	private *message.PrivateMessage,
 ) {
-
+	routeInfo, knowsRoute := gossiper.routing.m[private.Destination]
+	if !knowsRoute {
+		return
+	}
+	bytes := encodeMessage(&message.GossipPacket{Private: private})
+	gossiper.gossipConn.WriteToUDP(bytes, routeInfo.nextHop)
 }
