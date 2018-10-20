@@ -15,6 +15,12 @@ type Ordering struct {
 	l []RumorKey
 }
 
+type ChatHistory struct {
+	sync.RWMutex
+	unordered []*message.PrivateMessage
+	ordered   map[uint32]*message.PrivateMessage
+}
+
 var messageOrdering Ordering
 
 func (gossiper *Gossiper) createClientRumor(text string) *message.RumorMessage {
@@ -67,8 +73,8 @@ func (gossiper *Gossiper) getMessagesSince(
 	length := len(messageOrdering.l) - startIndex
 	messages := make([]message.RumorMessage, length)
 	for index := 0; index < length; index++ {
-		origin := messageOrdering.l[startIndex + index].origin
-		id := messageOrdering.l[startIndex + index].messageID
+		origin := messageOrdering.l[startIndex+index].origin
+		id := messageOrdering.l[startIndex+index].messageID
 		messages[index] = *gossiper.rumors.m[origin][id]
 	}
 	return messages
@@ -78,7 +84,7 @@ func (gossiper *Gossiper) receivePrivateMessage(
 	private *message.PrivateMessage,
 ) {
 	if private.Destination == gossiper.Name {
-		// TODO accept private message
+		gossiper.savePrivateMessage(private)
 	}
 	relayed := *private
 	relayed.HopLimit -= 1
@@ -91,10 +97,53 @@ func (gossiper *Gossiper) receivePrivateMessage(
 func (gossiper *Gossiper) sendPrivateMessage(
 	private *message.PrivateMessage,
 ) {
+	if private.Origin == gossiper.Name {
+		gossiper.savePrivateMessage(private)
+	}
+	gossiper.routing.RLock()
+	defer gossiper.routing.RUnlock()
 	routeInfo, knowsRoute := gossiper.routing.m[private.Destination]
 	if !knowsRoute {
 		return
 	}
 	bytes := encodeMessage(&message.GossipPacket{Private: private})
 	gossiper.gossipConn.WriteToUDP(bytes, routeInfo.nextHop)
+}
+
+func (gossiper *Gossiper) savePrivateMessage(
+	private *message.PrivateMessage,
+) {
+	peer := private.Destination
+	if peer == gossiper.Name {
+		peer = private.Origin
+	}
+	gossiper.upsertChatter(peer)
+
+	gossiper.privates.Lock()
+	defer gossiper.privates.Unlock()
+
+	chatHistory := gossiper.privates.m[peer]
+	chatHistory.Lock()
+	defer chatHistory.Unlock()
+
+	if private.ID == 0 {
+		chatHistory.unordered = append(chatHistory.unordered, private)
+	} else {
+		if _, hasMessage := chatHistory.ordered[private.ID]; hasMessage {
+			return
+		}
+		chatHistory.ordered[private.ID] = private
+	}
+}
+
+func (gossiper *Gossiper) upsertChatter(peer string) {
+	gossiper.privates.Lock()
+	defer gossiper.privates.Unlock()
+	if _, hasPeer := gossiper.privates.m[peer]; !hasPeer {
+		return
+	}
+	gossiper.privates.m[peer] = &ChatHistory{
+		unordered: make([]*message.PrivateMessage, 0),
+		ordered:   make(map[uint32]*message.PrivateMessage),
+	}
 }

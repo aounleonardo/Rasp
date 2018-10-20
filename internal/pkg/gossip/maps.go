@@ -31,3 +31,8 @@ type Routes struct {
 	sync.RWMutex
 	m map[string]RouteInfo
 }
+
+type Privates struct {
+	sync.RWMutex
+	m map[string]*ChatHistory
+}

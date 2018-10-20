@@ -30,6 +30,7 @@ type Gossiper struct {
 	wants      Needs
 	rumors     Rumors
 	routing    Routes
+	privates   Privates
 }
 
 func NewGossiper(
@@ -74,6 +75,7 @@ func NewGossiper(
 		rumors:     Rumors{m: rumors},
 		wants:      Needs{m: wants},
 		routing:    Routes{m: make(map[string]RouteInfo)},
+		privates:   Privates{m: make(map[string]*ChatHistory)},
 	}
 
 	go gossiper.listenForGossip()
