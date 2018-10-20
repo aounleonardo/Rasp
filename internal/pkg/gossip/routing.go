@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const hopLimit = 10
+
 type RouteInfo struct {
 	nextHop        *net.UDPAddr
 	sequenceNumber uint32

@@ -20,7 +20,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	} else {
 		go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 	}
-	gossiper.sendToClient(&message.ValidationResponse{Success:true}, clientAddr)
+	gossiper.sendToClient(&message.ValidationResponse{Success: true}, clientAddr)
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
@@ -65,9 +65,9 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer func(){
+	defer func() {
 		gossiper.sendToClient(
-			&message.ValidationResponse{Success:success},
+			&message.ValidationResponse{Success: success},
 			clientAddr,
 		)
 	}()
@@ -87,14 +87,37 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	request *message.PrivatePutRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	gossiper.privates.RLock()
-	gossiper.upsertPeer()
-	gossiper.privates.RUnlock()
-	if
-	private := message.PrivateMessage{
-		Origin: gossiper.Name,
-
+	success := true
+	defer func() {
+		gossiper.sendToClient(
+			&message.ValidationResponse{Success: success},
+			clientAddr,
+		)
+	}()
+	gossiper.routing.RLock()
+	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
+		success = false
+		fmt.Printf(
+			"does not know route to destination: %s\n",
+			request.Destination,
+		)
+		return
 	}
+	gossiper.routing.RUnlock()
+	gossiper.upsertChatter(request.Destination)
+	gossiper.privates.RLock()
+	chatHistory, _ := gossiper.privates.m[request.Destination]
+	id := chatHistory.next
+	chatHistory.next += 1
+	private := &message.PrivateMessage{
+		Origin:      gossiper.Name,
+		ID:          id,
+		Text:        request.Contents,
+		Destination: request.Destination,
+		HopLimit:    hopLimit,
+	}
+	gossiper.privates.RUnlock()
+	gossiper.receivePrivateMessage(private)
 }
 
 func (gossiper *Gossiper) sendToClient(

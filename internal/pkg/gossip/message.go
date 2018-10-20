@@ -167,7 +167,7 @@ func (gossiper *Gossiper) upsertChatter(peer string) {
 	gossiper.privates.m[peer] = &ChatHistory{
 		received:  make(map[uint32]*message.PrivateMessage),
 		sent:      make(map[uint32]*message.PrivateMessage),
-		next:      0,
+		next:      1,
 		ordering:  make([]MessageKey, 0),
 		unordered: make([]*message.PrivateMessage, 0),
 	}
