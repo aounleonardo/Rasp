@@ -19,6 +19,11 @@ func main() {
 		"Leo",
 		"message to be sent",
 	)
+	dest := flag.String(
+		"dest",
+		"",
+		"destination for the private message",
+	)
 	flag.Parse()
 
 	destinationAddr, _ := net.ResolveUDPAddr(
@@ -27,9 +32,20 @@ func main() {
 	)
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
-	clientPacket := &message.ClientPacket{
-		Rumor: &message.RumorRequest{Contents: *msg},
+	var clientPacket message.ClientPacket
+	if len(*dest) > 0 {
+		clientPacket = message.ClientPacket{
+			SendPrivate: &message.PrivatePutRequest{
+				Contents:    *msg,
+				Destination: *dest,
+			},
+		}
+	} else {
+		clientPacket = message.ClientPacket{
+			Rumor: &message.RumorRequest{Contents: *msg},
+		}
 	}
+
 	bytes, err := protobuf.Encode(clientPacket)
 	if err != nil {
 		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
