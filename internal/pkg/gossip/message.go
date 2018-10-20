@@ -10,15 +10,25 @@ type RumorKey struct {
 	messageID uint32
 }
 
+type MessageKey struct {
+	sent      bool
+	messageID uint32
+}
+
 type Ordering struct {
 	sync.RWMutex
 	l []RumorKey
 }
 
+type OrderedMessages map[uint32]*message.PrivateMessage
+
 type ChatHistory struct {
 	sync.RWMutex
+	received  OrderedMessages
+	sent      OrderedMessages
+	next      uint32
+	ordering  []MessageKey
 	unordered []*message.PrivateMessage
-	ordered   map[uint32]*message.PrivateMessage
 }
 
 var messageOrdering Ordering
@@ -113,9 +123,11 @@ func (gossiper *Gossiper) sendPrivateMessage(
 func (gossiper *Gossiper) savePrivateMessage(
 	private *message.PrivateMessage,
 ) {
+	sending := false
 	peer := private.Destination
 	if peer == gossiper.Name {
 		peer = private.Origin
+		sending = true
 	}
 	gossiper.upsertChatter(peer)
 
@@ -129,10 +141,20 @@ func (gossiper *Gossiper) savePrivateMessage(
 	if private.ID == 0 {
 		chatHistory.unordered = append(chatHistory.unordered, private)
 	} else {
-		if _, hasMessage := chatHistory.ordered[private.ID]; hasMessage {
+		var m *OrderedMessages
+		if sending {
+			m = &chatHistory.sent
+		} else {
+			m = &chatHistory.received
+		}
+		if _, hasMessage := (*m)[private.ID]; hasMessage {
 			return
 		}
-		chatHistory.ordered[private.ID] = private
+		(*m)[private.ID] = private
+		chatHistory.ordering = append(
+			chatHistory.ordering,
+			MessageKey{sent: sending, messageID: private.ID},
+		)
 	}
 }
 
@@ -143,7 +165,10 @@ func (gossiper *Gossiper) upsertChatter(peer string) {
 		return
 	}
 	gossiper.privates.m[peer] = &ChatHistory{
+		received:  make(map[uint32]*message.PrivateMessage),
+		sent:      make(map[uint32]*message.PrivateMessage),
+		next:      0,
+		ordering:  make([]MessageKey, 0),
 		unordered: make([]*message.PrivateMessage, 0),
-		ordered:   make(map[uint32]*message.PrivateMessage),
 	}
 }
