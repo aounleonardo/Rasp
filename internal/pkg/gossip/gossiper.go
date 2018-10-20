@@ -38,6 +38,7 @@ func NewGossiper(
 	gossipAddress string,
 	PeerList []string,
 	simple bool,
+	rtimer int,
 ) *Gossiper {
 	uiAddr, _ := net.ResolveUDPAddr("udp4", "127.0.0.1:"+uiPort)
 	uiConn, _ := net.ListenUDP("udp4", uiAddr)

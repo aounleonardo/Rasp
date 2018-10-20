@@ -29,6 +29,12 @@ func main() {
 		"",
 		"comma separated list of peers of the form ip:port",
 	)
+	var rtimer = flag.Int(
+		"rtimer",
+		0,
+		"route rumors sending period in seconds, 0 to disable sending " +
+			"of route rumors (default 0)",
+	)
 	var simple = flag.Bool(
 		"simple",
 		false,
@@ -49,6 +55,7 @@ func main() {
 		*gossipAddr,
 		peerList,
 		*simple,
+		*rtimer,
 	)
 	defer gossiper.ShutUp()
 
