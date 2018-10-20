@@ -83,6 +83,20 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	gossiper.upsertPeer(address)
 }
 
+func (gossiper *Gossiper) handleSendPrivateRequest(
+	request *message.PrivatePutRequest,
+	clientAddr *net.UDPAddr,
+) {
+	gossiper.privates.RLock()
+	gossiper.upsertPeer()
+	gossiper.privates.RUnlock()
+	if
+	private := message.PrivateMessage{
+		Origin: gossiper.Name,
+
+	}
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,

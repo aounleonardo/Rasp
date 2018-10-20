@@ -43,3 +43,8 @@ type AddPeerRequest struct {
 	Address string
 	Port string
 }
+
+type PrivatePutRequest struct {
+	Contents string
+	Destination string
+}
