@@ -19,14 +19,11 @@ func (gossiper *Gossiper) receiveRumorPacket(
 		rumor.ID,
 		rumor.Text,
 	)
-
 	gossiper.updateNextHop(rumor, sender)
-
 	if rumor.ID == gossiper.nextIdForPeer(rumor.Origin) {
 		gossiper.memorizeRumor(rumor)
 		go gossiper.rumormonger(rumor, sender)
 	}
-
 	gossiper.sendStatusPacket(sender)
 }
 

@@ -36,21 +36,20 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 	gossiper.upsertOrigin(rumor.Origin)
 
 	gossiper.wants.Lock()
-	gossiper.rumors.Lock()
-	messageOrdering.Lock()
+	gossiper.wants.m[rumor.Origin] = rumor.ID + 1
+	gossiper.wants.Unlock()
 
-	if _, hasRumor := gossiper.rumors.m[rumor.Origin][rumor.ID]; !hasRumor {
-		gossiper.wants.m[rumor.Origin] = rumor.ID + 1
+	if !isRouteRumor(rumor) {
+		gossiper.rumors.Lock()
+		messageOrdering.Lock()
 		gossiper.rumors.m[rumor.Origin][rumor.ID] = rumor
 		messageOrdering.l = append(
 			messageOrdering.l,
 			RumorKey{origin: rumor.Origin, messageID: rumor.ID},
 		)
+		gossiper.rumors.Unlock()
+		messageOrdering.Unlock()
 	}
-
-	gossiper.wants.Unlock()
-	gossiper.rumors.Unlock()
-	messageOrdering.Unlock()
 }
 
 func (gossiper *Gossiper) getMessagesSince(

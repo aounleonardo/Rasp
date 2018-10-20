@@ -48,10 +48,6 @@ func (gossiper *Gossiper) routeRumorMessages(
 }
 
 func (gossiper *Gossiper) sendRouteRumor(peer *net.UDPAddr) {
-	gossiper.wants.Lock()
-	gossiper.wants.m[gossiper.Name] += 1
-	gossiper.wants.Unlock()
-
 	gossiper.routing.Lock()
 	sequenceNumber := gossiper.routing.m[gossiper.Name].sequenceNumber + 1
 	gossiper.routing.m[gossiper.Name] = RouteInfo{
@@ -59,13 +55,16 @@ func (gossiper *Gossiper) sendRouteRumor(peer *net.UDPAddr) {
 		sequenceNumber: sequenceNumber,
 	}
 	gossiper.routing.Unlock()
-	packet := &message.GossipPacket{
-		Rumor: &message.RumorMessage{
-			Origin: gossiper.Name,
-			ID:     sequenceNumber,
-			Text:   "",
-		},
+	emptyRumor := &message.RumorMessage{
+		Origin: gossiper.Name,
+		ID:     sequenceNumber,
+		Text:   "",
 	}
-	bytes := encodeMessage(packet)
+	gossiper.memorizeRumor(emptyRumor)
+	bytes := encodeMessage(&message.GossipPacket{Rumor: emptyRumor})
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
+}
+
+func isRouteRumor(rumor *message.RumorMessage) bool {
+	return len(rumor.Text) == 0
 }
