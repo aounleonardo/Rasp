@@ -18,6 +18,7 @@ func (gossiper *Gossiper) updateNextHop(
 	rumor *message.RumorMessage,
 	sender *net.UDPAddr,
 ) {
+	fmt.Println("UpdatingNextHop", rumor, sender)
 	gossiper.routing.Lock()
 	if route, hasRoute := gossiper.routing.m[rumor.Origin];
 		!hasRoute ||

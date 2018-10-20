@@ -46,7 +46,7 @@ func main() {
 		}
 	}
 
-	bytes, err := protobuf.Encode(clientPacket)
+	bytes, err := protobuf.Encode(&clientPacket)
 	if err != nil {
 		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
 		return

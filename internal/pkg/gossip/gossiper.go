@@ -80,6 +80,7 @@ func NewGossiper(
 
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
+	go gossiper.routeRumorMessages(rtimer)
 
 	return gossiper
 }
@@ -122,7 +123,7 @@ func (gossiper *Gossiper) handleClientPacket(
 	} else if packet.AddPeer != nil {
 		gossiper.handleAddPeersRequest(packet.AddPeer, clientAddr)
 	} else if packet.SendPrivate != nil {
-
+		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
 	}
 }
 

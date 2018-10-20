@@ -31,7 +31,6 @@ func multiplexer(w http.ResponseWriter, r *http.Request) {
 		ret, err = getHandler(r, conn)
 	case "POST":
 		ret, err = postHandler(r, conn)
-
 	}
 	if err != nil {
 		fmt.Fprint(w, err)
@@ -64,13 +63,19 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 }
 
 func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
-	isMessagesRequest, _ := regexp.MatchString("/message/", r.RequestURI)
-	if isMessagesRequest {
+	if isMessagesRequest, _ :=
+		regexp.MatchString("/message/", r.RequestURI);
+		isMessagesRequest {
 		return json.Marshal(readMessage(conn, r))
 	}
-	isPeerRequest, _ := regexp.MatchString("/peers/", r.RequestURI)
-	if isPeerRequest {
+	if isPeerRequest, _ := regexp.MatchString("/peers/", r.RequestURI);
+		isPeerRequest {
 		return json.Marshal(addPeer(conn, r))
+	}
+	if isPrivateMessageRequest, _ :=
+		regexp.MatchString("/pm/", r.RequestURI);
+		isPrivateMessageRequest {
+		return json.Marshal(sendPrivateMessage(conn, r))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -159,6 +164,33 @@ func addPeer(conn *net.UDPConn, r *http.Request) message.ValidationResponse {
 		conn,
 		&message.ClientPacket{
 			AddPeer: &message.AddPeerRequest{Address: s.Address, Port: s.Port},
+		},
+		response,
+	)
+	return *response
+}
+
+func sendPrivateMessage(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var s struct {
+		Contents    string
+		Destination string
+	}
+	err := decoder.Decode(&s)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			SendPrivate: &message.PrivatePutRequest{
+				Contents: s.Contents,
+				Destination: s.Destination,
+			},
 		},
 		response,
 	)

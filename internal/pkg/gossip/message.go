@@ -168,7 +168,7 @@ func (gossiper *Gossiper) savePrivateMessage(
 func (gossiper *Gossiper) upsertChatter(peer string) {
 	gossiper.privates.Lock()
 	defer gossiper.privates.Unlock()
-	if _, hasPeer := gossiper.privates.m[peer]; !hasPeer {
+	if _, hasPeer := gossiper.privates.m[peer]; hasPeer {
 		return
 	}
 	gossiper.privates.m[peer] = &ChatHistory{
