@@ -3,6 +3,7 @@ package gossip
 import (
 	"sync"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"fmt"
 )
 
 type RumorKey struct {
@@ -94,6 +95,12 @@ func (gossiper *Gossiper) receivePrivateMessage(
 	private *message.PrivateMessage,
 ) {
 	if private.Destination == gossiper.Name {
+		fmt.Printf(
+			"PRIVATE origin %s hop-limit %d contents %s\n",
+			private.Origin,
+			private.HopLimit,
+			private.Text,
+		)
 		gossiper.savePrivateMessage(private)
 	}
 	relayed := *private
