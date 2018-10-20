@@ -159,11 +159,11 @@ func (gossiper *Gossiper) listenForGossip() {
 			continue
 		}
 		protobuf.Decode(bytes, packet)
-		gossiper.ReceiveMessage(packet, sender)
+		gossiper.ReceivePacket(packet, sender)
 	}
 }
 
-func (gossiper *Gossiper) ReceiveMessage(
+func (gossiper *Gossiper) ReceivePacket(
 	packet *message.GossipPacket,
 	sender *net.UDPAddr,
 ) {
@@ -176,6 +176,8 @@ func (gossiper *Gossiper) ReceiveMessage(
 		gossiper.receiveStatusPacket(packet.Status, sender)
 	} else if packet.Simple != nil && gossiper.simple {
 		gossiper.receiveSimplePacket(packet.Simple, sender)
+	} else if packet.Private != nil {
+		gossiper.receivePrivateMessage(packet.Private)
 	}
 }
 
