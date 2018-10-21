@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Button, Col, Label} from 'react-bootstrap';
+import {Button, ButtonGroup, Col, Label} from 'react-bootstrap';
 
 export default class Chats extends Component {
     constructor(props) {
@@ -16,31 +16,35 @@ export default class Chats extends Component {
             </h4>
             <h4>
                 <Button
-                    bsStyle={(this.props.current === "")? "primary" : "info"}
+                    bsStyle={(this.props.current === "") ? "primary" : "info"}
                     onClick={() => this.onChatSelection("")}
                 >
                     Home 🏠
                 </Button>
             </h4>
-            {
-                this.props.peers
-                    .filter((peer) => peer !== this.props.identifier)
-                    .sort()
-                    .map((peer) => this.createRow(peer))
-            }
+            <ButtonGroup vertical>
+                {
+                    this.props.peers
+                        .filter((peer) => peer !== this.props.identifier)
+                        .sort()
+                        .map((peer) => this.createRow(peer))
+                }
+            </ButtonGroup>
         </Col>
 
     }
 
     createRow = (peer) => {
-        return <h6 key={peer}>
+        return (
             <Button
+                key={peer}
                 bsStyle={(this.props.current === peer) ? "primary" : "info"}
                 onClick={() => this.onChatSelection(peer)}
             >
                 {peer}
             </Button>
-        </h6>
+
+        )
     };
 
     onChatSelection = (peer) => {

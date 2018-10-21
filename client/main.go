@@ -24,6 +24,11 @@ func main() {
 		"",
 		"destination for the private message",
 	)
+	file := flag.String(
+		"file",
+		"",
+		"file to be indexed by the gossiper",
+	)
 	flag.Parse()
 
 	destinationAddr, _ := net.ResolveUDPAddr(
@@ -40,6 +45,8 @@ func main() {
 				Destination: *dest,
 			},
 		}
+	} else if len(*file) > 0 {
+
 	} else {
 		clientPacket = message.ClientPacket{
 			Rumor: &message.RumorRequest{Contents: *msg},
