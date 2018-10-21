@@ -18,7 +18,6 @@ func (gossiper *Gossiper) updateNextHop(
 	rumor *message.RumorMessage,
 	sender *net.UDPAddr,
 ) {
-	fmt.Println("UpdatingNextHop", rumor, sender)
 	gossiper.routing.Lock()
 	if route, hasRoute := gossiper.routing.m[rumor.Origin];
 		!hasRoute ||
@@ -37,9 +36,7 @@ func (gossiper *Gossiper) routeRumorMessages(
 	if rtimer == 0 {
 		return
 	}
-	ticker := time.NewTicker(
-		time.Duration(float64(rtimer) * time.Second.Seconds()),
-	)
+	ticker := time.NewTicker(time.Duration(rtimer) * time.Second)
 	defer ticker.Stop()
 	peer := gossiper.pickRumormongeringPartner(map[string]struct{}{})
 	gossiper.sendRouteRumor(peer)
