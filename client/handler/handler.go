@@ -59,6 +59,12 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		start := getStartIndex(r.RequestURI)
 		return json.Marshal(waitForMessages(conn, start))
 	}
+	if isPrivateMessageRequest, _ :=
+		regexp.MatchString("/pm/*/*/*/", r.RequestURI);
+		isPrivateMessageRequest {
+		partner, unordered, ordered := getPrivateIndexes(r.RequestURI)
+		return json.Marshal(waitForPrivates(conn, partner, unordered, ordered))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -115,6 +121,27 @@ func waitForMessages(
 	return *response
 }
 
+func waitForPrivates(
+	conn *net.UDPConn,
+	partner string,
+	unorderedStart int,
+	orderedStart int,
+) message.PrivateGetResponse {
+	response := &message.PrivateGetResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			GetPrivate: &message.PrivateGetRequest{
+				Partner:        partner,
+				UnorderedIndex: unorderedStart,
+				OrderedIndex:   orderedStart,
+			},
+		},
+		response,
+	)
+	return *response
+}
+
 func getStartIndex(uri string) int {
 	start := strings.TrimSuffix(
 		strings.TrimPrefix(uri, "/message/"),
@@ -128,6 +155,26 @@ func getStartIndex(uri string) int {
 		return 0
 	}
 	return nextID
+}
+
+func getPrivateIndexes(uri string) (string, int, int) {
+	trimmed := strings.TrimSuffix(
+		strings.TrimPrefix(uri, "/pm/"),
+		"/",
+	)
+	if len(trimmed) == 0 {
+		return "", 0, 0
+	}
+	indexes := strings.Split(trimmed, "/")
+	if len(indexes) < 3 {
+		return "", 0, 0
+	}
+	unordered, err0 := strconv.Atoi(indexes[1])
+	ordered, err1 := strconv.Atoi(indexes[2])
+	if err0 != nil || err1 != nil {
+		return "", 0, 0
+	}
+	return indexes[0], unordered, ordered
 }
 
 func readMessage(
@@ -188,7 +235,7 @@ func sendPrivateMessage(
 		conn,
 		&message.ClientPacket{
 			SendPrivate: &message.PrivatePutRequest{
-				Contents: s.Contents,
+				Contents:    s.Contents,
 				Destination: s.Destination,
 			},
 		},

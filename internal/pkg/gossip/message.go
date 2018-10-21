@@ -25,11 +25,12 @@ type OrderedMessages map[uint32]*message.PrivateMessage
 
 type ChatHistory struct {
 	sync.RWMutex
-	received  OrderedMessages
-	sent      OrderedMessages
-	next      uint32
-	ordering  []MessageKey
-	unordered []*message.PrivateMessage
+	received       OrderedMessages
+	sent           OrderedMessages
+	nextSend       uint32
+	highestReceive uint32
+	ordering       []MessageKey
+	unordered      []*message.PrivateMessage
 }
 
 var messageOrdering Ordering
@@ -153,6 +154,9 @@ func (gossiper *Gossiper) savePrivateMessage(
 			m = &chatHistory.sent
 		} else {
 			m = &chatHistory.received
+			if private.ID > chatHistory.highestReceive {
+				chatHistory.highestReceive = private.ID
+			}
 		}
 		if _, hasMessage := (*m)[private.ID]; hasMessage {
 			return
@@ -172,10 +176,11 @@ func (gossiper *Gossiper) upsertChatter(peer string) {
 		return
 	}
 	gossiper.privates.m[peer] = &ChatHistory{
-		received:  make(map[uint32]*message.PrivateMessage),
-		sent:      make(map[uint32]*message.PrivateMessage),
-		next:      1,
-		ordering:  make([]MessageKey, 0),
-		unordered: make([]*message.PrivateMessage, 0),
+		received:       make(map[uint32]*message.PrivateMessage),
+		sent:           make(map[uint32]*message.PrivateMessage),
+		nextSend:       1,
+		highestReceive: 0,
+		ordering:       make([]MessageKey, 0),
+		unordered:      make([]*message.PrivateMessage, 0),
 	}
 }

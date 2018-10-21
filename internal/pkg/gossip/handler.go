@@ -111,8 +111,8 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	gossiper.upsertChatter(request.Destination)
 	gossiper.privates.RLock()
 	chatHistory, _ := gossiper.privates.m[request.Destination]
-	id := chatHistory.next
-	chatHistory.next += 1
+	id := chatHistory.nextSend
+	chatHistory.nextSend += 1
 	private := &message.PrivateMessage{
 		Origin:      gossiper.Name,
 		ID:          id,
@@ -122,6 +122,52 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	}
 	gossiper.privates.RUnlock()
 	gossiper.receivePrivateMessage(private)
+}
+
+func (gossiper *Gossiper) handleGetPrivateRequest(
+	request *message.PrivateGetRequest,
+	clientAddr *net.UDPAddr,
+) {
+	unordered := make([]message.PrivateMessage, 0)
+	ordered := make([]message.PrivateMessage, 0)
+	unorderedIndex := 1
+	orderedIndex := 1
+	defer func() {
+		gossiper.sendToClient(
+			&message.PrivateGetResponse{
+				Unordered:      unordered,
+				Ordered:        ordered,
+				UnorderedIndex: unorderedIndex,
+				OrderedIndex:   orderedIndex,
+			},
+			clientAddr,
+		)
+	}()
+
+	gossiper.privates.RLock()
+	defer gossiper.privates.RUnlock()
+	chatHistory, hasChat := gossiper.privates.m[request.Partner]
+	if !hasChat {
+		return
+	}
+	chatHistory.RLock()
+	defer chatHistory.RUnlock()
+
+	for i := request.UnorderedIndex; i < len(chatHistory.unordered); i++ {
+		unordered = append(unordered, *chatHistory.unordered[i])
+	}
+	for i := request.OrderedIndex; i < len(chatHistory.ordering); i++ {
+		key := chatHistory.ordering[i]
+		var private message.PrivateMessage
+		if key.sent {
+			private = *chatHistory.sent[key.messageID]
+		} else {
+			private = *chatHistory.received[key.messageID]
+		}
+		ordered = append(ordered, private)
+	}
+	unorderedIndex = request.UnorderedIndex
+	orderedIndex = request.OrderedIndex
 }
 
 func (gossiper *Gossiper) sendToClient(
