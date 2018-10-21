@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Label, Col, Grid, Row} from 'react-bootstrap';
+import {Col, Grid, Row} from 'react-bootstrap';
 import IDBox from "./IDBox";
 import PeersList from "./PeersList";
 import MessagesWindow from "./MessagesWindow";
@@ -19,6 +19,10 @@ export default class Peerster extends Component {
             messages: [],
             wants: 0,
             currentChat: "",
+            unordered: [],
+            ordered: [],
+            unorderedIndex: 0,
+            orderedIndex: 0,
         };
         this.getGossiperIdentifier =
             this.getGossiperIdentifier.bind(this);
@@ -32,6 +36,10 @@ export default class Peerster extends Component {
         this.getGossiperMessages = this.getGossiperMessages.bind(this);
         this.getGossiperMessages();
         setInterval(this.getGossiperMessages, 3000);
+
+        this.getGossiperPrivates = this.getGossiperPrivates.bind(this);
+        this.getGossiperPrivates();
+        setInterval(this.getGossiperPrivates, 3000);
 
         this.sendMessage = this.sendMessage.bind(this);
         this.addPeer = this.addPeer.bind(this);
@@ -70,6 +78,9 @@ export default class Peerster extends Component {
                         <MessagesWindow
                             identifier={this.state.identifier}
                             messages={this.state.messages}
+                            unordered={this.state.unordered}
+                            ordered={this.state.ordered}
+                            currentChat={this.state.currentChat}
                         />
                     </Row>
                     <Row style={this.style.chatbox}>
@@ -84,6 +95,7 @@ export default class Peerster extends Component {
                         <Row>
                             <Chats
                                 current={this.state.currentChat}
+                                identifier={this.state.identifier}
                                 peers={this.state.chats}
                                 chatSelected={this.chatSelected}
                             />
@@ -141,6 +153,63 @@ export default class Peerster extends Component {
         });
     };
 
+    getGossiperPrivates = async () => {
+        if (this.state.currentChat === "") {
+            return
+        }
+        this.getGossiper(
+            '/pm/' +
+            this.state.currentChat +
+            '/' +
+            this.state.unorderedIndex +
+            '/' +
+            this.state.orderedIndex +
+            '/',
+            (body) => {
+                if (body === null) {
+                    return
+                }
+                const unorderedIndex = body["UnorderedIndex"];
+                const orderedIndex = body["OrderedIndex"];
+                const receivedUnordered = body["Unordered"];
+                const receivedOrdered = body["Ordered"];
+                let newUnordered = [...this.state.unordered];
+                let newUnorderedIndex = this.state.unorderedIndex;
+                let newOrdered = [...this.state.ordered];
+                let newOrderedIndex = this.state.orderedIndex;
+
+                if (receivedUnordered !== null) {
+                    const toDrop =
+                        Math.max(this.state.unorderedIndex - unorderedIndex, 0);
+                    receivedUnordered.slice(toDrop, receivedUnordered.length);
+                    newUnordered = [
+                        ...this.state.unordered,
+                        ...receivedUnordered,
+                    ];
+                    newUnorderedIndex = newUnordered.length;
+                }
+
+                if (receivedOrdered !== null) {
+                    const toDrop =
+                        Math.max(this.state.orderedIndex - orderedIndex, 0);
+                    receivedOrdered.slice(toDrop, receivedOrdered.length);
+                    newOrdered = [
+                        ...this.state.ordered,
+                        ...receivedOrdered,
+                    ];
+                    newOrderedIndex = newOrdered.length;
+                }
+
+                this.setState({
+                    unordered: newUnordered,
+                    ordered: newOrdered,
+                    unorderedIndex: newUnorderedIndex,
+                    orderedIndex: newOrderedIndex,
+                })
+            },
+        );
+    };
+
     getGossiper = async (api, callback) => {
         const request = endPoint + api;
         const response = await fetch(request);
@@ -150,15 +219,29 @@ export default class Peerster extends Component {
     };
 
     sendMessage = async (message) => {
-        const request = endPoint + '/message/';
+        const details = this.getMessageDetails(message);
+        const request = endPoint + details.api;
         fetch(request, {
             method: 'post',
-            body: JSON.stringify(message),
+            body: details.body,
         })
             .then(res => res.json())
             .then(res => (res === false) ?
                 console.log("Error occurred while posting") :
                 console.log(`Message ${message} sent.`));
+    };
+
+    getMessageDetails = (message) => {
+        return (this.state.currentChat === "") ? {
+            api: '/message/',
+            body: JSON.stringify(message),
+        } : {
+            api: '/pm/',
+            body: JSON.stringify({
+                Contents: message,
+                Destination: this.state.currentChat,
+            })
+        };
     };
 
     addPeer = async (address, port) => {
@@ -174,6 +257,13 @@ export default class Peerster extends Component {
     };
 
     chatSelected = (peer) => {
-        this.setState({currentChat: peer})
+        if(peer !== this.state.peer) {
+            if(peer === "") {
+                this.getGossiperMessages();
+            } else {
+                this.getGossiperPrivates();
+            }
+        }
+        this.setState({currentChat: peer});
     }
 }

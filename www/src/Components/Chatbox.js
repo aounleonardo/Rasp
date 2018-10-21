@@ -87,7 +87,6 @@ export default class Chatbox extends Component {
         event.preventDefault();
         if (this.validationState() === 'success') {
             this.props.onSend(this.state.value);
-            console.log(this.state.value);
         } else {
             console.log('incomplete');
         }

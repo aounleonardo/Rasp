@@ -22,9 +22,12 @@ export default class Chats extends Component {
                     Home 🏠
                 </Button>
             </h4>
-            {this.props.peers.sort().map(
-                (peer) => this.createRow(peer),
-            )}
+            {
+                this.props.peers
+                    .filter((peer) => peer !== this.props.identifier)
+                    .sort()
+                    .map((peer) => this.createRow(peer))
+            }
         </Col>
 
     }

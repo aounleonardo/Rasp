@@ -33,7 +33,7 @@ export default class MessagesWindow extends Component {
     render() {
         return (
             <Col>
-                {this.props.messages.map((message) => this.createRow(message))}
+                {this.getMessages().map((message) => this.createRow(message))}
             </Col>
         )
     };
@@ -51,8 +51,22 @@ export default class MessagesWindow extends Component {
         </Row>
     };
 
+    getMessages = () => {
+        return (this.props.currentChat === "")
+            ? this.getGossip()
+            : this.getPrivates();
+    };
+
+    getGossip = () => {
+        return this.props.messages;
+    };
+
+    getPrivates = () => {
+        return [...this.props.unordered, ...this.props.ordered];
+    };
+
     getColor = (author) => {
-        if(author === this.props.identifier) {
+        if (author === this.props.identifier) {
             return this.styles.messageColors[0];
         }
         const index = parseInt(sha256.hex(author), 16)
