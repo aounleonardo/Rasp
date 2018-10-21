@@ -61,3 +61,9 @@ type PrivateGetResponse struct {
 	UnorderedIndex int
 	OrderedIndex   int
 }
+
+type ChatsRequest struct {}
+
+type ChatsResponse struct {
+	Origins []string
+}

@@ -122,6 +122,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleMessagesRequest(packet.Messages, clientAddr)
 	} else if packet.AddPeer != nil {
 		gossiper.handleAddPeersRequest(packet.AddPeer, clientAddr)
+	} else if packet.Chats != nil {
+		gossiper.handleChatsRequest(packet.Chats, clientAddr)
 	} else if packet.SendPrivate != nil {
 		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
 	} else if packet.GetPrivate != nil {

@@ -59,6 +59,11 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		start := getStartIndex(r.RequestURI)
 		return json.Marshal(waitForMessages(conn, start))
 	}
+	if isChatRequest, _ :=
+		regexp.MatchString("/chats/", r.RequestURI);
+		isChatRequest {
+		return json.Marshal(waitForChats(conn))
+	}
 	if isPrivateMessageRequest, _ :=
 		regexp.MatchString("/pm/*/*/*/", r.RequestURI);
 		isPrivateMessageRequest {
@@ -104,6 +109,16 @@ func waitForPeers(conn *net.UDPConn) []string {
 		response,
 	)
 	return response.Peers
+}
+
+func waitForChats(conn *net.UDPConn) []string {
+	response := &message.ChatsResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{Chats: &message.ChatsRequest{}},
+		response,
+	)
+	return response.Origins
 }
 
 func waitForMessages(

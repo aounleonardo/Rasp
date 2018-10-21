@@ -83,6 +83,19 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	gossiper.upsertPeer(address)
 }
 
+func (gossiper *Gossiper) handleChatsRequest(
+	request *message.ChatsRequest,
+	clientAddr *net.UDPAddr,
+) {
+	var chats []string
+	gossiper.routing.RLock()
+	for origin := range gossiper.routing.m {
+		chats = append(chats, origin)
+	}
+	gossiper.routing.RUnlock()
+	gossiper.sendToClient(&message.ChatsResponse{Origins: chats}, clientAddr)
+}
+
 func (gossiper *Gossiper) handleSendPrivateRequest(
 	request *message.PrivatePutRequest,
 	clientAddr *net.UDPAddr,

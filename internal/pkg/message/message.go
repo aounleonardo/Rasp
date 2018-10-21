@@ -27,6 +27,7 @@ type ClientPacket struct {
 	AddPeer     *AddPeerRequest
 	SendPrivate *PrivatePutRequest
 	GetPrivate  *PrivateGetRequest
+	Chats       *ChatsRequest
 }
 
 type PeerStatus struct {
