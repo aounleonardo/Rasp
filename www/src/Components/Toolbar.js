@@ -51,7 +51,9 @@ export default class Toolbar extends Component {
         )
     }
 
-    fileUploaded = (event) => {
-        console.log(event.target.files[0])
+    fileUploaded = async (event) => {
+        const file = event.target.files[0];
+        console.log(file.size);
+        this.props.shareFile(file);
     }
 }

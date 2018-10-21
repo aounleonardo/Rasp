@@ -8,7 +8,7 @@ import PeerAdder from "./PeerAdder";
 import Chats from "./Chats";
 import Toolbar from "./Toolbar";
 
-const endPoint = 'http://127.0.0.1:8000';
+const endPoint = "http://127.0.0.1:8000";
 
 export default class Peerster extends Component {
     constructor(props) {
@@ -43,6 +43,7 @@ export default class Peerster extends Component {
         setInterval(this.getGossiperPrivates, 3000);
 
         this.sendMessage = this.sendMessage.bind(this);
+        this.shareFile = this.shareFile.bind(this);
         this.addPeer = this.addPeer.bind(this);
         this.chatSelected = this.chatSelected.bind(this);
     }
@@ -111,7 +112,7 @@ export default class Peerster extends Component {
                     </Col>
                 </Row>
                 <Row>
-                    <Toolbar/>
+                    <Toolbar shareFile={this.shareFile}/>
                 </Row>
             </Grid>
         )
@@ -226,7 +227,7 @@ export default class Peerster extends Component {
     sendMessage = async (message) => {
         const details = this.getMessageDetails(message);
         const request = endPoint + details.api;
-        fetch(request, {
+        await fetch(request, {
             method: 'post',
             body: details.body,
         })
@@ -234,6 +235,21 @@ export default class Peerster extends Component {
             .then(res => (res === false) ?
                 console.log("Error occurred while posting") :
                 console.log(`Message ${message} sent.`));
+    };
+
+    shareFile = async (file) => {
+        const data = new FormData();
+        const name = file.name;
+        data.append("file", file, name);
+        const request = endPoint + '/share-file/';
+        await fetch(request, {
+            method: 'post',
+            body: data,
+        })
+            .then(res => res.json())
+            .then(res => (res === false) ?
+                console.log("Error occurred while sharing") :
+                console.log(`File ${name} shared.`));
     };
 
     getMessageDetails = (message) => {

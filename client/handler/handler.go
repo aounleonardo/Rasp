@@ -12,7 +12,15 @@ import (
 	"errors"
 	"strings"
 	"strconv"
+	"bytes"
+	"io"
+	"io/ioutil"
+	"os"
 )
+
+const maxFileChunkSize = 8000
+const fileHashSize = 32
+const sharedFiles = "client/_SharedFiles/"
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -87,6 +95,11 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		regexp.MatchString("/pm/", r.RequestURI);
 		isPrivateMessageRequest {
 		return json.Marshal(sendPrivateMessage(conn, r))
+	}
+	if isFileShareRequest, _ :=
+		regexp.MatchString("/share-file/", r.RequestURI);
+		isFileShareRequest {
+			return json.Marshal(shareFile(conn, r))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -257,6 +270,37 @@ func sendPrivateMessage(
 		response,
 	)
 	return *response
+}
+
+func shareFile(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	var Buf bytes.Buffer
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	defer file.Close()
+	io.Copy(&Buf, file)
+	err = shareBuffer(Buf, header.Filename)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	Buf.Reset()
+	return message.ValidationResponse{Success: true}
+}
+
+func shareBuffer(buffer bytes.Buffer, filename string) error {
+	if buffer.Len() / maxFileChunkSize > maxFileChunkSize / fileHashSize {
+		return errors.New("file too big")
+	}
+	err := ioutil.WriteFile(sharedFiles + filename, buffer.Bytes(), os.ModePerm)
+	if err != nil {
+		fmt.Println("error saving file", err.Error())
+		return err
+	}
+	return nil
 }
 
 func contactGossiper(
