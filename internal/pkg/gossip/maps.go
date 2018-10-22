@@ -36,3 +36,8 @@ type Privates struct {
 	sync.RWMutex
 	m map[string]*ChatHistory
 }
+
+type Files struct {
+	sync.RWMutex
+	m map[string]File
+}

@@ -31,6 +31,7 @@ type Gossiper struct {
 	rumors     Rumors
 	routing    Routes
 	privates   Privates
+	files      Files
 }
 
 func NewGossiper(
@@ -76,6 +77,7 @@ func NewGossiper(
 		wants:      Needs{m: wants},
 		routing:    Routes{m: make(map[string]RouteInfo)},
 		privates:   Privates{m: make(map[string]*ChatHistory)},
+		files:      Files{m: make(map[string]File)},
 	}
 
 	go gossiper.listenForGossip()
@@ -128,6 +130,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
 	} else if packet.GetPrivate != nil {
 		gossiper.handleGetPrivateRequest(packet.GetPrivate, clientAddr)
+	} else if packet.FileShare != nil {
+		gossiper.handleFileShareRequest(packet.FileShare, clientAddr)
 	}
 }
 

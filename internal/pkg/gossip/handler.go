@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"encoding/base64"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -181,6 +182,32 @@ func (gossiper *Gossiper) handleGetPrivateRequest(
 	}
 	unorderedIndex = request.UnorderedIndex
 	orderedIndex = request.OrderedIndex
+}
+
+func (gossiper *Gossiper) handleFileShareRequest(
+	request *message.FileShareRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	hashEncoding := base64.URLEncoding.EncodeToString(request.Metahash)
+	gossiper.files.Lock()
+	if _, hasFile := gossiper.files.m[hashEncoding]; hasFile {
+		success = false
+		return
+	}
+	gossiper.files.m[hashEncoding] = File{
+		Name:     request.Name,
+		Size:     request.Size,
+		Metafile: request.Metafile,
+		Metahash: request.Metahash,
+	}
+	defer gossiper.files.Unlock()
+	defer func() {
+		gossiper.sendToClient(
+			&message.ValidationResponse{Success: success},
+			clientAddr,
+		)
+	}()
 }
 
 func (gossiper *Gossiper) sendToClient(
