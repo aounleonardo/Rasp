@@ -118,14 +118,10 @@ func (gossiper *Gossiper) sendPrivateMessage(
 	if private.Origin == gossiper.Name {
 		gossiper.savePrivateMessage(private)
 	}
-	gossiper.routing.RLock()
-	defer gossiper.routing.RUnlock()
-	routeInfo, knowsRoute := gossiper.routing.m[private.Destination]
-	if !knowsRoute {
-		return
-	}
-	bytes := encodeMessage(&message.GossipPacket{Private: private})
-	gossiper.gossipConn.WriteToUDP(bytes, routeInfo.nextHop)
+	gossiper.relayGossipPacket(
+		&message.GossipPacket{Private: private},
+		private.Destination,
+	)
 }
 
 func (gossiper *Gossiper) savePrivateMessage(
@@ -167,6 +163,42 @@ func (gossiper *Gossiper) savePrivateMessage(
 			MessageKey{sent: sending, messageID: private.ID},
 		)
 	}
+}
+
+func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
+	if request.Destination == gossiper.Name {
+		// TODO start data reply
+	}
+	relayed := *request
+	relayed.HopLimit -= 1
+	if relayed.HopLimit < 1 {
+		return
+	}
+	gossiper.relayGossipPacket(
+		&message.GossipPacket{DataRequest:request},
+		request.Destination,
+	)
+}
+
+func (gossiper *Gossiper) sendDataRequest(request *message.DataRequest) {
+	gossiper.relayGossipPacket(
+		&message.GossipPacket{DataRequest:request},
+		request.Destination,
+	)
+}
+
+func (gossiper *Gossiper) relayGossipPacket(
+	packet *message.GossipPacket,
+	destination string,
+) {
+	gossiper.routing.RLock()
+	defer gossiper.routing.RUnlock()
+	routeInfo, knowsRoute := gossiper.routing.m[destination]
+	if !knowsRoute {
+		return
+	}
+	bytes := encodeMessage(packet)
+	gossiper.gossipConn.WriteToUDP(bytes, routeInfo.nextHop)
 }
 
 func (gossiper *Gossiper) upsertChatter(peer string) {
