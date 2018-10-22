@@ -56,14 +56,21 @@ type PrivateGetRequest struct {
 }
 
 type PrivateGetResponse struct {
-	Unordered []PrivateMessage
-	Ordered   []PrivateMessage
+	Unordered      []PrivateMessage
+	Ordered        []PrivateMessage
 	UnorderedIndex int
 	OrderedIndex   int
 }
 
-type ChatsRequest struct {}
+type ChatsRequest struct{}
 
 type ChatsResponse struct {
 	Origins []string
+}
+
+type FileShareRequest struct {
+	Name     string
+	Size     uint32
+	Metafile []byte
+	Metahash []byte
 }

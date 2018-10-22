@@ -16,10 +16,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"math"
+	"crypto/sha256"
 )
 
 const maxFileChunkSize = 8000
 const fileHashSize = 32
+const maxChunks = maxFileChunkSize / fileHashSize
 const sharedFiles = "client/_SharedFiles/"
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +102,7 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isFileShareRequest, _ :=
 		regexp.MatchString("/share-file/", r.RequestURI);
 		isFileShareRequest {
-			return json.Marshal(shareFile(conn, r))
+		return json.Marshal(shareFile(conn, r))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -283,24 +286,57 @@ func shareFile(
 	}
 	defer file.Close()
 	io.Copy(&Buf, file)
-	err = shareBuffer(Buf, header.Filename)
+	request, err := bufferToShareRequest(Buf, header.Filename)
 	if err != nil {
 		return message.ValidationResponse{Success: false}
 	}
 	Buf.Reset()
-	return message.ValidationResponse{Success: true}
+	response := &message.ValidationResponse{}
+	contactGossiper(conn, &message.ClientPacket{FileShare: request}, response)
+	return *response
 }
 
-func shareBuffer(buffer bytes.Buffer, filename string) error {
-	if buffer.Len() / maxFileChunkSize > maxFileChunkSize / fileHashSize {
-		return errors.New("file too big")
+func bufferToShareRequest(
+	buffer bytes.Buffer,
+	filename string,
+) (*message.FileShareRequest, error) {
+	bufferLength := buffer.Len()
+	bufferBytes := buffer.Bytes()
+	nbChunks :=
+		int(math.Ceil(float64(bufferLength) / float64(maxFileChunkSize)))
+	if nbChunks > maxChunks {
+		return nil, errors.New("file too big")
 	}
-	err := ioutil.WriteFile(sharedFiles + filename, buffer.Bytes(), os.ModePerm)
+	var metafile bytes.Buffer
+	for chunk := 0; chunk < nbChunks; chunk++ {
+		readChunk := make([]byte, maxFileChunkSize)
+		bytesRead, _ := buffer.Read(readChunk)
+		_, err := metafile.Write(sha256.New().Sum(readChunk[:bytesRead]))
+		if err != nil {
+			return nil, errors.New("error saving file: " + err.Error())
+		}
+	}
+	metahash := sha256.New().Sum(metafile.Bytes())
+	err := ioutil.WriteFile(sharedFiles+filename, bufferBytes, os.ModePerm)
 	if err != nil {
 		fmt.Println("error saving file", err.Error())
-		return err
+		return nil, err
 	}
-	return nil
+	err = ioutil.WriteFile(
+		sharedFiles+"meta_"+filename,
+		metafile.Bytes(),
+		os.ModePerm,
+	)
+	if err != nil {
+		fmt.Println("error saving metafile", err.Error())
+		return nil, err
+	}
+	return &message.FileShareRequest{
+		Name:     filename,
+		Size:     uint32(bufferLength),
+		Metafile: metafile.Bytes(),
+		Metahash: metahash,
+	}, nil
 }
 
 func contactGossiper(
