@@ -7,6 +7,7 @@ import (
 	"github.com/dedis/protobuf"
 	"strings"
 	"time"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 const maxMsgSize = 1024
@@ -77,7 +78,7 @@ func NewGossiper(
 		wants:      Needs{m: wants},
 		routing:    Routes{m: make(map[string]RouteInfo)},
 		privates:   Privates{m: make(map[string]*ChatHistory)},
-		files:      Files{m: make(map[string]File)},
+		files:      Files{m: make(map[string]files.File)},
 	}
 
 	go gossiper.listenForGossip()

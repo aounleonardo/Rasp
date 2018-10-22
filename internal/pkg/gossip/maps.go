@@ -4,6 +4,7 @@ import (
 	"sync"
 	"net"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 type Peers struct {
@@ -39,5 +40,5 @@ type Privates struct {
 
 type Files struct {
 	sync.RWMutex
-	m map[string]File
+	m map[string]files.File
 }

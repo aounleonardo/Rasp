@@ -7,6 +7,7 @@ import (
 	"net"
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"regexp"
 	"encoding/json"
 	"errors"
@@ -17,13 +18,13 @@ import (
 	"io/ioutil"
 	"os"
 	"math"
-	"crypto/sha256"
 )
 
 const maxFileChunkSize = 8000
 const fileHashSize = 32
 const maxChunks = maxFileChunkSize / fileHashSize
 const sharedFiles = "client/_SharedFiles/"
+const downloads = "client/_Downloads/"
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -307,29 +308,35 @@ func bufferToShareRequest(
 	if nbChunks > maxChunks {
 		return nil, errors.New("file too big")
 	}
+	chunks := make(map[string][]byte)
 	var metafile bytes.Buffer
 	for chunk := 0; chunk < nbChunks; chunk++ {
 		readChunk := make([]byte, maxFileChunkSize)
-		bytesRead, _ := buffer.Read(readChunk)
-		_, err := metafile.Write(sha256.New().Sum(readChunk[:bytesRead]))
+		nbBytesRead, _ := buffer.Read(readChunk)
+		hash := files.HashChunk(readChunk[:nbBytesRead])
+		_, err := metafile.Write(hash)
 		if err != nil {
 			return nil, errors.New("error saving file: " + err.Error())
 		}
+		chunks[files.KeyToFilename(hash)] = readChunk[:nbBytesRead]
 	}
-	metahash := sha256.New().Sum(metafile.Bytes())
 	err := ioutil.WriteFile(sharedFiles+filename, bufferBytes, os.ModePerm)
 	if err != nil {
 		fmt.Println("error saving file", err.Error())
 		return nil, err
 	}
-	err = ioutil.WriteFile(
-		sharedFiles+"meta_"+filename,
-		metafile.Bytes(),
-		os.ModePerm,
-	)
-	if err != nil {
-		fmt.Println("error saving metafile", err.Error())
-		return nil, err
+	metahash := files.HashChunk(metafile.Bytes())
+	chunks[files.KeyToFilename(metahash)] = metafile.Bytes()
+	for chunkName, chunk := range chunks {
+		err = ioutil.WriteFile(
+			downloads + chunkName,
+			chunk,
+			os.ModePerm,
+		)
+		if err != nil {
+			fmt.Println("error saving file", err.Error())
+			return nil, err
+		}
 	}
 	return &message.FileShareRequest{
 		Name:     filename,
