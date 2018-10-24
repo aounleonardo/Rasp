@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"sync"
 	"io/ioutil"
+	"errors"
+	"fmt"
 )
 
 const MaxFileChunkSize = 8000
@@ -31,8 +33,17 @@ var FileStates struct {
 	m map[string]*FileState
 }
 
-func HashToKey(key []byte) string {
-	return base64.URLEncoding.EncodeToString(key)
+func HashToKey(hash []byte) string {
+	return base64.URLEncoding.EncodeToString(hash)
+}
+
+func KeyToHash(key string) []byte {
+	hash, err := base64.URLEncoding.DecodeString(key)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	return hash
 }
 
 func HashChunk(chunk []byte) []byte {
@@ -60,7 +71,7 @@ func IsMetahash(key string) bool {
 	return isMetahash
 }
 
-func GetContainingMetahash(chunkey string) *string {
+func GetContainingMetakey(chunkey string) *string {
 	FileStates.RLock()
 	defer FileStates.RUnlock()
 	for metahash, state := range FileStates.m {
@@ -75,4 +86,19 @@ func GetChunkForKey(key string) ([]byte, error) {
 	return ioutil.ReadFile(Downloads + key)
 }
 
-
+func NextHash(hashValue []byte) ([]byte, error) {
+	metakey := GetContainingMetakey(HashToKey(hashValue))
+	if metakey == nil {
+		return nil, errors.New("unknown metahash")
+	}
+	FileStates.RLock()
+	defer FileStates.RUnlock()
+	if FileStates.m[*metakey].Index+1 >=
+		uint32(len(FileStates.m[*metakey].Chunkeys)) {
+		return nil, nil
+	}
+	FileStates.m[*metakey].Index += 1
+	return KeyToHash(
+		FileStates.m[*metakey].Chunkeys[FileStates.m[*metakey].Index],
+	), nil
+}

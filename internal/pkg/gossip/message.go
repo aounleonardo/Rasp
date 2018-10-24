@@ -5,6 +5,7 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"bytes"
 )
 
 type RumorKey struct {
@@ -181,7 +182,7 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 			Data:        data,
 		}
 		gossiper.relayGossipPacket(
-			&message.GossipPacket{DataReply:reply},
+			&message.GossipPacket{DataReply: reply},
 			request.Origin,
 		)
 	}
@@ -200,6 +201,33 @@ func (gossiper *Gossiper) sendDataRequest(request *message.DataRequest) {
 	gossiper.relayGossipPacket(
 		&message.GossipPacket{DataRequest: request},
 		request.Destination,
+	)
+}
+
+func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
+	if reply.Destination == gossiper.Name {
+		if bytes.Equal(files.HashChunk(reply.Data), reply.HashValue) {
+			return
+		}
+		nextHash, err := files.NextHash(reply.HashValue)
+		if err != nil {
+			return
+		}
+		if nextHash == nil {
+			// TODO reconstruct file
+			return
+		}
+		// TODO download chunk
+		// TODO send new request
+	}
+	relayed := *reply
+	relayed.HopLimit -= 1
+	if relayed.HopLimit < 1 {
+		return
+	}
+	gossiper.relayGossipPacket(
+		&message.GossipPacket{DataReply: reply},
+		reply.Destination,
 	)
 }
 
