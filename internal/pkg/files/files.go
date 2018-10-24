@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"crypto/sha256"
 	"sync"
+	"io/ioutil"
 )
 
 const MaxFileChunkSize = 8000
@@ -68,6 +69,10 @@ func GetContainingMetahash(chunkey string) *string {
 		}
 	}
 	return nil
+}
+
+func GetChunkForKey(key string) ([]byte, error) {
+	return ioutil.ReadFile(Downloads + key)
 }
 
 

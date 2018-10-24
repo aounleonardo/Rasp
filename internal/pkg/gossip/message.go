@@ -4,6 +4,7 @@ import (
 	"sync"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 type RumorKey struct {
@@ -167,7 +168,22 @@ func (gossiper *Gossiper) savePrivateMessage(
 
 func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 	if request.Destination == gossiper.Name {
-		// TODO start data reply
+		data, err := files.GetChunkForKey(files.HashToKey(request.HashValue))
+		if err != nil {
+			fmt.Println("error retrieving chunk", err.Error())
+			return
+		}
+		reply := &message.DataReply{
+			Origin:      gossiper.Name,
+			Destination: request.Origin,
+			HopLimit:    hopLimit,
+			HashValue:   request.HashValue,
+			Data:        data,
+		}
+		gossiper.relayGossipPacket(
+			&message.GossipPacket{DataReply:reply},
+			request.Origin,
+		)
 	}
 	relayed := *request
 	relayed.HopLimit -= 1
@@ -175,14 +191,14 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 		return
 	}
 	gossiper.relayGossipPacket(
-		&message.GossipPacket{DataRequest:request},
+		&message.GossipPacket{DataRequest: request},
 		request.Destination,
 	)
 }
 
 func (gossiper *Gossiper) sendDataRequest(request *message.DataRequest) {
 	gossiper.relayGossipPacket(
-		&message.GossipPacket{DataRequest:request},
+		&message.GossipPacket{DataRequest: request},
 		request.Destination,
 	)
 }
