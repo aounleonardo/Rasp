@@ -189,7 +189,7 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	hashEncoding := files.KeyToFilename(request.Metahash)
+	hashEncoding := files.HashToKey(request.Metahash)
 	gossiper.files.Lock()
 	if _, hasFile := gossiper.files.m[hashEncoding]; hasFile {
 		success = false

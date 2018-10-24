@@ -20,12 +20,6 @@ import (
 	"math"
 )
 
-const maxFileChunkSize = 8000
-const fileHashSize = 32
-const maxChunks = maxFileChunkSize / fileHashSize
-const sharedFiles = "client/_SharedFiles/"
-const downloads = "client/_Downloads/"
-
 func multiplexer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
@@ -304,32 +298,32 @@ func bufferToShareRequest(
 	bufferLength := buffer.Len()
 	bufferBytes := buffer.Bytes()
 	nbChunks :=
-		int(math.Ceil(float64(bufferLength) / float64(maxFileChunkSize)))
-	if nbChunks > maxChunks {
+		int(math.Ceil(float64(bufferLength) / float64(files.MaxFileChunkSize)))
+	if nbChunks > files.MaxChunks {
 		return nil, errors.New("file too big")
 	}
 	chunks := make(map[string][]byte)
 	var metafile bytes.Buffer
 	for chunk := 0; chunk < nbChunks; chunk++ {
-		readChunk := make([]byte, maxFileChunkSize)
+		readChunk := make([]byte, files.MaxFileChunkSize)
 		nbBytesRead, _ := buffer.Read(readChunk)
 		hash := files.HashChunk(readChunk[:nbBytesRead])
 		_, err := metafile.Write(hash)
 		if err != nil {
 			return nil, errors.New("error saving file: " + err.Error())
 		}
-		chunks[files.KeyToFilename(hash)] = readChunk[:nbBytesRead]
+		chunks[files.HashToKey(hash)] = readChunk[:nbBytesRead]
 	}
-	err := ioutil.WriteFile(sharedFiles+filename, bufferBytes, os.ModePerm)
+	err := ioutil.WriteFile(files.SharedFiles+filename, bufferBytes, os.ModePerm)
 	if err != nil {
 		fmt.Println("error saving file", err.Error())
 		return nil, err
 	}
 	metahash := files.HashChunk(metafile.Bytes())
-	chunks[files.KeyToFilename(metahash)] = metafile.Bytes()
+	chunks[files.HashToKey(metahash)] = metafile.Bytes()
 	for chunkName, chunk := range chunks {
 		err = ioutil.WriteFile(
-			downloads + chunkName,
+			files.Downloads + chunkName,
 			chunk,
 			os.ModePerm,
 		)
