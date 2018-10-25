@@ -74,3 +74,9 @@ type FileShareRequest struct {
 	Metafile []byte
 	Metahash []byte
 }
+
+type FileDownloadRequest struct {
+	Name     string
+	Metahash []byte
+	Origin   string
+}

@@ -210,6 +210,27 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	}()
 }
 
+func (gossiper *Gossiper) handleFileDownloadRequest(
+	request *message.FileDownloadRequest,
+	clientAddr *net.UDPAddr,
+) {
+	metakey := files.HashToKey(request.Metahash)
+	_ = files.NewFileState(metakey, request.Name)
+	gossiper.sendDataRequest(
+		&message.DataRequest{
+			Origin:      gossiper.Name,
+			Destination: request.Origin,
+			HopLimit:    hopLimit,
+			HashValue:   request.Metahash,
+		},
+		files.RetryLimit,
+	)
+	gossiper.sendToClient(
+		&message.ValidationResponse{Success: true},
+		clientAddr,
+	)
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,

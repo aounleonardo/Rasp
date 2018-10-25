@@ -133,6 +133,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleGetPrivateRequest(packet.GetPrivate, clientAddr)
 	} else if packet.FileShare != nil {
 		gossiper.handleFileShareRequest(packet.FileShare, clientAddr)
+	} else if packet.Download != nil {
+		gossiper.handleFileDownloadRequest(packet.Download, clientAddr)
 	}
 }
 

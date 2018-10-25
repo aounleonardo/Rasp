@@ -99,6 +99,11 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		isFileShareRequest {
 		return json.Marshal(shareFile(conn, r))
 	}
+	if isDownloadRequest, _ :=
+		regexp.MatchString("/download-file/", r.RequestURI);
+		isDownloadRequest {
+		return json.Marshal(downloadFile(conn, r))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -323,7 +328,7 @@ func bufferToShareRequest(
 	chunks[files.HashToKey(metahash)] = metafile.Bytes()
 	for chunkName, chunk := range chunks {
 		err = ioutil.WriteFile(
-			files.Downloads + chunkName,
+			files.Downloads+chunkName,
 			chunk,
 			os.ModePerm,
 		)
@@ -338,6 +343,35 @@ func bufferToShareRequest(
 		Metafile: metafile.Bytes(),
 		Metahash: metahash,
 	}, nil
+}
+
+func downloadFile(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var s struct {
+		Metakey  string
+		Filename string
+		Origin   string
+	}
+	err := decoder.Decode(&s)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			Download: &message.FileDownloadRequest{
+				Name:     s.Filename,
+				Metahash: files.KeyToHash(s.Metakey),
+				Origin:   s.Origin,
+			},
+		},
+		response,
+	)
+	return *response
 }
 
 func contactGossiper(
