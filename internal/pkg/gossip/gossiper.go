@@ -192,6 +192,8 @@ func (gossiper *Gossiper) ReceivePacket(
 		gossiper.receivePrivateMessage(packet.Private)
 	} else if packet.DataRequest != nil {
 		gossiper.receiveDataRequest(packet.DataRequest)
+	} else if packet.DataReply != nil {
+		gossiper.receiveDataReply(packet.DataReply)
 	}
 }
 

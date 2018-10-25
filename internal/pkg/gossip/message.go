@@ -5,7 +5,7 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"bytes"
+	"time"
 )
 
 type RumorKey struct {
@@ -197,28 +197,53 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 	)
 }
 
-func (gossiper *Gossiper) sendDataRequest(request *message.DataRequest) {
+func (gossiper *Gossiper) sendDataRequest(
+	request *message.DataRequest,
+	retries int,
+) {
+	if retries < 0 || files.IsFilePresent(request.HashValue) {
+		return
+	}
 	gossiper.relayGossipPacket(
 		&message.GossipPacket{DataRequest: request},
 		request.Destination,
 	)
+	go func() {
+		timer := time.NewTimer(5 * time.Second)
+		<-timer.C
+		gossiper.sendDataRequest(request, retries-1)
+	}()
 }
 
 func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 	if reply.Destination == gossiper.Name {
-		if bytes.Equal(files.HashChunk(reply.Data), reply.HashValue) {
+		if files.ShouldIgnoreData(reply) {
 			return
+		}
+		if files.IsAwaitedMetafile(reply.HashValue) {
+			files.InitFileState(reply.HashValue)
 		}
 		nextHash, err := files.NextHash(reply.HashValue)
 		if err != nil {
 			return
 		}
+		err = files.DownloadChunk(reply.HashValue, reply.Data)
+		if err != nil {
+			fmt.Println("error downloading", reply.HashValue, err.Error())
+		}
 		if nextHash == nil {
-			// TODO reconstruct file
+			files.ReconstructFile(files.HashToKey(reply.HashValue))
 			return
 		}
-		// TODO download chunk
-		// TODO send new request
+		gossiper.sendDataRequest(
+			&message.DataRequest{
+				Origin:      gossiper.Name,
+				Destination: reply.Origin,
+				HopLimit:    hopLimit,
+				HashValue:   nextHash,
+			},
+			files.RetryLimit,
+		)
 	}
 	relayed := *reply
 	relayed.HopLimit -= 1
