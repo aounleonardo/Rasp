@@ -15,9 +15,6 @@ import (
 	"strconv"
 	"bytes"
 	"io"
-	"io/ioutil"
-	"os"
-	"math"
 )
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
@@ -279,70 +276,19 @@ func shareFile(
 	conn *net.UDPConn,
 	r *http.Request,
 ) message.ValidationResponse {
-	var Buf bytes.Buffer
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		return message.ValidationResponse{Success: false}
 	}
+	var Buf bytes.Buffer
 	defer file.Close()
 	io.Copy(&Buf, file)
-	request, err := bufferToShareRequest(Buf, header.Filename)
-	if err != nil {
-		return message.ValidationResponse{Success: false}
+	request, response := files.ShareFile(Buf, header.Filename)
+	if err != nil || !response.Success {
+		return *response
 	}
-	Buf.Reset()
-	response := &message.ValidationResponse{}
 	contactGossiper(conn, &message.ClientPacket{FileShare: request}, response)
 	return *response
-}
-
-func bufferToShareRequest(
-	buffer bytes.Buffer,
-	filename string,
-) (*message.FileShareRequest, error) {
-	bufferLength := buffer.Len()
-	bufferBytes := buffer.Bytes()
-	nbChunks :=
-		int(math.Ceil(float64(bufferLength) / float64(files.MaxFileChunkSize)))
-	if nbChunks > files.MaxChunks {
-		return nil, errors.New("file too big")
-	}
-	chunks := make(map[string][]byte)
-	var metafile bytes.Buffer
-	for chunk := 0; chunk < nbChunks; chunk++ {
-		readChunk := make([]byte, files.MaxFileChunkSize)
-		nbBytesRead, _ := buffer.Read(readChunk)
-		hash := files.HashChunk(readChunk[:nbBytesRead])
-		_, err := metafile.Write(hash)
-		if err != nil {
-			return nil, errors.New("error saving file: " + err.Error())
-		}
-		chunks[files.HashToKey(hash)] = readChunk[:nbBytesRead]
-	}
-	err := ioutil.WriteFile(files.SharedFiles+filename, bufferBytes, os.ModePerm)
-	if err != nil {
-		fmt.Println("error saving file", err.Error())
-		return nil, err
-	}
-	metahash := files.HashChunk(metafile.Bytes())
-	chunks[files.HashToKey(metahash)] = metafile.Bytes()
-	for chunkName, chunk := range chunks {
-		err = ioutil.WriteFile(
-			files.Downloads+chunkName,
-			chunk,
-			os.ModePerm,
-		)
-		if err != nil {
-			fmt.Println("error saving file", err.Error())
-			return nil, err
-		}
-	}
-	return &message.FileShareRequest{
-		Name:     filename,
-		Size:     uint32(bufferLength),
-		Metafile: metafile.Bytes(),
-		Metahash: metahash,
-	}, nil
 }
 
 func downloadFile(

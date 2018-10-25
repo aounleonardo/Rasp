@@ -10,13 +10,15 @@ import (
 	"bytes"
 	"os"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"math"
 )
 
-const MaxFileChunkSize = 8000
-const FileHashSize = 32
-const MaxChunks = MaxFileChunkSize / FileHashSize
-const SharedFiles = "client/_SharedFiles/"
-const Downloads = "client/_Downloads/"
+const maxFileChunkSize = 8000
+const fileHashSize = 32
+const maxChunks = maxFileChunkSize / fileHashSize
+const sharedFiles = "client/_SharedFiles/"
+const downloads = "client/_Downloads/"
+const chunksDownloads = downloads + "/_Chunks/"
 const RetryLimit = 10
 
 type File struct {
@@ -57,6 +59,68 @@ func HashChunk(chunk []byte) []byte {
 	return hasher.Sum(nil)
 }
 
+func ShareFile(
+	file bytes.Buffer,
+	filename string,
+) (*message.FileShareRequest, *message.ValidationResponse) {
+	request, err := bufferToShareRequest(file, filename)
+	if err != nil {
+		return nil, &message.ValidationResponse{Success: false}
+	}
+	file.Reset()
+	response := &message.ValidationResponse{}
+	return request, response
+}
+
+func bufferToShareRequest(
+	buffer bytes.Buffer,
+	filename string,
+) (*message.FileShareRequest, error) {
+	bufferLength := buffer.Len()
+	bufferBytes := buffer.Bytes()
+	nbChunks :=
+		int(math.Ceil(float64(bufferLength) / float64(maxFileChunkSize)))
+	if nbChunks > maxChunks {
+		return nil, errors.New("file too big")
+	}
+	chunks := make(map[string][]byte)
+	var metafile bytes.Buffer
+	for chunk := 0; chunk < nbChunks; chunk++ {
+		readChunk := make([]byte, maxFileChunkSize)
+		nbBytesRead, _ := buffer.Read(readChunk)
+		hash := HashChunk(readChunk[:nbBytesRead])
+		_, err := metafile.Write(hash)
+		if err != nil {
+			return nil, errors.New("error saving file: " + err.Error())
+		}
+		chunks[HashToKey(hash)] = readChunk[:nbBytesRead]
+	}
+	err := ioutil.WriteFile(sharedFiles+filename, bufferBytes, os.ModePerm)
+	if err != nil {
+		fmt.Println("error saving file", err.Error())
+		return nil, err
+	}
+	metahash := HashChunk(metafile.Bytes())
+	chunks[HashToKey(metahash)] = metafile.Bytes()
+	for chunkName, chunk := range chunks {
+		err = ioutil.WriteFile(
+			chunksDownloads+chunkName,
+			chunk,
+			os.ModePerm,
+		)
+		if err != nil {
+			fmt.Println("error saving file", err.Error())
+			return nil, err
+		}
+	}
+	return &message.FileShareRequest{
+		Name:     filename,
+		Size:     uint32(bufferLength),
+		Metafile: metafile.Bytes(),
+		Metahash: metahash,
+	}, nil
+}
+
 func NewFileState(metahash string, filename string) *FileState {
 	newState := &FileState{
 		Key:      metahash,
@@ -71,9 +135,9 @@ func NewFileState(metahash string, filename string) *FileState {
 }
 
 func InitFileState(metafile []byte) {
-	chunkeys := make([]string, len(metafile)/FileHashSize)
-	for i := 0; i < len(metafile)/FileHashSize; i++ {
-		chunkeys[i] = HashToKey(metafile[i*FileHashSize : (i+1)*FileHashSize])
+	chunkeys := make([]string, len(metafile)/fileHashSize)
+	for i := 0; i < len(metafile)/fileHashSize; i++ {
+		chunkeys[i] = HashToKey(metafile[i*fileHashSize : (i+1)*fileHashSize])
 	}
 	FileStates.Lock()
 	FileStates.m[HashToKey(metafile)].Chunkeys = chunkeys
@@ -126,7 +190,7 @@ func getContainingMetakey(chunkey string) *string {
 }
 
 func GetChunkForKey(key string) ([]byte, error) {
-	return ioutil.ReadFile(Downloads + key)
+	return ioutil.ReadFile(chunksDownloads + key)
 }
 
 func NextHash(hashValue []byte) ([]byte, error) {
@@ -146,18 +210,18 @@ func NextHash(hashValue []byte) ([]byte, error) {
 	), nil
 }
 
-func IsFilePresent(key []byte) bool {
-	_, err := os.Stat(Downloads + HashToKey(key))
+func IsChunkPresent(key []byte) bool {
+	_, err := os.Stat(chunksDownloads + HashToKey(key))
 	return err != nil || !os.IsNotExist(err)
 }
 
 func DownloadChunk(key []byte, data []byte, sender string) error {
-	err := ioutil.WriteFile(Downloads + HashToKey(key), data, os.ModePerm)
+	err := ioutil.WriteFile(chunksDownloads+HashToKey(key), data, os.ModePerm)
 	FileStates.RLock()
 	fmt.Printf(
 		"DOWNLOADING %s chunk %d from %s",
 		FileStates.m[HashToKey(key)].Filename,
-		FileStates.m[HashToKey(key)].Index + 1,
+		FileStates.m[HashToKey(key)].Index+1,
 		sender,
 	)
 	FileStates.RUnlock()
@@ -170,13 +234,17 @@ func ReconstructFile(metakey string) error {
 	FileStates.Lock()
 	defer FileStates.Unlock()
 	for _, chunkey := range FileStates.m[metakey].Chunkeys {
-		chunk, err := ioutil.ReadFile(Downloads + chunkey)
+		chunk, err := ioutil.ReadFile(chunksDownloads + chunkey)
 		if err != nil {
 			return err
 		}
 		file.Write(chunk)
 	}
-	ioutil.WriteFile(FileStates.m[metakey].Filename, file.Bytes(), os.ModePerm)
+	ioutil.WriteFile(
+		downloads+FileStates.m[metakey].Filename,
+		file.Bytes(),
+		os.ModePerm,
+	)
 	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[metakey].Filename)
 	delete(FileStates.m, metakey)
 	return nil

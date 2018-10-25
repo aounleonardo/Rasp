@@ -6,6 +6,9 @@ import (
 	"github.com/dedis/protobuf"
 	"fmt"
 	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"io/ioutil"
+	"bytes"
 )
 
 func main() {
@@ -29,6 +32,11 @@ func main() {
 		"",
 		"file to be indexed by the gossiper",
 	)
+	request := flag.String(
+		"request",
+		"",
+		"request a chunk or metafile of this hash",
+	)
 	flag.Parse()
 
 	destinationAddr, _ := net.ResolveUDPAddr(
@@ -38,15 +46,25 @@ func main() {
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
 	var clientPacket message.ClientPacket
-	if len(*dest) > 0 {
+	if len(*file) > 0 {
+		if len(*request) > 0 && len(*dest) > 0 {
+			clientPacket = message.ClientPacket{
+				Download: &message.FileDownloadRequest{
+					Name:     *file,
+					Metahash: files.KeyToHash(*request),
+					Origin:   *dest,
+				},
+			}
+		} else {
+			clientPacket = message.ClientPacket{FileShare: shareFile(*file)}
+		}
+	} else if len(*dest) > 0 {
 		clientPacket = message.ClientPacket{
 			SendPrivate: &message.PrivatePutRequest{
 				Contents:    *msg,
 				Destination: *dest,
 			},
 		}
-	} else if len(*file) > 0 {
-
 	} else {
 		clientPacket = message.ClientPacket{
 			Rumor: &message.RumorRequest{Contents: *msg},
@@ -66,4 +84,20 @@ func main() {
 	fmt.Println("Sent:", clientPacket.Rumor.Contents)
 
 	defer conn.Close()
+}
+
+func shareFile(filename string) *message.FileShareRequest {
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Println("error reading file", filename)
+	}
+	buf := bytes.NewBuffer(file)
+	if buf == nil {
+		fmt.Println("error building buffer for file", filename)
+	}
+	request, response := files.ShareFile(*buf, filename)
+	if err != nil || !response.Success {
+		fmt.Println("error sharing file", err.Error())
+	}
+	return request
 }
