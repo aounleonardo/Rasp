@@ -151,8 +151,16 @@ func IsFilePresent(key []byte) bool {
 	return err != nil || !os.IsNotExist(err)
 }
 
-func DownloadChunk(key []byte, data []byte) error {
+func DownloadChunk(key []byte, data []byte, sender string) error {
 	err := ioutil.WriteFile(Downloads + HashToKey(key), data, os.ModePerm)
+	FileStates.RLock()
+	fmt.Printf(
+		"DOWNLOADING %s chunk %d from %s",
+		FileStates.m[HashToKey(key)].Filename,
+		FileStates.m[HashToKey(key)].Index + 1,
+		sender,
+	)
+	FileStates.RUnlock()
 	return err
 }
 

@@ -227,7 +227,7 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 		if err != nil {
 			return
 		}
-		err = files.DownloadChunk(reply.HashValue, reply.Data)
+		err = files.DownloadChunk(reply.HashValue, reply.Data, reply.Origin)
 		if err != nil {
 			fmt.Println("error downloading", reply.HashValue, err.Error())
 		}
