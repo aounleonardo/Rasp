@@ -203,7 +203,22 @@ func (gossiper *Gossiper) sendDataRequest(
 	request *message.DataRequest,
 	retries int,
 ) {
-	if retries < 0 || files.IsChunkPresent(request.HashValue) {
+	if files.IsChunkPresent(request.HashValue) {
+		nextHash, _ := files.NextHash(request.HashValue)
+		if nextHash != nil {
+			gossiper.sendDataRequest(
+				&message.DataRequest{
+					Origin:      request.Origin,
+					Destination: request.Destination,
+					HashValue:   nextHash,
+					HopLimit:    hopLimit,
+				},
+				files.RetryLimit,
+			)
+		}
+		return
+	}
+	if retries < 0 {
 		return
 	}
 	gossiper.relayGossipPacket(

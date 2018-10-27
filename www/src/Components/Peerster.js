@@ -38,18 +38,18 @@ export default class Peerster extends Component {
             this.getGossiperIdentifier.bind(this);
         this.getGossiperIdentifier();
         this.getGossiperPeers();
-        setInterval(this.getGossiperPeers, 5000);
+        setInterval(this.getGossiperPeers, 2000);
 
         this.getGossiperChats();
-        setInterval(this.getGossiperChats, 5000);
+        setInterval(this.getGossiperChats, 2000);
 
         this.getGossiperMessages = this.getGossiperMessages.bind(this);
         this.getGossiperMessages();
-        setInterval(this.getGossiperMessages, 3000);
+        setInterval(this.getGossiperMessages, 1000);
 
         this.getGossiperPrivates = this.getGossiperPrivates.bind(this);
         this.getGossiperPrivates();
-        setInterval(this.getGossiperPrivates, 3000);
+        setInterval(this.getGossiperPrivates, 1000);
 
         this.sendMessage = this.sendMessage.bind(this);
         this.shareFile = this.shareFile.bind(this);

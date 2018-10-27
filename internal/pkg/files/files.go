@@ -18,7 +18,7 @@ const fileHashSize = 32
 const maxChunks = maxFileChunkSize / fileHashSize
 const sharedFiles = "client/_SharedFiles/"
 const downloads = "client/_Downloads/"
-const chunksDownloads = downloads + "/_Chunks/"
+const chunksDownloads = downloads + "_Chunks/"
 const RetryLimit = 10
 
 type File struct {
@@ -172,13 +172,6 @@ func IsAwaitedMetafile(hash []byte) bool {
 
 func IsAwaitedChunk(hash []byte) bool {
 	return getContainingMetakey(HashToKey(hash)) != nil
-}
-
-func HasMetahashState(key string) bool {
-	FileStates.RLock()
-	_, isMetahash := FileStates.m[key]
-	FileStates.RUnlock()
-	return isMetahash
 }
 
 func getContainingMetakey(chunkey string) *string {
