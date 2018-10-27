@@ -148,6 +148,9 @@ func ShouldIgnoreData(data *message.DataReply) bool {
 	if !bytes.Equal(HashChunk(data.Data), data.HashValue) {
 		return true
 	}
+	if IsChunkPresent(data.HashValue) {
+		return true
+	}
 	isAwaitedMetafile := IsAwaitedMetafile(data.HashValue)
 	isAwaitedChunk := IsAwaitedChunk(data.HashValue)
 	if !isAwaitedMetafile && !isAwaitedChunk {
@@ -208,6 +211,16 @@ func NextHash(hashValue []byte) ([]byte, error) {
 	return KeyToHash(
 		FileStates.m[*metakey].Chunkeys[FileStates.m[*metakey].Index],
 	), nil
+}
+
+func NextForState(metakey string) ([]byte, error) {
+	FileStates.RLock()
+	defer FileStates.RUnlock()
+	state, hasMetakey := FileStates.m[metakey]
+	if !hasMetakey {
+		return nil, errors.New("unknown metakey")
+	}
+	return KeyToHash(state.Chunkeys[state.Index]), nil
 }
 
 func IsChunkPresent(key []byte) bool {

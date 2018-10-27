@@ -216,20 +216,49 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	metakey := files.HashToKey(request.Metahash)
-	_ = files.NewFileState(metakey, request.Name)
+	success := true
+	if files.IsChunkPresent(request.Metahash) {
+		err := gossiper.resumeFileDownloadRequest(metakey, request.Origin)
+		if err != nil {
+			success = false
+			return
+		}
+	} else {
+		_ = files.NewFileState(metakey, request.Name)
+		gossiper.sendDataRequest(
+			&message.DataRequest{
+				Origin:      gossiper.Name,
+				Destination: request.Origin,
+				HopLimit:    hopLimit,
+				HashValue:   request.Metahash,
+			},
+			files.RetryLimit,
+		)
+	}
+	gossiper.sendToClient(
+		&message.ValidationResponse{Success: success},
+		clientAddr,
+	)
+}
+
+func (gossiper *Gossiper) resumeFileDownloadRequest(
+	metakey string,
+	from string,
+) error {
+	nextHash, err := files.NextForState(metakey)
+	if err != nil {
+		return err
+	}
 	gossiper.sendDataRequest(
 		&message.DataRequest{
 			Origin:      gossiper.Name,
-			Destination: request.Origin,
+			Destination: from,
 			HopLimit:    hopLimit,
-			HashValue:   request.Metahash,
+			HashValue:   nextHash,
 		},
 		files.RetryLimit,
 	)
-	gossiper.sendToClient(
-		&message.ValidationResponse{Success: true},
-		clientAddr,
-	)
+	return nil
 }
 
 func (gossiper *Gossiper) sendToClient(
