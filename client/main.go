@@ -81,7 +81,6 @@ func main() {
 	if sendErr != nil {
 		fmt.Println("Error while sending packet from client", err)
 	}
-	fmt.Println("Sent:", clientPacket.Rumor.Contents)
 
 	defer conn.Close()
 }

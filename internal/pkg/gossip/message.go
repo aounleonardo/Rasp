@@ -61,13 +61,14 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 
 	if !isRouteRumor(rumor) {
 		gossiper.rumors.Lock()
-		messageOrdering.Lock()
 		gossiper.rumors.m[rumor.Origin][rumor.ID] = rumor
+		gossiper.rumors.Unlock()
+
+		messageOrdering.Lock()
 		messageOrdering.l = append(
 			messageOrdering.l,
 			RumorKey{origin: rumor.Origin, messageID: rumor.ID},
 		)
-		gossiper.rumors.Unlock()
 		messageOrdering.Unlock()
 	}
 }
