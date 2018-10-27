@@ -105,6 +105,7 @@ func (gossiper *Gossiper) receivePrivateMessage(
 			private.Text,
 		)
 		gossiper.savePrivateMessage(private)
+		return
 	}
 	relayed := *private
 	relayed.HopLimit -= 1
@@ -129,11 +130,11 @@ func (gossiper *Gossiper) sendPrivateMessage(
 func (gossiper *Gossiper) savePrivateMessage(
 	private *message.PrivateMessage,
 ) {
-	sending := false
+	sending := true
 	peer := private.Destination
 	if peer == gossiper.Name {
 		peer = private.Origin
-		sending = true
+		sending = false
 	}
 	gossiper.upsertChatter(peer)
 

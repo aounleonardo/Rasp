@@ -56,6 +56,7 @@ type PrivateGetRequest struct {
 }
 
 type PrivateGetResponse struct {
+	Partner        string
 	Unordered      []PrivateMessage
 	Ordered        []PrivateMessage
 	UnorderedIndex int

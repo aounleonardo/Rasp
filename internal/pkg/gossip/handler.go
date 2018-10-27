@@ -149,6 +149,7 @@ func (gossiper *Gossiper) handleGetPrivateRequest(
 	defer func() {
 		gossiper.sendToClient(
 			&message.PrivateGetResponse{
+				Partner:        request.Partner,
 				Unordered:      unordered,
 				Ordered:        ordered,
 				UnorderedIndex: unorderedIndex,

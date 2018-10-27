@@ -10,6 +10,15 @@ import Toolbar from "./Toolbar";
 
 const endPoint = "http://127.0.0.1:8000";
 
+const maybeIndex =
+    (index) => (index === undefined || index === null) ? 0 : index;
+const maybeList = (list) => (list === undefined || list === null) ? [] : list;
+const merge = (obj, key, value) => {
+    let ret = {...obj};
+    ret[key] = value;
+    return ret;
+};
+
 export default class Peerster extends Component {
     constructor(props) {
         super(props);
@@ -20,10 +29,10 @@ export default class Peerster extends Component {
             messages: [],
             wants: 0,
             currentChat: "",
-            unordered: [],
-            ordered: [],
-            unorderedIndex: 0,
-            orderedIndex: 0,
+            unordered: {},
+            ordered: {},
+            unorderedIndex: {},
+            orderedIndex: {},
         };
         this.getGossiperIdentifier =
             this.getGossiperIdentifier.bind(this);
@@ -80,8 +89,12 @@ export default class Peerster extends Component {
                             <MessagesWindow
                                 identifier={this.state.identifier}
                                 messages={this.state.messages}
-                                unordered={this.state.unordered}
-                                ordered={this.state.ordered}
+                                unordered={maybeList(
+                                    this.state.unordered[this.state.currentChat]
+                                )}
+                                ordered={maybeList(
+                                    this.state.ordered[this.state.currentChat]
+                                )}
                                 currentChat={this.state.currentChat}
                             />
                         </Row>
@@ -167,51 +180,76 @@ export default class Peerster extends Component {
             '/pm/' +
             this.state.currentChat +
             '/' +
-            this.state.unorderedIndex +
+            maybeIndex(this.state.unorderedIndex[this.state.currentChat]) +
             '/' +
-            this.state.orderedIndex +
+            maybeIndex(this.state.orderedIndex[this.state.currentChat]) +
             '/',
             (body) => {
                 if (body === null) {
                     return
                 }
-                const unorderedIndex = body["UnorderedIndex"];
-                const orderedIndex = body["OrderedIndex"];
-                const receivedUnordered = body["Unordered"];
-                const receivedOrdered = body["Ordered"];
-                let newUnordered = [...this.state.unordered];
-                let newUnorderedIndex = this.state.unorderedIndex;
-                let newOrdered = [...this.state.ordered];
-                let newOrderedIndex = this.state.orderedIndex;
+                const unorderedIndex = maybeIndex(body["UnorderedIndex"]);
+                const orderedIndex = maybeIndex(body["OrderedIndex"]);
+                const receivedUnordered = maybeList(body["Unordered"]);
+                const receivedOrdered = maybeList(body["Ordered"]);
+                const partner = body["Partner"];
+
+                let newUnordered = [...maybeList(
+                    this.state.unordered[partner],
+                )];
+                let newUnorderedIndex = maybeIndex(
+                    this.state.unorderedIndex[partner],
+                );
+                let newOrdered = [...maybeList(
+                    this.state.ordered[partner],
+                )];
+                let newOrderedIndex = maybeIndex(
+                    this.state.orderedIndex[partner],
+                );
 
                 if (receivedUnordered !== null) {
                     const toDrop =
-                        Math.max(this.state.unorderedIndex - unorderedIndex, 0);
+                        Math.max(newUnorderedIndex - unorderedIndex, 0);
                     receivedUnordered.slice(toDrop, receivedUnordered.length);
                     newUnordered = [
-                        ...this.state.unordered,
+                        ...newUnordered,
                         ...receivedUnordered,
                     ];
                     newUnorderedIndex = newUnordered.length;
                 }
 
                 if (receivedOrdered !== null) {
-                    const toDrop =
-                        Math.max(this.state.orderedIndex - orderedIndex, 0);
+                    const toDrop = Math.max(newOrderedIndex - orderedIndex, 0);
                     receivedOrdered.slice(toDrop, receivedOrdered.length);
                     newOrdered = [
-                        ...this.state.ordered,
+                        ...newOrdered,
                         ...receivedOrdered,
                     ];
                     newOrderedIndex = newOrdered.length;
                 }
 
                 this.setState({
-                    unordered: newUnordered,
-                    ordered: newOrdered,
-                    unorderedIndex: newUnorderedIndex,
-                    orderedIndex: newOrderedIndex,
-                })
+                    unordered: merge(
+                        this.state.unordered,
+                        partner,
+                        newUnordered,
+                    ),
+                    ordered: merge(
+                        this.state.ordered,
+                        partner,
+                        newOrdered,
+                    ),
+                    unorderedIndex: merge(
+                        this.state.unorderedIndex,
+                        partner,
+                        newUnorderedIndex,
+                    ),
+                    orderedIndex: merge(
+                        this.state.orderedIndex,
+                        partner,
+                        newOrderedIndex,
+                    ),
+                });
             },
         );
     };
@@ -278,8 +316,8 @@ export default class Peerster extends Component {
     };
 
     chatSelected = (peer) => {
-        if(peer !== this.state.peer) {
-            if(peer === "") {
+        if (peer !== this.state.peer) {
+            if (peer === "") {
                 this.getGossiperMessages();
             } else {
                 this.getGossiperPrivates();
