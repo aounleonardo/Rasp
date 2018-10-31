@@ -203,7 +203,7 @@ func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
 	gossiper.peers.Lock()
 	defer gossiper.peers.Unlock()
 	_, hasPeer := gossiper.peers.m[sender.String()]
-	if hasPeer {
+	if hasPeer || sender.String() == gossiper.gossipAddr.String() {
 		return
 	}
 	gossiper.peers.m[sender.String()] = sender

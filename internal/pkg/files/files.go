@@ -62,13 +62,19 @@ func HashChunk(chunk []byte) []byte {
 func ShareFile(
 	file bytes.Buffer,
 	filename string,
-) (*message.FileShareRequest, *message.ValidationResponse) {
+) (*message.FileShareRequest, *message.FileShareResponse) {
 	request, err := bufferToShareRequest(file, filename)
 	if err != nil {
-		return nil, &message.ValidationResponse{Success: false}
+		return nil, &message.FileShareResponse{
+			Name:    "error sharing: " + err.Error(),
+			Metakey: "",
+		}
 	}
 	file.Reset()
-	response := &message.ValidationResponse{}
+	response := &message.FileShareResponse{
+		Name:    filename,
+		Metakey: HashToKey(request.Metahash),
+	}
 	return request, response
 }
 
@@ -129,6 +135,9 @@ func NewFileState(metahash string, filename string) *FileState {
 		Filename: filename,
 	}
 	FileStates.Lock()
+	if FileStates.m == nil {
+		FileStates.m = make(map[string]*FileState)
+	}
 	FileStates.m[metahash] = newState
 	FileStates.Unlock()
 	return newState
@@ -178,7 +187,8 @@ func getContainingMetakey(chunkey string) *string {
 	FileStates.RLock()
 	defer FileStates.RUnlock()
 	for metahash, state := range FileStates.m {
-		if chunkey == state.Chunkeys[state.Index] {
+		if uint32(len(state.Chunkeys)) > state.Index &&
+			chunkey == state.Chunkeys[state.Index] {
 			return &metahash
 		}
 	}
@@ -218,14 +228,14 @@ func NextForState(metakey string) ([]byte, error) {
 
 func IsChunkPresent(key []byte) bool {
 	_, err := os.Stat(chunksDownloads + HashToKey(key))
-	return err != nil || !os.IsNotExist(err)
+	return err != nil && !os.IsNotExist(err)
 }
 
 func DownloadChunk(key []byte, data []byte, sender string) error {
 	err := ioutil.WriteFile(chunksDownloads+HashToKey(key), data, os.ModePerm)
 	FileStates.RLock()
 	fmt.Printf(
-		"DOWNLOADING %s chunk %d from %s",
+		"DOWNLOADING %s chunk %d from %s\n",
 		FileStates.m[HashToKey(key)].Filename,
 		FileStates.m[HashToKey(key)].Index+1,
 		sender,

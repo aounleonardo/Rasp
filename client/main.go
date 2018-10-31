@@ -71,13 +71,13 @@ func main() {
 		}
 	}
 
-	bytes, err := protobuf.Encode(&clientPacket)
+	buf, err := protobuf.Encode(&clientPacket)
 	if err != nil {
 		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
 		return
 	}
 
-	_, sendErr := conn.Write(bytes)
+	_, sendErr := conn.Write(buf)
 	if sendErr != nil {
 		fmt.Println("Error while sending packet from client", err)
 	}
@@ -95,7 +95,7 @@ func shareFile(filename string) *message.FileShareRequest {
 		fmt.Println("error building buffer for file", filename)
 	}
 	request, response := files.ShareFile(*buf, filename)
-	if err != nil || !response.Success {
+	if err != nil || len(response.Metakey) == 0 {
 		fmt.Println("error sharing file", err.Error())
 	}
 	return request

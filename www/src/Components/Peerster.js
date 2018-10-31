@@ -285,9 +285,7 @@ export default class Peerster extends Component {
             body: data,
         })
             .then(res => res.json())
-            .then(res => (res === false) ?
-                console.log("Error occurred while sharing") :
-                console.log(`File ${name} shared.`));
+            .then(res => console.log(res));
     };
 
     getMessageDetails = (message) => {

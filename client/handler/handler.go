@@ -15,14 +15,18 @@ import (
 	"strconv"
 	"bytes"
 	"io"
+	"flag"
 )
+
+var port string
+var gossiperPort string
 
 func multiplexer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	destinationAddr, _ := net.ResolveUDPAddr(
 		"udp4",
-		"127.0.0.1:8080",
+		"127.0.0.1:"+gossiperPort,
 	)
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 	defer conn.Close()
@@ -275,20 +279,32 @@ func sendPrivateMessage(
 func shareFile(
 	conn *net.UDPConn,
 	r *http.Request,
-) message.ValidationResponse {
+) message.FileShareResponse {
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		return message.ValidationResponse{Success: false}
+		return message.FileShareResponse{Name: "Error: No File", Metakey: ""}
 	}
 	var Buf bytes.Buffer
 	defer file.Close()
 	io.Copy(&Buf, file)
 	request, response := files.ShareFile(Buf, header.Filename)
-	if err != nil || !response.Success {
+	if err != nil || len(response.Metakey) == 0 {
 		return *response
 	}
-	contactGossiper(conn, &message.ClientPacket{FileShare: request}, response)
-	return *response
+	gossiperResponse := &message.FileShareResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			FileShare: &message.FileShareRequest{
+				Name:     request.Name,
+				Size:     request.Size,
+				Metafile: request.Metafile,
+				Metahash: request.Metahash,
+			},
+		},
+		gossiperResponse,
+	)
+	return *gossiperResponse
 }
 
 func downloadFile(
@@ -325,17 +341,30 @@ func contactGossiper(
 	request *message.ClientPacket,
 	response interface{},
 ) {
-	bytes, _ := protobuf.Encode(request)
-	conn.Write(bytes)
+	buf, _ := protobuf.Encode(request)
+	conn.Write(buf)
 	for {
-		bytes := make([]byte, 1024)
-		_, _ = conn.Read(bytes)
-		protobuf.Decode(bytes, response)
+		buf := make([]byte, 1024000)
+		_, _ = conn.Read(buf)
+		protobuf.Decode(buf, response)
 		return
 	}
 }
 
 func main() {
+	port := flag.String(
+		"port",
+		"8000",
+		"port for the web handler (\"default 8000\")",
+	)
+	gossiper := flag.String(
+		"gossiper",
+		"8080",
+		"port of the gossiper",
+	)
+	flag.Parse()
+
+	gossiperPort = *gossiper
 	http.HandleFunc("/", multiplexer)
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	log.Fatal(http.ListenAndServe(":" + *port, nil))
 }

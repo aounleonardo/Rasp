@@ -189,26 +189,22 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	request *message.FileShareRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	success := true
 	hashEncoding := files.HashToKey(request.Metahash)
 	gossiper.files.Lock()
-	if _, hasFile := gossiper.files.m[hashEncoding]; hasFile {
-		success = false
-		return
-	}
 	gossiper.files.m[hashEncoding] = files.File{
 		Name:     request.Name,
 		Size:     request.Size,
 		Metafile: request.Metafile,
 		Metahash: request.Metahash,
 	}
-	defer gossiper.files.Unlock()
-	defer func() {
-		gossiper.sendToClient(
-			&message.ValidationResponse{Success: success},
-			clientAddr,
-		)
-	}()
+	gossiper.files.Unlock()
+	gossiper.sendToClient(
+		&message.FileShareResponse{
+			Name:    request.Name,
+			Metakey: hashEncoding,
+		},
+		clientAddr,
+	)
 }
 
 func (gossiper *Gossiper) handleFileDownloadRequest(
