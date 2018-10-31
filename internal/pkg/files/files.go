@@ -245,23 +245,30 @@ func DownloadChunk(key []byte, data []byte, sender string) error {
 }
 
 func ReconstructFile(metakey string) error {
-	var file bytes.Buffer
-	defer file.Reset()
 	FileStates.Lock()
 	defer FileStates.Unlock()
-	for _, chunkey := range FileStates.m[metakey].Chunkeys {
+	CombineChunksIntoFile(
+		FileStates.m[metakey].Chunkeys,
+		FileStates.m[metakey].Filename,
+	)
+	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[metakey].Filename)
+	delete(FileStates.m, metakey)
+	return nil
+}
+
+func CombineChunksIntoFile(chunkeys []string, filename string) error {
+	var file bytes.Buffer
+	defer file.Reset()
+	for _, chunkey := range chunkeys {
 		chunk, err := ioutil.ReadFile(chunksDownloads + chunkey)
 		if err != nil {
 			return err
 		}
 		file.Write(chunk)
 	}
-	ioutil.WriteFile(
-		downloads+FileStates.m[metakey].Filename,
+	return ioutil.WriteFile(
+		downloads+filename,
 		file.Bytes(),
 		os.ModePerm,
 	)
-	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[metakey].Filename)
-	delete(FileStates.m, metakey)
-	return nil
 }
