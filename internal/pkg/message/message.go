@@ -32,6 +32,8 @@ type ClientPacket struct {
 	Chats       *ChatsRequest
 	FileShare   *FileShareRequest
 	Download    *FileDownloadRequest
+
+	TestReconstruct *TestFileReconstructRequest
 }
 
 type PeerStatus struct {

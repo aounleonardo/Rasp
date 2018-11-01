@@ -37,6 +37,11 @@ func main() {
 		"",
 		"request a chunk or metafile of this hash",
 	)
+	test := flag.String(
+		"test",
+		"",
+		"dev only",
+	)
 	flag.Parse()
 
 	destinationAddr, _ := net.ResolveUDPAddr(
@@ -46,7 +51,17 @@ func main() {
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
 	var clientPacket message.ClientPacket
-	if len(*file) > 0 {
+	if len(*test) > 0 {
+		switch *test {
+		case "reconstruct":
+			clientPacket = message.ClientPacket{
+				TestReconstruct: &message.TestFileReconstructRequest{
+					Metahash: files.KeyToHash(*request),
+					Filename: *file,
+				},
+			}
+		}
+	} else if len(*file) > 0 {
 		if len(*request) > 0 && len(*dest) > 0 {
 			clientPacket = message.ClientPacket{
 				Download: &message.FileDownloadRequest{

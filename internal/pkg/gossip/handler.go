@@ -109,10 +109,6 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 		)
 	}()
 	gossiper.routing.RLock()
-	fmt.Println("Routes:")
-	for route := range gossiper.routing.m {
-		fmt.Println(route)
-	}
 	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
 		success = false
 		fmt.Printf(

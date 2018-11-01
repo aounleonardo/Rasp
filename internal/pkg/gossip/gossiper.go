@@ -10,7 +10,8 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
-const maxMsgSize = 1024
+const maxMsgSize = 10000
+const maxChanSize = 1000
 
 var acks Acks
 
@@ -61,7 +62,7 @@ func NewGossiper(
 	for _, peer := range PeerList {
 		peerAddr, _ := net.ResolveUDPAddr("udp4", peer)
 		peerAddrs[peer] = peerAddr
-		acks.queue[peer] = make(chan *message.StatusPacket, maxMsgSize)
+		acks.queue[peer] = make(chan *message.StatusPacket, maxChanSize)
 		acks.expected[peer] = 0
 	}
 	acks.Unlock()
@@ -91,7 +92,7 @@ func NewGossiper(
 func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
-		bytes := make([]byte, maxMsgSize)
+		bytes := make([]byte, 10 * maxMsgSize)
 		length, sender, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)
@@ -135,6 +136,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleFileShareRequest(packet.FileShare, clientAddr)
 	} else if packet.Download != nil {
 		gossiper.handleFileDownloadRequest(packet.Download, clientAddr)
+	} else {
+		gossiper.handleTestPacket(packet, clientAddr)
 	}
 }
 
@@ -172,7 +175,10 @@ func (gossiper *Gossiper) listenForGossip() {
 			)
 			continue
 		}
-		protobuf.Decode(bytes, packet)
+		err = protobuf.Decode(bytes, packet)
+		if err != nil {
+			fmt.Println("error decoding", err.Error())
+		}
 		gossiper.ReceivePacket(packet, sender)
 	}
 }
@@ -209,7 +215,7 @@ func (gossiper *Gossiper) upsertPeer(sender *net.UDPAddr) {
 	gossiper.peers.m[sender.String()] = sender
 
 	acks.Lock()
-	acks.queue[sender.String()] = make(chan *message.StatusPacket, maxMsgSize)
+	acks.queue[sender.String()] = make(chan *message.StatusPacket, maxChanSize)
 	acks.expected[sender.String()] = 0
 	acks.Unlock()
 }

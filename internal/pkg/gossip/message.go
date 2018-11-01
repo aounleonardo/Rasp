@@ -194,7 +194,7 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 		return
 	}
 	gossiper.relayGossipPacket(
-		&message.GossipPacket{DataRequest: request},
+		&message.GossipPacket{DataRequest: &relayed},
 		request.Destination,
 	)
 }
@@ -238,15 +238,15 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 			return
 		}
 		if files.IsAwaitedMetafile(reply.HashValue) {
-			files.InitFileState(reply.HashValue)
+			files.InitFileState(reply.Data)
+		}
+		err := files.DownloadChunk(reply.HashValue, reply.Data, reply.Origin)
+		if err != nil {
+			fmt.Println("error downloading", reply.HashValue, err.Error())
 		}
 		nextHash, err := files.NextHash(reply.HashValue)
 		if err != nil {
 			return
-		}
-		err = files.DownloadChunk(reply.HashValue, reply.Data, reply.Origin)
-		if err != nil {
-			fmt.Println("error downloading", reply.HashValue, err.Error())
 		}
 		if nextHash == nil {
 			files.ReconstructFile(files.HashToKey(reply.HashValue))
@@ -268,7 +268,7 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 		return
 	}
 	gossiper.relayGossipPacket(
-		&message.GossipPacket{DataReply: reply},
+		&message.GossipPacket{DataReply: &relayed},
 		reply.Destination,
 	)
 }
@@ -281,6 +281,7 @@ func (gossiper *Gossiper) relayGossipPacket(
 	defer gossiper.routing.RUnlock()
 	routeInfo, knowsRoute := gossiper.routing.m[destination]
 	if !knowsRoute {
+		fmt.Println("Doesn't know route to relay gossip packet!", destination)
 		return
 	}
 	bytes := encodeMessage(packet)

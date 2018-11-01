@@ -149,7 +149,7 @@ func InitFileState(metafile []byte) {
 		chunkeys[i] = HashToKey(metafile[i*fileHashSize : (i+1)*fileHashSize])
 	}
 	FileStates.Lock()
-	FileStates.m[HashToKey(metafile)].Chunkeys = chunkeys
+	FileStates.m[HashToKey(HashChunk(metafile))].Chunkeys = chunkeys
 	FileStates.Unlock()
 }
 
@@ -179,6 +179,13 @@ func IsAwaitedMetafile(hash []byte) bool {
 	return isAwaitedMetafile
 }
 
+func IsUndergoneMetafile(hash []byte) bool {
+	FileStates.RLock()
+	_, isUndergoneMetafile := FileStates.m[HashToKey(hash)]
+	FileStates.RUnlock()
+	return isUndergoneMetafile
+}
+
 func IsAwaitedChunk(hash []byte) bool {
 	return getContainingMetakey(HashToKey(hash)) != nil
 }
@@ -187,8 +194,8 @@ func getContainingMetakey(chunkey string) *string {
 	FileStates.RLock()
 	defer FileStates.RUnlock()
 	for metahash, state := range FileStates.m {
-		if uint32(len(state.Chunkeys)) > state.Index &&
-			chunkey == state.Chunkeys[state.Index] {
+		if uint32(len(state.Chunkeys)) >= state.Index && state.Index >= 1 &&
+			chunkey == state.Chunkeys[state.Index-1] {
 			return &metahash
 		}
 	}
@@ -200,19 +207,25 @@ func GetChunkForKey(key string) ([]byte, error) {
 }
 
 func NextHash(hashValue []byte) ([]byte, error) {
-	metakey := getContainingMetakey(HashToKey(hashValue))
-	if metakey == nil {
-		return nil, errors.New("unknown metahash")
+	var metakey string
+	if IsUndergoneMetafile(hashValue) {
+		metakey = HashToKey(hashValue)
+	} else {
+		option := getContainingMetakey(HashToKey(hashValue))
+		if option == nil {
+			return nil, errors.New("unknown metahash")
+		}
+		metakey = *option
 	}
 	FileStates.RLock()
 	defer FileStates.RUnlock()
-	if FileStates.m[*metakey].Index+1 >=
-		uint32(len(FileStates.m[*metakey].Chunkeys)) {
+	if FileStates.m[metakey].Index >=
+		uint32(len(FileStates.m[metakey].Chunkeys)) {
 		return nil, nil
 	}
-	FileStates.m[*metakey].Index += 1
+	FileStates.m[metakey].Index += 1
 	return KeyToHash(
-		FileStates.m[*metakey].Chunkeys[FileStates.m[*metakey].Index],
+		FileStates.m[metakey].Chunkeys[FileStates.m[metakey].Index-1],
 	), nil
 }
 
@@ -223,40 +236,58 @@ func NextForState(metakey string) ([]byte, error) {
 	if !hasMetakey {
 		return nil, errors.New("unknown metakey")
 	}
-	return KeyToHash(state.Chunkeys[state.Index]), nil
+	return KeyToHash(state.Chunkeys[state.Index-1]), nil
 }
 
 func IsChunkPresent(key []byte) bool {
 	_, err := os.Stat(chunksDownloads + HashToKey(key))
-	return err != nil && !os.IsNotExist(err)
+	return err == nil || (err != nil && !os.IsNotExist(err))
 }
 
 func DownloadChunk(key []byte, data []byte, sender string) error {
 	err := ioutil.WriteFile(chunksDownloads+HashToKey(key), data, os.ModePerm)
+	if err != nil {
+		fmt.Println("error writing downloaded chunk", err.Error())
+		return err
+	}
+	isMetakey := IsUndergoneMetafile(key)
+	if isMetakey {
+		return nil
+	}
+	metakey := getContainingMetakey(HashToKey(key))
+	if metakey == nil {
+		return errors.New(
+			"downloading file corresponding to no metakey" + HashToKey(key),
+		)
+	}
 	FileStates.RLock()
 	fmt.Printf(
 		"DOWNLOADING %s chunk %d from %s\n",
-		FileStates.m[HashToKey(key)].Filename,
-		FileStates.m[HashToKey(key)].Index+1,
+		FileStates.m[*metakey].Filename,
+		FileStates.m[*metakey].Index,
 		sender,
 	)
-	FileStates.RUnlock()
+	defer FileStates.RUnlock()
 	return err
 }
 
-func ReconstructFile(metakey string) error {
+func ReconstructFile(key string) error {
+	metakey := getContainingMetakey(key)
+	if metakey == nil {
+		errors.New("reconstructing file corresponding to no metakey" + key)
+	}
 	FileStates.Lock()
 	defer FileStates.Unlock()
-	CombineChunksIntoFile(
-		FileStates.m[metakey].Chunkeys,
-		FileStates.m[metakey].Filename,
+	combineChunksIntoFile(
+		FileStates.m[*metakey].Chunkeys,
+		FileStates.m[*metakey].Filename,
 	)
-	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[metakey].Filename)
-	delete(FileStates.m, metakey)
+	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[*metakey].Filename)
+	delete(FileStates.m, *metakey)
 	return nil
 }
 
-func CombineChunksIntoFile(chunkeys []string, filename string) error {
+func combineChunksIntoFile(chunkeys []string, filename string) error {
 	var file bytes.Buffer
 	defer file.Reset()
 	for _, chunkey := range chunkeys {
