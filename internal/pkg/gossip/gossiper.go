@@ -175,9 +175,10 @@ func (gossiper *Gossiper) listenForGossip() {
 			)
 			continue
 		}
-		err = protobuf.Decode(bytes, packet)
+		err = protobuf.Decode(bytes[:length], packet)
 		if err != nil {
-			fmt.Println("error decoding", err.Error())
+			fmt.Println("error decoding", err.Error(), *packet)
+			return
 		}
 		gossiper.ReceivePacket(packet, sender)
 	}
