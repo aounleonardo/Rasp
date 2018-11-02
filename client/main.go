@@ -113,5 +113,6 @@ func shareFile(filename string) *message.FileShareRequest {
 	if err != nil || len(response.Metakey) == 0 {
 		fmt.Println("error sharing file", err.Error())
 	}
+	fmt.Println(response.Metakey)
 	return request
 }

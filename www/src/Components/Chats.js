@@ -2,13 +2,6 @@ import React, {Component} from 'react';
 import {Button, ButtonGroup, Col, Label} from 'react-bootstrap';
 
 export default class Chats extends Component {
-    constructor(props) {
-        super(props);
-
-        this.createRow = this.createRow.bind(this);
-        this.onChatSelection = this.onChatSelection.bind(this);
-    }
-
     render() {
         return <Col>
             <h4>

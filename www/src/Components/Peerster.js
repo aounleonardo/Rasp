@@ -22,6 +22,7 @@ const merge = (obj, key, value) => {
 export default class Peerster extends Component {
     constructor(props) {
         super(props);
+
         this.state = {
             identifier: "",
             peers: [],
@@ -34,8 +35,6 @@ export default class Peerster extends Component {
             unorderedIndex: {},
             orderedIndex: {},
         };
-        this.getGossiperIdentifier =
-            this.getGossiperIdentifier.bind(this);
         this.getGossiperIdentifier();
         this.getGossiperPeers();
         setInterval(this.getGossiperPeers, 2000);
@@ -43,18 +42,11 @@ export default class Peerster extends Component {
         this.getGossiperChats();
         setInterval(this.getGossiperChats, 2000);
 
-        this.getGossiperMessages = this.getGossiperMessages.bind(this);
         this.getGossiperMessages();
         setInterval(this.getGossiperMessages, 1000);
 
-        this.getGossiperPrivates = this.getGossiperPrivates.bind(this);
         this.getGossiperPrivates();
         setInterval(this.getGossiperPrivates, 1000);
-
-        this.sendMessage = this.sendMessage.bind(this);
-        this.shareFile = this.shareFile.bind(this);
-        this.addPeer = this.addPeer.bind(this);
-        this.chatSelected = this.chatSelected.bind(this);
     }
 
     style = {
@@ -125,7 +117,10 @@ export default class Peerster extends Component {
                     </Col>
                 </Row>
                 <Row>
-                    <Toolbar shareFile={this.shareFile}/>
+                    <Toolbar
+                        shareFile={this.shareFile}
+                        download={this.downloadFile}
+                    />
                 </Row>
             </Grid>
         )
@@ -275,7 +270,7 @@ export default class Peerster extends Component {
                 console.log(`Message ${message} sent.`));
     };
 
-    shareFile = async (file) => {
+    shareFile = async (file, callback) => {
         const data = new FormData();
         const name = file.name;
         data.append("file", file, name);
@@ -285,7 +280,25 @@ export default class Peerster extends Component {
             body: data,
         })
             .then(res => res.json())
-            .then(res => console.log(res));
+            .then(res => callback(res["Metakey"]));
+    };
+
+    downloadFile = async (metakey, filename, callback) => {
+        const request = endPoint + '/download-file/';
+        if (this.state.currentChat === "") {
+            callback(false, "choose a peer first");
+            return
+        }
+        await fetch(request, {
+            method: 'post',
+            body: JSON.stringify({
+               Metakey: metakey,
+               Filename: filename,
+               Origin: this.state.currentChat,
+            }),
+        })
+            .then(res => res.json())
+            .then(res => callback(res["Success"], ""))
     };
 
     getMessageDetails = (message) => {

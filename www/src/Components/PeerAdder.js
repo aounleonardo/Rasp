@@ -1,22 +1,9 @@
 import React, {Component} from 'react';
-import {
-    Button,
-    Form,
-    FormControl,
-    FormGroup,
-    Row,
-    HelpBlock,
-} from 'react-bootstrap';
+import {Button, Form, FormControl, FormGroup, HelpBlock, Row,} from 'react-bootstrap';
 
 export default class PeerAdder extends Component {
     constructor(props) {
         super(props);
-
-        this.add = this.add.bind(this);
-        this.addressChange = this.addressChange.bind(this);
-        this.portChange = this.portChange.bind(this);
-        this.getPort = this.getPort.bind(this);
-        this.getAddress = this.getAddress.bind(this);
 
         this.state = {
             address: "",
@@ -49,7 +36,7 @@ export default class PeerAdder extends Component {
             resize: "none",
         },
         button: {
-            height:'25%',
+            height: '25%',
             width: '60%',
             color: 'dodgerblue',
             fontSize: '120%',
@@ -59,43 +46,43 @@ export default class PeerAdder extends Component {
 
     render() {
         return (
-                <Form inline onSubmit={this.add} style={this.style.form}>
-                    <FormGroup
-                        controlId={"addPeer"}
-                        validationState={this.validationState()}
-                        style={this.style.group}
-                    >
-                        <Row>
-                            <FormControl
-                                type={"text"}
-                                value={this.state.address}
-                                placeholder={"address"}
-                                onChange={this.addressChange}
-                                bsSize={"sm"}
-                                style={this.style.text}
-                            />
-                        </Row>
-                        <Row>
-                            <FormControl
-                                type={"text"}
-                                value={this.state.port}
-                                placeholder={"port"}
-                                onChange={this.portChange}
-                                bsSize={"sm"}
-                                style={this.style.text}
-                            />
-                        </Row>
-                        <Row>
-                            <Button
-                                type={"submit"}
-                                style={this.style.button}
-                            >
-                                Add peer
-                            </Button>
-                        </Row>
-                        <HelpBlock>{this.state.help}</HelpBlock>
-                    </FormGroup>
-                </Form>
+            <Form inline onSubmit={this.add} style={this.style.form}>
+                <FormGroup
+                    controlId={"addPeer"}
+                    validationState={this.validationState()}
+                    style={this.style.group}
+                >
+                    <Row>
+                        <FormControl
+                            type={"text"}
+                            value={this.state.address}
+                            placeholder={"address"}
+                            onChange={this.addressChange}
+                            bsSize={"sm"}
+                            style={this.style.text}
+                        />
+                    </Row>
+                    <Row>
+                        <FormControl
+                            type={"text"}
+                            value={this.state.port}
+                            placeholder={"port"}
+                            onChange={this.portChange}
+                            bsSize={"sm"}
+                            style={this.style.text}
+                        />
+                    </Row>
+                    <Row>
+                        <Button
+                            type={"submit"}
+                            style={this.style.button}
+                        >
+                            Add peer
+                        </Button>
+                    </Row>
+                    <HelpBlock>{this.state.help}</HelpBlock>
+                </FormGroup>
+            </Form>
         )
     }
 
@@ -140,7 +127,7 @@ export default class PeerAdder extends Component {
 
     add = (event) => {
         event.preventDefault();
-        if(this.validationState() === "success") {
+        if (this.validationState() === "success") {
             this.props.onAdd(
                 this.getAddress().join('.'),
                 this.getPort().toString(),

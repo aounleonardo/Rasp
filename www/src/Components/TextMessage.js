@@ -2,12 +2,6 @@ import React, {Component} from 'react';
 import {FormControl} from 'react-bootstrap';
 
 export default class TextMessage extends Component {
-    constructor(props) {
-        super(props);
-
-        this.getText = this.getText.bind(this);
-    }
-
     width = Math.min(80, 5 + this.props.text.length * 1.8);
     style = {
         text: {

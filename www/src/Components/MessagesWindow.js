@@ -4,12 +4,6 @@ import TextMessage from "./TextMessage";
 import {sha256} from 'js-sha256';
 
 export default class MessagesWindow extends Component {
-    constructor(props) {
-        super(props);
-
-        this.getColor = this.getColor.bind(this);
-    }
-
     styles = {
         messageRow: {
             paddingLeft: "5%",

@@ -5,9 +5,6 @@ export default class Chatbox extends Component {
     constructor(props) {
         super(props);
 
-        this.send = this.send.bind(this);
-        this.textChange = this.textChange.bind(this);
-
         this.state = {
             value: '',
         };
