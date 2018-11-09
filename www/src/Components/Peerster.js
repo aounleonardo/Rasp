@@ -280,7 +280,7 @@ export default class Peerster extends Component {
             body: data,
         })
             .then(res => res.json())
-            .then(res => callback(res["Metakey"]));
+            .then(res => {console.log(res); callback(res["Metakey"])});
     };
 
     downloadFile = async (metakey, filename, callback) => {

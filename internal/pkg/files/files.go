@@ -13,11 +13,11 @@ import (
 	"math"
 )
 
-const maxFileChunkSize = 8000
+const maxFileChunkSize = 8 * 1000
 const fileHashSize = 32
 const maxChunks = maxFileChunkSize / fileHashSize
-const sharedFiles = "client/_SharedFiles/"
-const downloads = "client/_Downloads/"
+const sharedFiles = "_SharedFiles/"
+const downloads = "_Downloads/"
 const chunksDownloads = downloads + "_Chunks/"
 const RetryLimit = 10
 

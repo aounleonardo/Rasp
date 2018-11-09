@@ -9,6 +9,7 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"io/ioutil"
 	"bytes"
+	"os"
 )
 
 func main() {
@@ -101,9 +102,10 @@ func main() {
 }
 
 func shareFile(filename string) *message.FileShareRequest {
-	file, err := ioutil.ReadFile(filename)
+	file, err := ioutil.ReadFile("_SharedFiles/" + filename)
 	if err != nil {
-		fmt.Println("error reading file", filename)
+		a, _ := os.Getwd()
+		fmt.Println("error reading file", filename, err.Error(), a)
 	}
 	buf := bytes.NewBuffer(file)
 	if buf == nil {

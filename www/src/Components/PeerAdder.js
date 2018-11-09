@@ -136,5 +136,5 @@ export default class PeerAdder extends Component {
         } else {
             this.setState({help: "Bad address:port"});
         }
-    }
+    };
 }
