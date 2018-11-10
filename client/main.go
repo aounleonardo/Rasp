@@ -102,7 +102,7 @@ func main() {
 }
 
 func shareFile(filename string) *message.FileShareRequest {
-	file, err := ioutil.ReadFile("_SharedFiles/" + filename)
+	file, err := ioutil.ReadFile(files.SharedFiles + filename)
 	if err != nil {
 		a, _ := os.Getwd()
 		fmt.Println("error reading file", filename, err.Error(), a)

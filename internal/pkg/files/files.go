@@ -1,7 +1,6 @@
 package files
 
 import (
-	"encoding/base64"
 	"crypto/sha256"
 	"sync"
 	"io/ioutil"
@@ -11,12 +10,13 @@ import (
 	"os"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"math"
+	"encoding/hex"
 )
 
-const maxFileChunkSize = 8 * 1000
+const maxFileChunkSize = 8 * 1024
 const fileHashSize = 32
 const maxChunks = maxFileChunkSize / fileHashSize
-const sharedFiles = "_SharedFiles/"
+const SharedFiles = "_SharedFiles/"
 const downloads = "_Downloads/"
 const chunksDownloads = downloads + "_Chunks/"
 const RetryLimit = 10
@@ -41,11 +41,13 @@ var FileStates struct {
 }
 
 func HashToKey(hash []byte) string {
-	return base64.URLEncoding.EncodeToString(hash)
+	return hex.EncodeToString(hash)
+	// return base64.URLEncoding.EncodeToString(hash)
 }
 
 func KeyToHash(key string) []byte {
-	hash, err := base64.URLEncoding.DecodeString(key)
+	// hash, err := base64.URLEncoding.DecodeString(key)
+	hash, err := hex.DecodeString(key)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -101,7 +103,7 @@ func bufferToShareRequest(
 		}
 		chunks[HashToKey(hash)] = readChunk[:nbBytesRead]
 	}
-	err := ioutil.WriteFile(sharedFiles+filename, bufferBytes, os.ModePerm)
+	err := ioutil.WriteFile(SharedFiles+filename, bufferBytes, os.ModePerm)
 	if err != nil {
 		fmt.Println("error saving file", err.Error())
 		return nil, err

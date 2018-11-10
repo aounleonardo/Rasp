@@ -280,7 +280,15 @@ export default class Peerster extends Component {
             body: data,
         })
             .then(res => res.json())
-            .then(res => {console.log(res); callback(res["Metakey"])});
+            .then(res => {
+                if (res.hasOwnProperty("Metakey")) {
+                    this.sendMessage(
+                        `I just shared the file: "${file.name}"\n` +
+                        `with Metahash: "${res["Metakey"]}"`
+                    );
+                    callback(res["Metakey"]);
+                }
+            });
     };
 
     downloadFile = async (metakey, filename, callback) => {
@@ -292,9 +300,9 @@ export default class Peerster extends Component {
         await fetch(request, {
             method: 'post',
             body: JSON.stringify({
-               Metakey: metakey,
-               Filename: filename,
-               Origin: this.state.currentChat,
+                Metakey: metakey,
+                Filename: filename,
+                Origin: this.state.currentChat,
             }),
         })
             .then(res => res.json())

@@ -119,12 +119,13 @@ export default class Toolbar extends Component {
         if (this.state.metakey.length === 0) {
             return null;
         }
-        if (this.state.metakey.length === 44 &&
-            this.state.metakey[this.state.metakey.length - 1] === '=' &&
-            this.state.filename.length > 0) {
+        if (
+            isShaHex(this.state.metakey) &&
+            this.state.filename.length > 0
+        ) {
             return "success";
         }
-        if (this.state.metakey.length < 44) {
+        if (this.state.metakey.length < 64) {
             return "warning";
         }
         return "error";
@@ -138,7 +139,7 @@ export default class Toolbar extends Component {
                 this.state.filename,
                 (success, error) => {
                     if (!success) {
-                    console.log({success: success, error: error});
+                        console.log({success: success, error: error});
                         this.setState({labelKey: "error " + error});
                         setTimeout(() => this.setState({labelKey: ""}), 3000);
                     }
@@ -146,9 +147,14 @@ export default class Toolbar extends Component {
             );
             this.setState({metakey: "", filename: "", help: ""});
         } else if (this.state.filename.length === 0) {
-            this.setState({help: "please type a filename"})
+            this.setState({help: "please type a filename"});
         } else {
-            this.setState({help: "wrong metakey format"})
+            this.setState({
+                help: "wrong metakey format" +
+                (isShaHex(this.state.metakey) ?
+                    " isHex" :
+                    " isNot")
+            });
         }
     };
 
@@ -159,4 +165,8 @@ export default class Toolbar extends Component {
     filenameChange = (event) => {
         this.setState({filename: event.target.value})
     };
+}
+
+function isShaHex(key) {
+    return key.match(/^[a-f0-9]{64}$/) !== null;
 }

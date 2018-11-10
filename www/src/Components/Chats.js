@@ -12,7 +12,7 @@ export default class Chats extends Component {
                     bsStyle={(this.props.current === "") ? "primary" : "info"}
                     onClick={() => this.onChatSelection("")}
                 >
-                    Home 🏠
+                    Home <span role="img" aria-label="Home">🏠</span>
                 </Button>
             </h4>
             <ButtonGroup vertical>
