@@ -15,7 +15,7 @@ func TestCombineChunksIntoFile(metakey string, filename string) error {
 	InitFileState(metafile)
 	FileStates.Lock()
 	defer FileStates.Unlock()
-	err = combineChunksIntoFile(
+	_, err = combineChunksIntoFile(
 		FileStates.m[metakey].Chunkeys,
 		filename,
 	)

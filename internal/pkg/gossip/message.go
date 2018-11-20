@@ -249,7 +249,22 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 			return
 		}
 		if nextHash == nil {
-			files.ReconstructFile(files.HashToKey(reply.HashValue))
+			file, err := files.ReconstructFile(files.HashToKey(reply.HashValue))
+			if err != nil {
+				fmt.Println(
+					"error reconstructing file",
+					reply.HashValue,
+					err.Error(),
+				)
+			}
+			err = gossiper.saveFile(file)
+			if err != nil {
+				fmt.Println(
+					"error saving file",
+					reply.HashValue,
+					err.Error(),
+				)
+			}
 			return
 		}
 		gossiper.sendDataRequest(
@@ -301,5 +316,36 @@ func (gossiper *Gossiper) upsertChatter(peer string) {
 		highestReceive: 0,
 		ordering:       make([]MessageKey, 0),
 		unordered:      make([]*message.PrivateMessage, 0),
+	}
+}
+
+func (gossiper *Gossiper) receiveSearchRequest(request *message.SearchRequest) {
+	searchReply := &message.SearchReply{
+		Origin:      gossiper.Name,
+		Destination: request.Origin,
+		HopLimit:    hopLimit,
+		Results:     gossiper.SearchForKeywords(request.Keywords),
+	}
+	gossiper.relayGossipPacket(
+		&message.GossipPacket{SearchReply: searchReply},
+		request.Origin,
+	)
+
+	remainingBudget := request.Budget - 1
+	if remainingBudget <= 0 {
+		return
+	}
+	budgets := gossiper.distributeBudget(remainingBudget)
+	for peer, budget := range budgets {
+		gossiper.relayGossipPacket(
+			&message.GossipPacket{
+				SearchRequest: &message.SearchRequest{
+					Origin:   request.Origin,
+					Budget:   budget,
+					Keywords: request.Keywords,
+				},
+			},
+			peer,
+		)
 	}
 }

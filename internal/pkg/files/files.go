@@ -13,9 +13,9 @@ import (
 	"encoding/hex"
 )
 
-const maxFileChunkSize = 8 * 1024
+const MaxFileChunkSize = 8 * 1024
 const fileHashSize = 32
-const maxChunks = maxFileChunkSize / fileHashSize
+const maxChunks = MaxFileChunkSize / fileHashSize
 const SharedFiles = "_SharedFiles/"
 const downloads = "_Downloads/"
 const chunksDownloads = downloads + "_Chunks/"
@@ -42,11 +42,9 @@ var FileStates struct {
 
 func HashToKey(hash []byte) string {
 	return hex.EncodeToString(hash)
-	// return base64.URLEncoding.EncodeToString(hash)
 }
 
 func KeyToHash(key string) []byte {
-	// hash, err := base64.URLEncoding.DecodeString(key)
 	hash, err := hex.DecodeString(key)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -87,14 +85,14 @@ func bufferToShareRequest(
 	bufferLength := buffer.Len()
 	bufferBytes := buffer.Bytes()
 	nbChunks :=
-		int(math.Ceil(float64(bufferLength) / float64(maxFileChunkSize)))
+		int(math.Ceil(float64(bufferLength) / float64(MaxFileChunkSize)))
 	if nbChunks > maxChunks {
 		return nil, errors.New("file too big")
 	}
 	chunks := make(map[string][]byte)
 	var metafile bytes.Buffer
 	for chunk := 0; chunk < nbChunks; chunk++ {
-		readChunk := make([]byte, maxFileChunkSize)
+		readChunk := make([]byte, MaxFileChunkSize)
 		nbBytesRead, _ := buffer.Read(readChunk)
 		hash := HashChunk(readChunk[:nbBytesRead])
 		_, err := metafile.Write(hash)
@@ -273,35 +271,53 @@ func DownloadChunk(key []byte, data []byte, sender string) error {
 	return err
 }
 
-func ReconstructFile(key string) error {
+func ReconstructFile(key string) (*File, error) {
 	metakey := getContainingMetakey(key)
 	if metakey == nil {
-		errors.New("reconstructing file corresponding to no metakey" + key)
+		return nil,
+			errors.New("reconstructing file corresponding to no metakey" + key)
 	}
 	FileStates.Lock()
 	defer FileStates.Unlock()
-	combineChunksIntoFile(
+	filename := FileStates.m[*metakey].Filename
+	size, err := combineChunksIntoFile(
 		FileStates.m[*metakey].Chunkeys,
-		FileStates.m[*metakey].Filename,
+		filename,
 	)
+	if err != nil {
+		return nil,
+			errors.New("reconstructing file failed for metakey" + key)
+	}
 	fmt.Printf("RECONSTRUCTED file %s\n", FileStates.m[*metakey].Filename)
 	delete(FileStates.m, *metakey)
-	return nil
+	metafile, err := getMetafileBytes(key)
+	if err != nil {
+		return nil,
+			errors.New("could not find metafile for metakey" + key)
+	}
+	return &File{
+		Name:     filename,
+		Size:     size,
+		Metafile: metafile,
+		Metahash: KeyToHash(key),
+	},
+		nil
 }
 
-func combineChunksIntoFile(chunkeys []string, filename string) error {
+func combineChunksIntoFile(chunkeys []string, filename string) (uint32, error) {
 	var file bytes.Buffer
 	defer file.Reset()
 	for _, chunkey := range chunkeys {
 		chunk, err := ioutil.ReadFile(chunksDownloads + chunkey)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		file.Write(chunk)
 	}
-	return ioutil.WriteFile(
-		downloads+filename,
-		file.Bytes(),
-		os.ModePerm,
-	)
+	return uint32(file.Len()),
+		ioutil.WriteFile(
+			downloads+filename,
+			file.Bytes(),
+			os.ModePerm,
+		)
 }

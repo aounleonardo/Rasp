@@ -186,14 +186,16 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	hashEncoding := files.HashToKey(request.Metahash)
-	gossiper.files.Lock()
-	gossiper.files.m[hashEncoding] = files.File{
+	file := &files.File{
 		Name:     request.Name,
 		Size:     request.Size,
 		Metafile: request.Metafile,
 		Metahash: request.Metahash,
 	}
-	gossiper.files.Unlock()
+	err := gossiper.saveFile(file)
+	if err != nil {
+		fmt.Println("error saving file", hashEncoding, err.Error())
+	}
 	gossiper.sendToClient(
 		&message.FileShareResponse{
 			Name:    request.Name,
