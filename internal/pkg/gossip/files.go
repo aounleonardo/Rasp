@@ -4,7 +4,16 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"errors"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"strings"
+	"time"
+	"sync"
 )
+
+type recentSearches struct {
+	sync.RWMutex
+	m map[string]time.Time
+}
+const attentionSpan = 0.5
 
 func (gossiper *Gossiper) saveFile(file *files.File) error {
 	gossiper.files.Lock()
@@ -42,4 +51,25 @@ func (gossiper *Gossiper) SearchForKeywords(
 	}
 
 	return append(ret, files.SearchStatesForKeywords(keywords)...)
+}
+
+func constructRequestIdentifier(request *message.SearchRequest) string {
+	return request.Origin + "," + strings.Join(request.Keywords, ",")
+}
+
+func (gossiper *Gossiper) shouldIgnoreRequest(
+	request *message.SearchRequest,
+) bool {
+	gossiper.recentSearches.RLock()
+	defer gossiper.recentSearches.RUnlock()
+	identifier := constructRequestIdentifier(request)
+	lastSeen, hasSeen := gossiper.recentSearches.m[identifier]
+	return hasSeen && time.Now().Sub(lastSeen).Seconds() < attentionSpan
+}
+
+func (gossiper *Gossiper) timestampRequest(request *message.SearchRequest) {
+	gossiper.recentSearches.Lock()
+	defer gossiper.recentSearches.Unlock()
+	identifier := constructRequestIdentifier(request)
+	gossiper.recentSearches.m[identifier] = time.Now()
 }

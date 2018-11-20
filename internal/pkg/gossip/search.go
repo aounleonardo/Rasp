@@ -2,16 +2,7 @@ package gossip
 
 import (
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"sync"
-	"strings"
-	"time"
 )
-
-type recentSearches struct {
-	sync.RWMutex
-	m map[string]time.Time
-}
-const attentionSpan = 0.5
 
 func (gossiper *Gossiper) distributeBudget(budget uint64) map[string]uint64 {
 	gossiper.peers.RLock()
@@ -54,23 +45,3 @@ func (gossiper *Gossiper) performSearch(
 	}
 }
 
-func constructRequestIdentifier(request *message.SearchRequest) string {
-	return request.Origin + "," + strings.Join(request.Keywords, ",")
-}
-
-func (gossiper *Gossiper) shouldIgnoreRequest(
-	request *message.SearchRequest,
-) bool {
-	gossiper.recentSearches.RLock()
-	defer gossiper.recentSearches.RUnlock()
-	identifier := constructRequestIdentifier(request)
-	lastSeen, hasSeen := gossiper.recentSearches.m[identifier]
-	return hasSeen && time.Now().Sub(lastSeen).Seconds() < attentionSpan
-}
-
-func (gossiper *Gossiper) timestampRequest(request *message.SearchRequest) {
-	gossiper.recentSearches.Lock()
-	defer gossiper.recentSearches.Unlock()
-	identifier := constructRequestIdentifier(request)
-	gossiper.recentSearches.m[identifier] = time.Now()
-}
