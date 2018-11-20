@@ -22,18 +22,19 @@ const (
 )
 
 type Gossiper struct {
-	Name       string
-	uiConn     *net.UDPConn
-	uiAddr     *net.UDPAddr
-	gossipConn *net.UDPConn
-	gossipAddr *net.UDPAddr
-	simple     bool
-	peers      Peers
-	wants      Needs
-	rumors     Rumors
-	routing    Routes
-	privates   Privates
-	files      Files
+	Name           string
+	uiConn         *net.UDPConn
+	uiAddr         *net.UDPAddr
+	gossipConn     *net.UDPConn
+	gossipAddr     *net.UDPAddr
+	simple         bool
+	peers          Peers
+	wants          Needs
+	rumors         Rumors
+	routing        Routes
+	privates       Privates
+	files          Files
+	recentSearches recentSearches
 }
 
 func NewGossiper(
@@ -68,18 +69,19 @@ func NewGossiper(
 	acks.Unlock()
 
 	gossiper := &Gossiper{
-		Name:       name,
-		uiConn:     uiConn,
-		uiAddr:     uiAddr,
-		gossipConn: gossipConn,
-		gossipAddr: gossipAddr,
-		peers:      Peers{m: peerAddrs},
-		simple:     simple,
-		rumors:     Rumors{m: rumors},
-		wants:      Needs{m: wants},
-		routing:    Routes{m: make(map[string]RouteInfo)},
-		privates:   Privates{m: make(map[string]*ChatHistory)},
-		files:      Files{m: make(map[string]files.File)},
+		Name:           name,
+		uiConn:         uiConn,
+		uiAddr:         uiAddr,
+		gossipConn:     gossipConn,
+		gossipAddr:     gossipAddr,
+		peers:          Peers{m: peerAddrs},
+		simple:         simple,
+		rumors:         Rumors{m: rumors},
+		wants:          Needs{m: wants},
+		routing:        Routes{m: make(map[string]RouteInfo)},
+		privates:       Privates{m: make(map[string]*ChatHistory)},
+		files:          Files{m: make(map[string]files.File)},
+		recentSearches: recentSearches{m: make(map[string]time.Time)},
 	}
 
 	go gossiper.listenForGossip()
@@ -92,7 +94,7 @@ func NewGossiper(
 func (gossiper *Gossiper) ListenForClientMessages() {
 	for {
 		packet := &message.ClientPacket{}
-		bytes := make([]byte, 10 * maxMsgSize)
+		bytes := make([]byte, 10*maxMsgSize)
 		length, sender, err := gossiper.uiConn.ReadFromUDP(bytes)
 		if err != nil {
 			fmt.Println("Error reading Client Message from UDP: ", err)

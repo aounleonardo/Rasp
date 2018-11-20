@@ -320,6 +320,10 @@ func (gossiper *Gossiper) upsertChatter(peer string) {
 }
 
 func (gossiper *Gossiper) receiveSearchRequest(request *message.SearchRequest) {
+	defer gossiper.timestampRequest(request)
+	if gossiper.shouldIgnoreRequest(request) {
+		return
+	}
 	searchReply := &message.SearchReply{
 		Origin:      gossiper.Name,
 		Destination: request.Origin,
@@ -335,17 +339,5 @@ func (gossiper *Gossiper) receiveSearchRequest(request *message.SearchRequest) {
 	if remainingBudget <= 0 {
 		return
 	}
-	budgets := gossiper.distributeBudget(remainingBudget)
-	for peer, budget := range budgets {
-		gossiper.relayGossipPacket(
-			&message.GossipPacket{
-				SearchRequest: &message.SearchRequest{
-					Origin:   request.Origin,
-					Budget:   budget,
-					Keywords: request.Keywords,
-				},
-			},
-			peer,
-		)
-	}
+	gossiper.performSearch(request.Origin, request.Keywords, remainingBudget)
 }

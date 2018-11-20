@@ -43,24 +43,3 @@ func (gossiper *Gossiper) SearchForKeywords(
 
 	return append(ret, files.SearchStatesForKeywords(keywords)...)
 }
-
-func (gossiper *Gossiper) distributeBudget(budget uint64) map[string]uint64 {
-	gossiper.peers.RLock()
-	defer gossiper.peers.RUnlock()
-	low := budget / uint64(len(gossiper.peers.m))
-	remaining := budget % uint64(len(gossiper.peers.m))
-	budgets := make(map[string]uint64)
-
-	i := uint64(0)
-	for peer := range gossiper.peers.m {
-		if i < remaining {
-			budgets[peer] = low + 1
-			i++
-		} else if low == 0 {
-			return budgets
-		} else {
-			budgets[peer] = low
-		}
-	}
-	return budgets
-}

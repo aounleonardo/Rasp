@@ -86,3 +86,8 @@ type FileDownloadRequest struct {
 	Metahash []byte
 	Origin   string
 }
+
+type PerformSearchRequest struct {
+	Keywords []string
+	Budget   *uint64
+}
