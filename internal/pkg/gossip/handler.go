@@ -255,6 +255,19 @@ func (gossiper *Gossiper) resumeFileDownloadRequest(
 	return nil
 }
 
+func (gossiper *Gossiper) handlePerformSearchRequest(
+	request *message.PerformSearchRequest,
+	clientAddr *net.UDPAddr,
+) {
+	// TODO initialize search state
+	// TODO search locally ?
+	if request.Budget != nil && *request.Budget > 0 {
+		gossiper.performSearch(gossiper.Name, request.Keywords, *request.Budget)
+	} else {
+
+	}
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,

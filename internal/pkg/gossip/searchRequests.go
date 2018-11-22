@@ -9,10 +9,13 @@ import (
 	"sync"
 )
 
-type recentSearches struct {
+var receivedSearchRequests = struct {
 	sync.RWMutex
 	m map[string]time.Time
+}{
+	m: make(map[string]time.Time),
 }
+
 const attentionSpan = 0.5
 
 func (gossiper *Gossiper) saveFile(file *files.File) error {
@@ -60,16 +63,16 @@ func constructRequestIdentifier(request *message.SearchRequest) string {
 func (gossiper *Gossiper) shouldIgnoreRequest(
 	request *message.SearchRequest,
 ) bool {
-	gossiper.recentSearches.RLock()
-	defer gossiper.recentSearches.RUnlock()
+	receivedSearchRequests.RLock()
+	defer receivedSearchRequests.RUnlock()
 	identifier := constructRequestIdentifier(request)
-	lastSeen, hasSeen := gossiper.recentSearches.m[identifier]
+	lastSeen, hasSeen := receivedSearchRequests.m[identifier]
 	return hasSeen && time.Now().Sub(lastSeen).Seconds() < attentionSpan
 }
 
 func (gossiper *Gossiper) timestampRequest(request *message.SearchRequest) {
-	gossiper.recentSearches.Lock()
-	defer gossiper.recentSearches.Unlock()
+	receivedSearchRequests.Lock()
+	defer receivedSearchRequests.Unlock()
 	identifier := constructRequestIdentifier(request)
-	gossiper.recentSearches.m[identifier] = time.Now()
+	receivedSearchRequests.m[identifier] = time.Now()
 }

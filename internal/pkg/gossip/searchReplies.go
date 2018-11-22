@@ -2,7 +2,10 @@ package gossip
 
 import (
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"time"
 )
+
+const searchPeriod = 1
 
 func (gossiper *Gossiper) distributeBudget(budget uint64) map[string]uint64 {
 	gossiper.peers.RLock()
@@ -43,5 +46,22 @@ func (gossiper *Gossiper) performSearch(
 			peer,
 		)
 	}
+}
+
+func (gossiper *Gossiper) initSearchState(keywords []string) {
+
+}
+
+func (gossiper *Gossiper) performPeriodicSearch(
+	keywords []string,
+	budget uint64,
+) {
+	// TODO check if state is fine or if budget crossed max, and return
+	gossiper.performSearch(gossiper.Name, keywords, budget)
+	nextBudget := 2 * budget
+	go func() {
+		time.Sleep(searchPeriod * time.Second)
+		gossiper.performPeriodicSearch(keywords, nextBudget)
+	}()
 }
 

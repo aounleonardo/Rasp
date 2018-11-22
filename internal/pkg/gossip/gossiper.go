@@ -34,7 +34,6 @@ type Gossiper struct {
 	routing        Routes
 	privates       Privates
 	files          Files
-	recentSearches recentSearches
 }
 
 func NewGossiper(
@@ -81,7 +80,6 @@ func NewGossiper(
 		routing:        Routes{m: make(map[string]RouteInfo)},
 		privates:       Privates{m: make(map[string]*ChatHistory)},
 		files:          Files{m: make(map[string]files.File)},
-		recentSearches: recentSearches{m: make(map[string]time.Time)},
 	}
 
 	go gossiper.listenForGossip()
