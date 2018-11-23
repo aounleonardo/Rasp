@@ -2,10 +2,36 @@ package gossip
 
 import (
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"time"
+	"sync"
+	"strings"
 )
 
 const searchPeriod = 1
+const maxMatches = 2
+
+type searchState struct {
+	matches  uint8
+	keywords []string
+	files    map[string]map[uint64][]string
+}
+
+var searchStates = struct {
+	sync.RWMutex
+}{}
+
+var discoveredFiles = make([]files.File, 0)
+var matches = struct {
+	sync.RWMutex
+	l []struct {
+		file   string
+		chunks map[uint64][]string
+	}
+}{l: make([]struct {
+	file   string
+	chunks map[uint64][]string
+}, 0)}
 
 func (gossiper *Gossiper) distributeBudget(budget uint64) map[string]uint64 {
 	gossiper.peers.RLock()
@@ -49,7 +75,6 @@ func (gossiper *Gossiper) performSearch(
 }
 
 func (gossiper *Gossiper) initSearchState(keywords []string) {
-
 }
 
 func (gossiper *Gossiper) performPeriodicSearch(
@@ -65,3 +90,6 @@ func (gossiper *Gossiper) performPeriodicSearch(
 	}()
 }
 
+func constructSearchIdentifier(keywords []string) string {
+	return strings.Join(keywords, ",")
+}

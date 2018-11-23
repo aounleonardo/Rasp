@@ -233,58 +233,59 @@ func (gossiper *Gossiper) sendDataRequest(
 }
 
 func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
-	if reply.Destination == gossiper.Name {
-		if files.ShouldIgnoreData(reply) {
+	if reply.Destination != gossiper.Name {
+		relayed := *reply
+		relayed.HopLimit -= 1
+		if relayed.HopLimit < 1 {
 			return
 		}
-		if files.IsAwaitedMetafile(reply.HashValue) {
-			files.InitFileState(reply.Data)
-		}
-		err := files.DownloadChunk(reply.HashValue, reply.Data, reply.Origin)
-		if err != nil {
-			fmt.Println("error downloading", reply.HashValue, err.Error())
-		}
-		nextHash, err := files.NextHash(reply.HashValue)
-		if err != nil {
-			return
-		}
-		if nextHash == nil {
-			file, err := files.ReconstructFile(files.HashToKey(reply.HashValue))
-			if err != nil {
-				fmt.Println(
-					"error reconstructing file",
-					reply.HashValue,
-					err.Error(),
-				)
-			}
-			err = gossiper.saveFile(file)
-			if err != nil {
-				fmt.Println(
-					"error saving file",
-					reply.HashValue,
-					err.Error(),
-				)
-			}
-			return
-		}
-		gossiper.sendDataRequest(
-			&message.DataRequest{
-				Origin:      gossiper.Name,
-				Destination: reply.Origin,
-				HopLimit:    hopLimit,
-				HashValue:   nextHash,
-			},
-			files.RetryLimit,
+		gossiper.relayGossipPacket(
+			&message.GossipPacket{DataReply: &relayed},
+			reply.Destination,
 		)
-	}
-	relayed := *reply
-	relayed.HopLimit -= 1
-	if relayed.HopLimit < 1 {
 		return
 	}
-	gossiper.relayGossipPacket(
-		&message.GossipPacket{DataReply: &relayed},
-		reply.Destination,
+	if files.ShouldIgnoreData(reply) {
+		return
+	}
+	if files.IsAwaitedMetafile(reply.HashValue) {
+		files.InitFileState(reply.Data)
+	}
+	err := files.DownloadChunk(reply.HashValue, reply.Data, reply.Origin)
+	if err != nil {
+		fmt.Println("error downloading", reply.HashValue, err.Error())
+	}
+	nextHash, err := files.NextHash(reply.HashValue)
+	if err != nil {
+		return
+	}
+	if nextHash == nil {
+		file, err := files.ReconstructFile(files.HashToKey(reply.HashValue))
+		if err != nil {
+			fmt.Println(
+				"error reconstructing file",
+				reply.HashValue,
+				err.Error(),
+			)
+		}
+		err = gossiper.saveFile(file)
+		if err != nil {
+			fmt.Println(
+				"error saving file",
+				reply.HashValue,
+				err.Error(),
+			)
+		}
+		return
+	}
+	gossiper.sendDataRequest(
+		&message.DataRequest{
+			Origin:      gossiper.Name,
+			Destination: reply.Origin,
+			HopLimit:    hopLimit,
+			HashValue:   nextHash,
+		},
+		files.RetryLimit,
 	)
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func TestCombineChunksIntoFile(metakey string, filename string) error {
-	_ = NewFileState(metakey, filename)
+	NewFileState(metakey, filename)
 	metafile, err := ioutil.ReadFile(chunksDownloads + metakey)
 	if err != nil {
 		fmt.Println("error reading metafile:", err.Error())

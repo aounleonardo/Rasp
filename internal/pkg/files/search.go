@@ -40,7 +40,7 @@ func HasAnyKeyword(filename string, keywords []string) bool {
 	return false
 }
 
-func BuildChunkmapUpTo(index uint32) []uint64 {
+func BuildChunkmapUpTo(index uint64) []uint64 {
 	chunkmap := make([]uint64, index)
 	for i := 1; i <= int(index); i++ {
 		chunkmap[i-1] = uint64(i)

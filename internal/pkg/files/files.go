@@ -28,10 +28,14 @@ type File struct {
 	Metahash []byte
 }
 
+func (file File) NbChunks() uint64 {
+	return uint64(file.Size / MaxFileChunkSize) + 1
+}
+
 type FileState struct {
 	Key      string
 	Chunkeys []string
-	Index    uint32
+	Index    uint64
 	Filename string
 }
 
@@ -127,7 +131,7 @@ func bufferToShareRequest(
 	}, nil
 }
 
-func NewFileState(metahash string, filename string) *FileState {
+func NewFileState(metahash string, filename string) {
 	newState := &FileState{
 		Key:      metahash,
 		Chunkeys: nil,
@@ -140,7 +144,6 @@ func NewFileState(metahash string, filename string) *FileState {
 	}
 	FileStates.m[metahash] = newState
 	FileStates.Unlock()
-	return newState
 }
 
 func InitFileState(metafile []byte) {
@@ -171,10 +174,7 @@ func ShouldIgnoreData(data *message.DataReply) bool {
 func IsAwaitedMetafile(hash []byte) bool {
 	FileStates.RLock()
 	state, isProcessedMetahash := FileStates.m[HashToKey(hash)]
-	isAwaitedMetafile := false
-	if isProcessedMetahash && state.Chunkeys == nil {
-		isAwaitedMetafile = true
-	}
+	isAwaitedMetafile := isProcessedMetahash && state.Chunkeys == nil
 	FileStates.RUnlock()
 	return isAwaitedMetafile
 }
@@ -194,7 +194,7 @@ func getContainingMetakey(chunkey string) *string {
 	FileStates.RLock()
 	defer FileStates.RUnlock()
 	for metahash, state := range FileStates.m {
-		if uint32(len(state.Chunkeys)) >= state.Index && state.Index >= 1 &&
+		if uint64(len(state.Chunkeys)) >= state.Index && state.Index >= 1 &&
 			chunkey == state.Chunkeys[state.Index-1] {
 			return &metahash
 		}
@@ -220,7 +220,7 @@ func NextHash(hashValue []byte) ([]byte, error) {
 	FileStates.RLock()
 	defer FileStates.RUnlock()
 	if FileStates.m[metakey].Index >=
-		uint32(len(FileStates.m[metakey].Chunkeys)) {
+		uint64(len(FileStates.m[metakey].Chunkeys)) {
 		return nil, nil
 	}
 	FileStates.m[metakey].Index += 1

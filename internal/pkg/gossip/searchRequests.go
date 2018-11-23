@@ -4,7 +4,6 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"errors"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"strings"
 	"time"
 	"sync"
 )
@@ -46,7 +45,7 @@ func (gossiper *Gossiper) SearchForKeywords(
 					FileName:     file.Name,
 					MetafileHash: files.KeyToHash(metakey),
 					ChunkMap: files.BuildChunkmapUpTo(
-						file.Size / files.MaxFileChunkSize,
+						file.NbChunks() - 1,
 					),
 				},
 			)
@@ -57,7 +56,7 @@ func (gossiper *Gossiper) SearchForKeywords(
 }
 
 func constructRequestIdentifier(request *message.SearchRequest) string {
-	return request.Origin + "," + strings.Join(request.Keywords, ",")
+	return request.Origin + "," + constructSearchIdentifier(request.Keywords)
 }
 
 func (gossiper *Gossiper) shouldIgnoreRequest(

@@ -212,13 +212,26 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 	metakey := files.HashToKey(request.Metahash)
 	success := true
 	if files.IsChunkPresent(request.Metahash) {
+		if !files.IsUndergoneMetafile(request.Metahash) {
+			files.NewFileState(metakey, request.Name)
+			metafile, err := files.GetChunkForKey(metakey)
+			if err != nil {
+				success = false
+				fmt.Println(
+					"error reading metafile in handleFileDownloadRequest",
+				)
+				return
+			}
+			files.InitFileState(metafile)
+			_, err = files.NextHash(request.Metahash)
+		}
 		err := gossiper.resumeFileDownloadRequest(metakey, request.Origin)
 		if err != nil {
 			success = false
 			return
 		}
 	} else {
-		_ = files.NewFileState(metakey, request.Name)
+		files.NewFileState(metakey, request.Name)
 		gossiper.sendDataRequest(
 			&message.DataRequest{
 				Origin:      gossiper.Name,
