@@ -34,6 +34,7 @@ type ClientPacket struct {
 	Chats       *ChatsRequest
 	FileShare   *FileShareRequest
 	Download    *FileDownloadRequest
+	Search      *PerformSearchRequest
 
 	TestReconstruct *TestFileReconstructRequest
 }

@@ -272,12 +272,11 @@ func (gossiper *Gossiper) handlePerformSearchRequest(
 	request *message.PerformSearchRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	// TODO initialize search state
-	// TODO search locally ?
+	initSearchState(request.Keywords)
 	if request.Budget != nil && *request.Budget > 0 {
 		gossiper.performSearch(gossiper.Name, request.Keywords, *request.Budget)
 	} else {
-
+		gossiper.performPeriodicSearch(request.Keywords, uint64(2))
 	}
 }
 

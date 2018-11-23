@@ -136,6 +136,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleFileShareRequest(packet.FileShare, clientAddr)
 	} else if packet.Download != nil {
 		gossiper.handleFileDownloadRequest(packet.Download, clientAddr)
+	} else if packet.Search != nil {
+		gossiper.handlePerformSearchRequest(packet.Search, clientAddr)
 	} else {
 		gossiper.handleTestPacket(packet, clientAddr)
 	}
