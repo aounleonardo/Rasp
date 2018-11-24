@@ -223,19 +223,34 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 				return
 			}
 			files.InitFileState(metafile)
-			_, err = files.NextHash(request.Metahash)
+			_, _, err = files.NextHash(request.Metahash)
 		}
-		err := gossiper.resumeFileDownloadRequest(metakey, request.Origin)
+		chunk, err := files.GetChunkeyForMetakey(metakey)
+		if err != nil {
+			success = false
+			return
+		}
+		var destination string
+		if request.Origin != nil {
+			destination = *request.Origin
+		} else {
+			destination = getSourceOfDataRequest(&chunk, "")
+		}
+		err = gossiper.resumeFileDownloadRequest(metakey, destination)
 		if err != nil {
 			success = false
 			return
 		}
 	} else {
+		if request.Origin == nil {
+			fmt.Println("unknown metakey source", metakey)
+			return
+		}
 		files.NewFileState(metakey, request.Name)
 		gossiper.sendDataRequest(
 			&message.DataRequest{
 				Origin:      gossiper.Name,
-				Destination: request.Origin,
+				Destination: *request.Origin,
 				HopLimit:    hopLimit,
 				HashValue:   request.Metahash,
 			},

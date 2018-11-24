@@ -199,17 +199,33 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 	)
 }
 
+func getSourceOfDataRequest(chunk *files.Chunkey, defaultPeer string) string {
+	if chunk == nil {
+		return defaultPeer
+	}
+	chosen, err := getSourceForChunk(*chunk)
+	if err != nil {
+		fmt.Println(fmt.Sprintf(
+			"error in getSourceOfDataRequest %s",
+			err.Error(),
+		))
+		return defaultPeer
+	}
+	return chosen
+}
+
 func (gossiper *Gossiper) sendDataRequest(
 	request *message.DataRequest,
 	retries int,
 ) {
 	if files.IsChunkPresent(request.HashValue) {
-		nextHash, _ := files.NextHash(request.HashValue)
+		nextHash, chunkey, _ := files.NextHash(request.HashValue)
 		if nextHash != nil {
+			destination := getSourceOfDataRequest(chunkey, request.Origin)
 			gossiper.sendDataRequest(
 				&message.DataRequest{
 					Origin:      request.Origin,
-					Destination: request.Destination,
+					Destination: destination,
 					HashValue:   nextHash,
 					HopLimit:    hopLimit,
 				},
@@ -255,7 +271,7 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 	if err != nil {
 		fmt.Println("error downloading", reply.HashValue, err.Error())
 	}
-	nextHash, err := files.NextHash(reply.HashValue)
+	nextHash, chunkey, err := files.NextHash(reply.HashValue)
 	if err != nil {
 		return
 	}
@@ -278,10 +294,11 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 		}
 		return
 	}
+	destination := getSourceOfDataRequest(chunkey, reply.Origin)
 	gossiper.sendDataRequest(
 		&message.DataRequest{
 			Origin:      gossiper.Name,
-			Destination: reply.Origin,
+			Destination: destination,
 			HopLimit:    hopLimit,
 			HashValue:   nextHash,
 		},

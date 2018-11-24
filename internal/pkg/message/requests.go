@@ -84,7 +84,7 @@ type FileShareResponse struct {
 type FileDownloadRequest struct {
 	Name     string
 	Metahash []byte
-	Origin   string
+	Origin   *string
 }
 
 type PerformSearchRequest struct {

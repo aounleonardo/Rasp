@@ -68,7 +68,7 @@ func main() {
 				Download: &message.FileDownloadRequest{
 					Name:     *file,
 					Metahash: files.KeyToHash(*request),
-					Origin:   *dest,
+					Origin:   dest,
 				},
 			}
 		} else {

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"fmt"
+	"errors"
+	"math/rand"
 )
 
 const searchPeriod = 1 * time.Second
@@ -251,8 +253,31 @@ func checkNumberOfChunks(metakey string, retries int) {
 
 	go func() {
 		time.Sleep(searchPeriod)
-		checkNumberOfChunks(metakey, retries - 1)
+		checkNumberOfChunks(metakey, retries-1)
 	}()
+}
+
+func getSourceForChunk(chunkey files.Chunkey) (string, error) {
+	searchedFiles.RLock()
+	defer searchedFiles.RUnlock()
+
+	file, hasFile := searchedFiles.m[chunkey.Metakey]
+	if !hasFile {
+		return "", errors.New(fmt.Sprintf(
+			"has not seen file with metakey %s",
+			chunkey.Metakey,
+		))
+	}
+	peers, hasChunk := file.chunkDistribution[chunkey.Index]
+	if !hasChunk || len(peers) <= 0 {
+		return "", errors.New(fmt.Sprintf(
+			"has not seen chunk %d for file with metakey %s",
+			chunkey.Index,
+			chunkey.Metakey,
+		))
+	}
+	n := rand.Intn(len(peers))
+	return peers[n], nil
 }
 
 func constructSearchIdentifier(keywords []string) string {

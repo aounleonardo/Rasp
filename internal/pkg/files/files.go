@@ -44,6 +44,11 @@ var FileStates struct {
 	m map[string]*FileState
 }
 
+type Chunkey struct {
+	Metakey string
+	Index   uint64
+}
+
 func HashToKey(hash []byte) string {
 	return hex.EncodeToString(hash)
 }
@@ -206,14 +211,14 @@ func GetChunkForKey(key string) ([]byte, error) {
 	return ioutil.ReadFile(chunksDownloads + key)
 }
 
-func NextHash(hashValue []byte) ([]byte, error) {
+func NextHash(hashValue []byte) ([]byte, *Chunkey, error) {
 	var metakey string
 	if IsUndergoneMetafile(hashValue) {
 		metakey = HashToKey(hashValue)
 	} else {
 		option := getContainingMetakey(HashToKey(hashValue))
 		if option == nil {
-			return nil, errors.New("unknown metahash")
+			return nil, nil, errors.New("unknown metahash")
 		}
 		metakey = *option
 	}
@@ -221,12 +226,27 @@ func NextHash(hashValue []byte) ([]byte, error) {
 	defer FileStates.RUnlock()
 	if FileStates.m[metakey].Index >=
 		uint64(len(FileStates.m[metakey].Chunkeys)) {
-		return nil, nil
+		return nil, nil, nil
 	}
 	FileStates.m[metakey].Index += 1
 	return KeyToHash(
 		FileStates.m[metakey].Chunkeys[FileStates.m[metakey].Index-1],
-	), nil
+	),
+		&Chunkey{Metakey: metakey, Index: FileStates.m[metakey].Index},
+		nil
+}
+
+func GetChunkeyForMetakey(metakey string) (Chunkey, error) {
+	FileStates.RLock()
+	defer FileStates.RUnlock()
+	state, hasState := FileStates.m[metakey]
+	if !hasState {
+		return Chunkey{}, errors.New(fmt.Sprintf(
+			"no state for metakey %s",
+			metakey,
+		))
+	}
+	return Chunkey{Metakey: metakey, Index: state.Index + 1}, nil
 }
 
 func NextForState(metakey string) ([]byte, error) {
