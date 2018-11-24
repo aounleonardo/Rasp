@@ -6,9 +6,10 @@ import (
 	"sync"
 	"strings"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"fmt"
 )
 
-const searchPeriod = 1
+const searchPeriod = 1 * time.Second
 const maxMatches = 2
 const maxBudget = 32
 
@@ -113,7 +114,7 @@ func (gossiper *Gossiper) performPeriodicSearch(
 	gossiper.performSearch(gossiper.Name, keywords, budget)
 	nextBudget := 2 * budget
 	go func() {
-		time.Sleep(searchPeriod * time.Second)
+		time.Sleep(searchPeriod)
 		gossiper.performPeriodicSearch(keywords, nextBudget)
 	}()
 }
@@ -145,6 +146,7 @@ func (gossiper *Gossiper) processResult(
 			},
 			files.RetryLimit,
 		)
+		checkNumberOfChunks(metakey, files.RetryLimit)
 	}
 
 	searchedFiles.Lock()
@@ -153,14 +155,18 @@ func (gossiper *Gossiper) processResult(
 	for _, index := range result.ChunkMap {
 		upsertPeerToChunk(file.chunkDistribution, index, fromPeer)
 	}
-	if !file.isMatched && file.totalChunks != nil {
-		if uint64(len(file.chunkDistribution)) >= *file.totalChunks {
-			newFileMatched(file)
-		}
-	}
+	probableFileMatched(file)
 }
 
-func newFileMatched(file *SearchedFile) {
+func probableFileMatched(file *SearchedFile) {
+	if file.isMatched {
+		return
+	}
+	if file.totalChunks == nil ||
+		uint64(len(file.chunkDistribution)) < *file.totalChunks {
+		return
+	}
+
 	file.isMatched = true
 
 	searchStates.Lock()
@@ -217,6 +223,36 @@ func upsertSearchedFile(filename string, metakey string) bool {
 		return true
 	}
 	return false
+}
+
+func checkNumberOfChunks(metakey string, retries int) {
+	if retries < 0 {
+		return
+	}
+	searchedFiles.Lock()
+	defer searchedFiles.Unlock()
+	file := searchedFiles.m[metakey]
+
+	if file.totalChunks != nil {
+		probableFileMatched(file)
+		return
+	}
+
+	if files.IsChunkPresent(files.KeyToHash(metakey)) {
+		nbChunks, err := files.GetNumberOfChunksInFile(metakey)
+		if err != nil {
+			fmt.Println("checkNumberOfChunks error for", metakey, err.Error())
+			return
+		}
+		file.totalChunks = &nbChunks
+		probableFileMatched(file)
+		return
+	}
+
+	go func() {
+		time.Sleep(searchPeriod)
+		checkNumberOfChunks(metakey, retries - 1)
+	}()
 }
 
 func constructSearchIdentifier(keywords []string) string {
