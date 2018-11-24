@@ -22,18 +22,18 @@ const (
 )
 
 type Gossiper struct {
-	Name           string
-	uiConn         *net.UDPConn
-	uiAddr         *net.UDPAddr
-	gossipConn     *net.UDPConn
-	gossipAddr     *net.UDPAddr
-	simple         bool
-	peers          Peers
-	wants          Needs
-	rumors         Rumors
-	routing        Routes
-	privates       Privates
-	files          Files
+	Name       string
+	uiConn     *net.UDPConn
+	uiAddr     *net.UDPAddr
+	gossipConn *net.UDPConn
+	gossipAddr *net.UDPAddr
+	simple     bool
+	peers      Peers
+	wants      Needs
+	rumors     Rumors
+	routing    Routes
+	privates   Privates
+	files      Files
 }
 
 func NewGossiper(
@@ -68,18 +68,18 @@ func NewGossiper(
 	acks.Unlock()
 
 	gossiper := &Gossiper{
-		Name:           name,
-		uiConn:         uiConn,
-		uiAddr:         uiAddr,
-		gossipConn:     gossipConn,
-		gossipAddr:     gossipAddr,
-		peers:          Peers{m: peerAddrs},
-		simple:         simple,
-		rumors:         Rumors{m: rumors},
-		wants:          Needs{m: wants},
-		routing:        Routes{m: make(map[string]RouteInfo)},
-		privates:       Privates{m: make(map[string]*ChatHistory)},
-		files:          Files{m: make(map[string]files.File)},
+		Name:       name,
+		uiConn:     uiConn,
+		uiAddr:     uiAddr,
+		gossipConn: gossipConn,
+		gossipAddr: gossipAddr,
+		peers:      Peers{m: peerAddrs},
+		simple:     simple,
+		rumors:     Rumors{m: rumors},
+		wants:      Needs{m: wants},
+		routing:    Routes{m: make(map[string]RouteInfo)},
+		privates:   Privates{m: make(map[string]*ChatHistory)},
+		files:      Files{m: make(map[string]files.File)},
 	}
 
 	go gossiper.listenForGossip()
@@ -116,29 +116,30 @@ func (gossiper *Gossiper) handleClientPacket(
 	packet *message.ClientPacket,
 	clientAddr *net.UDPAddr,
 ) {
-	if packet.Rumor != nil {
+	switch {
+	case packet.Rumor != nil:
 		gossiper.handleRumorRequest(packet.Rumor, clientAddr)
-	} else if packet.Identifier != nil {
+	case packet.Identifier != nil:
 		gossiper.handleIdentifierRequest(packet.Identifier, clientAddr)
-	} else if packet.Peers != nil {
+	case packet.Peers != nil:
 		gossiper.handlePeersRequest(packet.Peers, clientAddr)
-	} else if packet.Messages != nil {
+	case packet.Messages != nil:
 		gossiper.handleMessagesRequest(packet.Messages, clientAddr)
-	} else if packet.AddPeer != nil {
+	case packet.AddPeer != nil:
 		gossiper.handleAddPeersRequest(packet.AddPeer, clientAddr)
-	} else if packet.Chats != nil {
+	case packet.Chats != nil:
 		gossiper.handleChatsRequest(packet.Chats, clientAddr)
-	} else if packet.SendPrivate != nil {
+	case packet.SendPrivate != nil:
 		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
-	} else if packet.GetPrivate != nil {
+	case packet.GetPrivate != nil:
 		gossiper.handleGetPrivateRequest(packet.GetPrivate, clientAddr)
-	} else if packet.FileShare != nil {
+	case packet.FileShare != nil:
 		gossiper.handleFileShareRequest(packet.FileShare, clientAddr)
-	} else if packet.Download != nil {
+	case packet.Download != nil:
 		gossiper.handleFileDownloadRequest(packet.Download, clientAddr)
-	} else if packet.Search != nil {
+	case packet.Search != nil:
 		gossiper.handlePerformSearchRequest(packet.Search, clientAddr)
-	} else {
+	default:
 		gossiper.handleTestPacket(packet, clientAddr)
 	}
 }
@@ -193,18 +194,21 @@ func (gossiper *Gossiper) ReceivePacket(
 	gossiper.upsertPeer(sender)
 	gossiper.upsertIdentifiers(packet)
 	fmt.Printf("PEERS %s\n", gossiper.listPeers())
-	if packet.Rumor != nil {
+	switch {
+	case packet.Rumor != nil:
 		gossiper.receiveRumorPacket(packet.Rumor, sender)
-	} else if packet.Status != nil {
+	case packet.Status != nil:
 		gossiper.receiveStatusPacket(packet.Status, sender)
-	} else if packet.Simple != nil && gossiper.simple {
+	case packet.Simple != nil && gossiper.simple:
 		gossiper.receiveSimplePacket(packet.Simple, sender)
-	} else if packet.Private != nil {
+	case packet.Private != nil:
 		gossiper.receivePrivateMessage(packet.Private)
-	} else if packet.DataRequest != nil {
+	case packet.DataRequest != nil:
 		gossiper.receiveDataRequest(packet.DataRequest)
-	} else if packet.DataReply != nil {
+	case packet.DataReply != nil:
 		gossiper.receiveDataReply(packet.DataReply)
+	default:
+		fmt.Println("unknown packet type", packet)
 	}
 }
 
