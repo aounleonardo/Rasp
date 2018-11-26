@@ -152,12 +152,28 @@ func (gossiper *Gossiper) processResult(
 	}
 
 	searchedFiles.Lock()
-	defer searchedFiles.Unlock()
 	file, _ := searchedFiles.m[metakey]
 	for _, index := range result.ChunkMap {
 		upsertPeerToChunk(file.chunkDistribution, index, fromPeer)
 	}
 	probableFileMatched(file)
+	searchedFiles.Unlock()
+
+	fmt.Printf(
+		"FOUND match %s at %s metafile=%s chunks=%s\n",
+		result.FileName,
+		fromPeer,
+		files.HashToKey(result.MetafileHash),
+		chunkmapToString(result.ChunkMap),
+	)
+}
+
+func chunkmapToString(chunkmap []uint64) string {
+	chunkstring := ""
+	for _, chunk := range chunkmap {
+		chunkstring += string(chunk)
+	}
+	return chunkstring
 }
 
 func probableFileMatched(file *SearchedFile) {
@@ -176,6 +192,7 @@ func probableFileMatched(file *SearchedFile) {
 		if files.HasAnyKeyword(file.Name, state.keywords) {
 			state.nbMatches++
 			if state.nbMatches >= maxMatches {
+				fmt.Println("SEARCH FINISHED")
 				delete(searchStates.m, searchKey)
 			}
 		}

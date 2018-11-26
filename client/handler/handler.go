@@ -328,7 +328,7 @@ func downloadFile(
 			Download: &message.FileDownloadRequest{
 				Name:     s.Filename,
 				Metahash: files.KeyToHash(s.Metakey),
-				Origin:   s.Origin,
+				Origin:   &s.Origin,
 			},
 		},
 		response,
