@@ -207,6 +207,10 @@ func (gossiper *Gossiper) ReceivePacket(
 		gossiper.receiveDataRequest(packet.DataRequest)
 	case packet.DataReply != nil:
 		gossiper.receiveDataReply(packet.DataReply)
+	case packet.SearchRequest != nil:
+		gossiper.receiveSearchRequest(packet.SearchRequest)
+	case packet.SearchReply != nil:
+		gossiper.receiveSearchReply(packet.SearchReply)
 	default:
 		fmt.Println("unknown packet type", packet)
 	}

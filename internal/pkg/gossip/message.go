@@ -359,3 +359,7 @@ func (gossiper *Gossiper) receiveSearchRequest(request *message.SearchRequest) {
 	}
 	gossiper.performSearch(request.Origin, request.Keywords, remainingBudget)
 }
+
+func (gossiper *Gossiper) receiveSearchReply(reply *message.SearchReply) {
+	gossiper.processSearchResults(reply.Results, reply.Origin)
+}

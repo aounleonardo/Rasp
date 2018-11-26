@@ -6,6 +6,7 @@ import (
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"strings"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -287,6 +288,7 @@ func (gossiper *Gossiper) handlePerformSearchRequest(
 	request *message.PerformSearchRequest,
 	clientAddr *net.UDPAddr,
 ) {
+	fmt.Printf("received search request %s\n", strings.Join(request.Keywords, ","))
 	initSearchState(request.Keywords)
 	if request.Budget != nil && *request.Budget > 0 {
 		gossiper.performSearch(gossiper.Name, request.Keywords, *request.Budget)
