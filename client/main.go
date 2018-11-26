@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"bytes"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -37,6 +38,17 @@ func main() {
 		"request",
 		"",
 		"request a chunk or metafile of this hash",
+	)
+	keywords := flag.String(
+		"keywords",
+		"",
+		"keywords to search for",
+	)
+	budget := flag.Int(
+		"budget",
+		-1,
+		"number of nodes to ask for a search " +
+			"(default recursive search with a start of 2)",
 	)
 	test := flag.String(
 		"test",
@@ -79,6 +91,18 @@ func main() {
 			SendPrivate: &message.PrivatePutRequest{
 				Contents:    *msg,
 				Destination: *dest,
+			},
+		}
+	} else if len(*keywords) > 0 {
+		keywordsList := strings.Split(*keywords, ",")
+		var searchBudget *uint64 = nil
+		if *budget >= 0 {
+			*searchBudget = uint64(*budget)
+		}
+		clientPacket = message.ClientPacket{
+			Search: &message.PerformSearchRequest{
+				Keywords:keywordsList,
+				Budget: searchBudget,
 			},
 		}
 	} else {
