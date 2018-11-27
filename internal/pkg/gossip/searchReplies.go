@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"errors"
 	"math/rand"
+	"strconv"
+	"net"
 )
 
 const searchPeriod = 1 * time.Second
@@ -43,15 +45,17 @@ var searchedFiles = struct {
 	m: make(map[string]*SearchedFile),
 }
 
-func (gossiper *Gossiper) distributeBudget(budget uint64) map[string]uint64 {
+func (gossiper *Gossiper) distributeBudget(
+	budget uint64,
+) map[*net.UDPAddr]uint64 {
 	gossiper.peers.RLock()
 	defer gossiper.peers.RUnlock()
 	low := budget / uint64(len(gossiper.peers.m))
 	remaining := budget % uint64(len(gossiper.peers.m))
-	budgets := make(map[string]uint64)
+	budgets := make(map[*net.UDPAddr]uint64)
 
 	i := uint64(0)
-	for peer := range gossiper.peers.m {
+	for _, peer := range gossiper.peers.m {
 		if i < remaining {
 			budgets[peer] = low + 1
 			i++
@@ -70,17 +74,15 @@ func (gossiper *Gossiper) performSearch(
 	budget uint64,
 ) {
 	budgets := gossiper.distributeBudget(budget)
-	for peer, budget := range budgets {
-		gossiper.relayGossipPacket(
-			&message.GossipPacket{
-				SearchRequest: &message.SearchRequest{
-					Origin:   origin,
-					Budget:   budget,
-					Keywords: keywords,
-				},
+	for peerAddr, budget := range budgets {
+		bytes := encodeMessage(&message.GossipPacket{
+			SearchRequest: &message.SearchRequest{
+				Origin: origin,
+				Budget: budget,
+				Keywords: keywords,
 			},
-			peer,
-		)
+		})
+		gossiper.gossipConn.WriteToUDP(bytes, peerAddr)
 	}
 }
 
@@ -171,7 +173,7 @@ func (gossiper *Gossiper) processResult(
 func chunkmapToString(chunkmap []uint64) string {
 	chunkstring := ""
 	for _, chunk := range chunkmap {
-		chunkstring += string(chunk)
+		chunkstring += strconv.Itoa(int(chunk))
 	}
 	return chunkstring
 }

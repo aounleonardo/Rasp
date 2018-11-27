@@ -45,7 +45,7 @@ func (gossiper *Gossiper) SearchForKeywords(
 					FileName:     file.Name,
 					MetafileHash: files.KeyToHash(metakey),
 					ChunkMap: files.BuildChunkmapUpTo(
-						file.NbChunks() - 1,
+						file.NbChunks(),
 					),
 				},
 			)
