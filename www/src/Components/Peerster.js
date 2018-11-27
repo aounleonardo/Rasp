@@ -34,6 +34,16 @@ export default class Peerster extends Component {
             ordered: {},
             unorderedIndex: {},
             orderedIndex: {},
+            searches: [
+                {"Filename": "A.txt", "Metakey": "z83", "ChunkCount": 1},
+                {"Filename": "B.txt", "Metakey": "a90", "ChunkCount": 1},
+                {"Filename": "C.txt", "Metakey": "b83", "ChunkCount": 1},
+                {"Filename": "D.txt", "Metakey": "c83", "ChunkCount": 1},
+                {"Filename": "E.txt", "Metakey": "d83", "ChunkCount": 1},
+                {"Filename": "F.txt", "Metakey": "e83", "ChunkCount": 1},
+                {"Filename": "G.txt", "Metakey": "f83", "ChunkCount": 1},
+                {"Filename": "H.txt", "Metakey": "g83", "ChunkCount": 1},
+            ],
         };
         this.getGossiperIdentifier();
         this.getGossiperPeers();
@@ -47,6 +57,9 @@ export default class Peerster extends Component {
 
         this.getGossiperPrivates();
         setInterval(this.getGossiperPrivates, 1000);
+
+        this.getGossiperSearches();
+        setInterval(this.getGossiperSearches, 2000);
     }
 
     style = {
@@ -120,6 +133,8 @@ export default class Peerster extends Component {
                     <Toolbar
                         shareFile={this.shareFile}
                         download={this.downloadFile}
+                        searchFor={this.searchFor}
+                        searches={this.state.searches}
                     />
                 </Row>
             </Grid>
@@ -331,7 +346,8 @@ export default class Peerster extends Component {
             .then(res => res.json())
             .then(res => (res === false) ?
                 console.log("Error occurred while adding peer") :
-                console.log(`Peer ${address}:${port} added.`));
+                console.log(`Peer ${address}:${port} added.`)
+            );
     };
 
     chatSelected = (peer) => {
@@ -343,5 +359,21 @@ export default class Peerster extends Component {
             }
         }
         this.setState({currentChat: peer});
-    }
+    };
+
+    searchFor = (keywords) => {
+        const request = endPoint + '/search-for/' + keywords.join(',') + '/';
+        fetch(request, {method: 'post'})
+            .then(res => res.json())
+            .then(res => (res === false) ?
+                console.log("Error while searching for keywords") :
+                console.log(`Searched for ${keywords}`)
+            );
+    };
+
+    getGossiperSearches = async () => {
+        this.getGossiper('/searches/', (body) => this.setState(
+            {searches: (body["Files"] !== null) ? body["Files"] : []}
+        ))
+    };
 }

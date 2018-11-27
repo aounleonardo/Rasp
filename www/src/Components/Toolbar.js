@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {Button, Col, ControlLabel, Form, FormControl, FormGroup, HelpBlock, Label, Row} from 'react-bootstrap';
+import FileSearch from "./FileSearch";
 
 export default class Toolbar extends Component {
     constructor(props) {
@@ -94,7 +95,10 @@ export default class Toolbar extends Component {
                                 bsSize={"sm"}
                                 style={this.styles.text}
                             />
-                            <Button type={"submit"} style={this.styles.downloadButton}>
+                            <Button
+                                type={"submit"}
+                                style={this.styles.downloadButton}
+                            >
                                 Download...
                             </Button>
                             <HelpBlock style={{fontWeight: "bold"}}>
@@ -102,6 +106,13 @@ export default class Toolbar extends Component {
                             </HelpBlock>
                         </FormGroup>
                     </Form>
+                </Col>
+                <Col>
+                    <FileSearch
+                        searchFor={this.props.searchFor}
+                        searches={this.props.searches}
+                        download={this.props.download}
+                    />
                 </Col>
             </Row>
         )
