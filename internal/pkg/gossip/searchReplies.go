@@ -115,15 +115,15 @@ func (gossiper *Gossiper) performPeriodicSearch(
 ) {
 	searchKey := constructSearchIdentifier(keywords)
 	searchStates.RLock()
+	defer searchStates.RUnlock()
 	if state, hasState := searchStates.m[searchKey];
 		!hasState ||
 			budget > maxBudget ||
 			state.nbMatches > maxMatches {
 		return
 	}
-	searchStates.RUnlock()
 
-	gossiper.performSearch(gossiper.Name, keywords, budget)
+	go gossiper.performSearch(gossiper.Name, keywords, budget)
 	nextBudget := 2 * budget
 	go func() {
 		time.Sleep(searchPeriod)
