@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"strconv"
 	"net"
+	"github.com/dedis/onet/log"
 )
 
 const searchPeriod = 1 * time.Second
@@ -43,6 +44,13 @@ var searchedFiles = struct {
 	m map[string]*SearchedFile
 }{
 	m: make(map[string]*SearchedFile),
+}
+
+var fileMatchOrder = struct {
+	sync.RWMutex
+	l []string
+}{
+	l: make([]string, 0),
 }
 
 func (gossiper *Gossiper) distributeBudget(
@@ -176,6 +184,10 @@ func probableFileMatched(file *SearchedFile) {
 
 	file.isMatched = true
 
+	fileMatchOrder.Lock()
+	fileMatchOrder.l = append(fileMatchOrder.l, file.Metakey)
+	fileMatchOrder.Unlock()
+
 	searchStates.Lock()
 	for searchKey, state := range searchStates.m {
 		if stateHasFile(state, file) {
@@ -286,16 +298,22 @@ func constructSearchIdentifier(keywords []string) string {
 
 func getAllFileMatches() []message.SearchesFile {
 	var searches []message.SearchesFile
+	fileMatchOrder.RLock()
+	defer fileMatchOrder.RUnlock()
 	searchedFiles.RLock()
-	for metakey, file := range searchedFiles.m {
-		if file.isMatched {
-			searches = append(searches, message.SearchesFile{
-				Filename:   file.Name,
-				Metakey:    metakey,
-				ChunkCount: file.totalChunks,
-			})
+	defer searchedFiles.RUnlock()
+
+	for _, metakey := range fileMatchOrder.l {
+		file, hasMetakey := searchedFiles.m[metakey]
+		if !hasMetakey || !file.isMatched || metakey != file.Metakey {
+			log.Fatal("getAllFileMatches error that should never happen")
+			return searches
 		}
+		searches = append(searches, message.SearchesFile{
+			Filename:   file.Name,
+			Metakey:    metakey,
+			ChunkCount: file.totalChunks,
+		})
 	}
-	searchedFiles.RUnlock()
 	return searches
 }
