@@ -12,6 +12,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	request *message.RumorRequest,
 	clientAddr *net.UDPAddr,
 ) {
+	success := true
 	fmt.Println("CLIENT MESSAGE", request.Contents)
 	fmt.Printf("PEERS %s\n", gossiper.listPeers())
 	msg := gossiper.buildClientMessage(request.Contents)
@@ -21,7 +22,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	} else {
 		go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 	}
-	gossiper.sendToClient(&message.ValidationResponse{Success: true}, clientAddr)
+	gossiper.sendValidationToClient(&success, clientAddr)
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
@@ -64,12 +65,7 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer func() {
-		gossiper.sendToClient(
-			&message.ValidationResponse{Success: success},
-			clientAddr,
-		)
-	}()
+	defer gossiper.sendValidationToClient(&success, clientAddr)
 	address, err := net.ResolveUDPAddr(
 		"udp4",
 		fmt.Sprintf("%s:%s", request.Address, request.Port),
@@ -100,12 +96,7 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer func() {
-		gossiper.sendToClient(
-			&message.ValidationResponse{Success: success},
-			clientAddr,
-		)
-	}()
+	defer gossiper.sendValidationToClient(&success, clientAddr)
 	gossiper.routing.RLock()
 	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
 		success = false
@@ -209,6 +200,7 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 ) {
 	metakey := files.HashToKey(request.Metahash)
 	success := true
+	defer gossiper.sendValidationToClient(&success, clientAddr)
 	if files.IsChunkPresent(request.Metahash) {
 		if !files.IsUndergoneMetafile(request.Metahash) {
 			success = false
@@ -253,11 +245,6 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 			files.RetryLimit,
 		)
 	}
-	// TODO sendValidationToClient
-	gossiper.sendToClient(
-		&message.ValidationResponse{Success: success},
-		clientAddr,
-	)
 }
 
 func (gossiper *Gossiper) resumeFileDownloadRequest(
@@ -311,4 +298,14 @@ func (gossiper *Gossiper) sendToClient(
 		return
 	}
 	gossiper.uiConn.WriteToUDP(bytes, clientAddr)
+}
+
+func (gossiper *Gossiper) sendValidationToClient(
+	success *bool,
+	clientAddr *net.UDPAddr,
+) {
+	gossiper.sendToClient(
+		&message.ValidationResponse{Success: *success},
+		clientAddr,
+	)
 }
