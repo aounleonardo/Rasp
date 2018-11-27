@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"time"
+	"errors"
+	"log"
 )
 
 type RumorKey struct {
@@ -199,19 +201,21 @@ func (gossiper *Gossiper) receiveDataRequest(request *message.DataRequest) {
 	)
 }
 
-func getSourceOfDataRequest(chunk *files.Chunkey, defaultPeer string) string {
-	if chunk == nil {
-		return defaultPeer
-	}
-	chosen, err := getSourceForChunk(*chunk)
-	if err != nil {
-		fmt.Println(fmt.Sprintf(
-			"error in getSourceOfDataRequest %s",
+func getSourceOfDataRequest(
+	chunk *files.Chunkey,
+	defaultPeer *string,
+) (string, error) {
+	chosen, err := getSourceForChunk(chunk)
+	if err != nil && defaultPeer == nil {
+		return "", errors.New(fmt.Sprintf(
+			"could not find destination for data request %s",
 			err.Error(),
 		))
-		return defaultPeer
 	}
-	return chosen
+	if err != nil {
+		return *defaultPeer, nil
+	}
+	return chosen, nil
 }
 
 func (gossiper *Gossiper) sendDataRequest(
@@ -221,7 +225,10 @@ func (gossiper *Gossiper) sendDataRequest(
 	if files.IsChunkPresent(request.HashValue) {
 		nextHash, chunkey, _ := files.NextHash(request.HashValue)
 		if nextHash != nil {
-			destination := getSourceOfDataRequest(chunkey, request.Origin)
+			destination, err := getSourceOfDataRequest(chunkey, &request.Origin)
+			if err != nil {
+				log.Fatal("should never happen", err.Error())
+			}
 			gossiper.sendDataRequest(
 				&message.DataRequest{
 					Origin:      request.Origin,
@@ -294,7 +301,10 @@ func (gossiper *Gossiper) receiveDataReply(reply *message.DataReply) {
 		}
 		return
 	}
-	destination := getSourceOfDataRequest(chunkey, reply.Origin)
+	destination, err := getSourceOfDataRequest(chunkey, &reply.Origin)
+	if err != nil {
+		log.Fatal("should never happen", err.Error())
+	}
 	gossiper.sendDataRequest(
 		&message.DataRequest{
 			Origin:      gossiper.Name,

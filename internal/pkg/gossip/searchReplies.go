@@ -33,7 +33,7 @@ var searchStates = struct {
 type SearchedFile struct {
 	Metakey           string
 	Name              string
-	totalChunks       *uint64
+	totalChunks       uint64
 	chunkDistribution map[uint64][]string
 	isMatched         bool
 }
@@ -138,21 +138,11 @@ func (gossiper *Gossiper) processResult(
 ) {
 	metakey := files.HashToKey(result.MetafileHash)
 	upsertFileToSearchedStates(result.FileName, metakey)
-	if upsertFileToSearchedFiles(result.FileName, metakey) {
-		gossiper.sendDataRequest(
-			&message.DataRequest{
-				Origin:      gossiper.Name,
-				Destination: fromPeer,
-				HopLimit:    hopLimit,
-				HashValue:   result.MetafileHash,
-			},
-			files.RetryLimit,
-		)
-		checkNumberOfChunks(metakey, files.RetryLimit)
-	}
+	upsertFileToSearchedFiles(result.FileName, metakey, result.ChunkCount)
 
 	searchedFiles.Lock()
 	file, _ := searchedFiles.m[metakey]
+	upsertPeerToChunk(file.chunkDistribution, uint64(0), fromPeer)
 	for _, index := range result.ChunkMap {
 		upsertPeerToChunk(file.chunkDistribution, index, fromPeer)
 	}
@@ -180,8 +170,7 @@ func probableFileMatched(file *SearchedFile) {
 	if file.isMatched {
 		return
 	}
-	if file.totalChunks == nil ||
-		uint64(len(file.chunkDistribution)) < *file.totalChunks {
+	if uint64(len(file.chunkDistribution)) < file.totalChunks {
 		return
 	}
 
@@ -237,20 +226,22 @@ func hasPeerInDistribution(
 	return false
 }
 
-func upsertFileToSearchedFiles(filename string, metakey string) bool {
+func upsertFileToSearchedFiles(
+	filename string,
+	metakey string,
+	chunkCount uint64,
+) {
 	searchedFiles.Lock()
-	defer searchedFiles.Unlock()
 	if _, hasFile := searchedFiles.m[metakey]; !hasFile {
 		searchedFiles.m[metakey] = &SearchedFile{
 			Metakey:           metakey,
 			Name:              filename,
-			totalChunks:       nil,
+			totalChunks:       chunkCount,
 			chunkDistribution: make(map[uint64][]string),
 			isMatched:         false,
 		}
-		return true
 	}
-	return false
+	searchedFiles.Unlock()
 }
 
 func upsertFileToSearchedStates(filename string, metakey string) {
@@ -263,37 +254,10 @@ func upsertFileToSearchedStates(filename string, metakey string) {
 	searchStates.Unlock()
 }
 
-func checkNumberOfChunks(metakey string, retries int) {
-	if retries < 0 {
-		return
+func getSourceForChunk(chunkey *files.Chunkey) (string, error) {
+	if chunkey == nil {
+		return "", errors.New("chunkey nil")
 	}
-	searchedFiles.Lock()
-	defer searchedFiles.Unlock()
-	file := searchedFiles.m[metakey]
-
-	if file.totalChunks != nil {
-		probableFileMatched(file)
-		return
-	}
-
-	if files.IsChunkPresent(files.KeyToHash(metakey)) {
-		nbChunks, err := files.GetNumberOfChunksInFile(metakey)
-		if err != nil {
-			fmt.Println("checkNumberOfChunks error for", metakey, err.Error())
-			return
-		}
-		file.totalChunks = &nbChunks
-		probableFileMatched(file)
-		return
-	}
-
-	go func() {
-		time.Sleep(searchPeriod)
-		checkNumberOfChunks(metakey, retries-1)
-	}()
-}
-
-func getSourceForChunk(chunkey files.Chunkey) (string, error) {
 	searchedFiles.RLock()
 	defer searchedFiles.RUnlock()
 
@@ -328,7 +292,7 @@ func getAllFileMatches() []message.SearchesFile {
 			searches = append(searches, message.SearchesFile{
 				Filename:   file.Name,
 				Metakey:    metakey,
-				ChunkCount: *file.totalChunks,
+				ChunkCount: file.totalChunks,
 			})
 		}
 	}

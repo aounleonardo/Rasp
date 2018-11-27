@@ -47,7 +47,7 @@ func main() {
 	budget := flag.Int(
 		"budget",
 		-1,
-		"number of nodes to ask for a search " +
+		"number of nodes to ask for a search "+
 			"(default recursive search with a start of 2)",
 	)
 	test := flag.String(
@@ -75,12 +75,16 @@ func main() {
 			}
 		}
 	} else if len(*file) > 0 {
-		if len(*request) > 0 && len(*dest) > 0 {
+		if len(*request) > 0 {
+			var destination *string = nil
+			if len(*dest) > 0 {
+				destination = dest
+			}
 			clientPacket = message.ClientPacket{
 				Download: &message.FileDownloadRequest{
 					Name:     *file,
 					Metahash: files.KeyToHash(*request),
-					Origin:   dest,
+					Origin:   destination,
 				},
 			}
 		} else {
@@ -101,8 +105,8 @@ func main() {
 		}
 		clientPacket = message.ClientPacket{
 			Search: &message.PerformSearchRequest{
-				Keywords:keywordsList,
-				Budget: searchBudget,
+				Keywords: keywordsList,
+				Budget:   searchBudget,
 			},
 		}
 	} else {

@@ -6,7 +6,6 @@ import (
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"strings"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -212,50 +211,49 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 	success := true
 	if files.IsChunkPresent(request.Metahash) {
 		if !files.IsUndergoneMetafile(request.Metahash) {
-			files.NewFileState(metakey, request.Name)
-			metafile, err := files.GetChunkForKey(metakey)
-			if err != nil {
-				success = false
-				fmt.Println(
-					"error reading metafile in handleFileDownloadRequest",
-				)
-				return
-			}
-			files.InitFileState(metafile)
-			_, _, err = files.NextHash(request.Metahash)
+			success = false
+			fmt.Println("metafile present but not undergone")
+			return
 		}
 		chunk, err := files.GetChunkeyForMetakey(metakey)
 		if err != nil {
 			success = false
+			fmt.Println("metafile present but", err.Error())
 			return
 		}
-		var destination string
-		if request.Origin != nil {
-			destination = *request.Origin
-		} else {
-			destination = getSourceOfDataRequest(&chunk, "")
+		destination, err := getSourceOfDataRequest(&chunk, request.Origin)
+		if err != nil {
+			success = false
+			fmt.Println("error getting destination", err.Error())
 		}
 		err = gossiper.resumeFileDownloadRequest(metakey, destination)
 		if err != nil {
 			success = false
+			fmt.Println("error handling resume request", err.Error())
 			return
 		}
 	} else {
-		if request.Origin == nil {
-			fmt.Println("unknown metakey source", metakey)
+		destination, err := getSourceOfDataRequest(
+			&files.Chunkey{Metakey: metakey, Index: uint64(0)},
+			request.Origin,
+		)
+		if err != nil {
+			success = false
+			fmt.Println("unknown metakey source", err.Error())
 			return
 		}
 		files.NewFileState(metakey, request.Name)
 		gossiper.sendDataRequest(
 			&message.DataRequest{
 				Origin:      gossiper.Name,
-				Destination: *request.Origin,
+				Destination: destination,
 				HopLimit:    hopLimit,
 				HashValue:   request.Metahash,
 			},
 			files.RetryLimit,
 		)
 	}
+	// TODO sendValidationToClient
 	gossiper.sendToClient(
 		&message.ValidationResponse{Success: success},
 		clientAddr,
@@ -286,7 +284,6 @@ func (gossiper *Gossiper) handlePerformSearchRequest(
 	request *message.PerformSearchRequest,
 	clientAddr *net.UDPAddr,
 ) {
-	fmt.Printf("received search request %s\n", strings.Join(request.Keywords, ","))
 	initSearchState(request.Keywords)
 	if request.Budget != nil && *request.Budget > 0 {
 		gossiper.performSearch(gossiper.Name, request.Keywords, *request.Budget)

@@ -246,6 +246,9 @@ func GetChunkeyForMetakey(metakey string) (Chunkey, error) {
 			metakey,
 		))
 	}
+	if state.Chunkeys == nil {
+		return Chunkey{Metakey: metakey, Index: uint64(0)}, nil
+	}
 	return Chunkey{Metakey: metakey, Index: state.Index + 1}, nil
 }
 
@@ -262,19 +265,6 @@ func NextForState(metakey string) ([]byte, error) {
 func IsChunkPresent(key []byte) bool {
 	_, err := os.Stat(chunksDownloads + HashToKey(key))
 	return err == nil || (err != nil && !os.IsNotExist(err))
-}
-
-func GetNumberOfChunksInFile(metakey string) (uint64, error) {
-	file, err := getMetafileBytes(metakey)
-	if err != nil {
-		fmt.Println("error while reading metafile", metakey, err.Error())
-		return 0, errors.New(fmt.Sprintf(
-			"error %s while reading metafile %s",
-			err.Error(),
-			metakey,
-		))
-	}
-	return uint64(1 + len(file)/MaxFileChunkSize), nil
 }
 
 func DownloadChunk(key []byte, data []byte, sender string) error {
