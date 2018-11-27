@@ -137,10 +137,8 @@ func (gossiper *Gossiper) processResult(
 	fromPeer string,
 ) {
 	metakey := files.HashToKey(result.MetafileHash)
-	if upsertSearchedFile(
-		result.FileName,
-		metakey,
-	) {
+	upsertFileToSearchedStates(result.FileName, metakey)
+	if upsertFileToSearchedFiles(result.FileName, metakey) {
 		gossiper.sendDataRequest(
 			&message.DataRequest{
 				Origin:      gossiper.Name,
@@ -191,7 +189,7 @@ func probableFileMatched(file *SearchedFile) {
 
 	searchStates.Lock()
 	for searchKey, state := range searchStates.m {
-		if files.HasAnyKeyword(file.Name, state.keywords) {
+		if stateHasFile(state, file) {
 			state.nbMatches++
 			if state.nbMatches >= maxMatches {
 				fmt.Println("SEARCH FINISHED")
@@ -200,6 +198,15 @@ func probableFileMatched(file *SearchedFile) {
 		}
 	}
 	searchStates.Unlock()
+}
+
+func stateHasFile(state *SearchState, file *SearchedFile) bool {
+	for metakey := range state.files {
+		if file.Metakey == metakey {
+			return true
+		}
+	}
+	return false
 }
 
 // use only if searchedFiles is locked
@@ -230,7 +237,7 @@ func hasPeerInDistribution(
 	return false
 }
 
-func upsertSearchedFile(filename string, metakey string) bool {
+func upsertFileToSearchedFiles(filename string, metakey string) bool {
 	searchedFiles.Lock()
 	defer searchedFiles.Unlock()
 	if _, hasFile := searchedFiles.m[metakey]; !hasFile {
@@ -244,6 +251,16 @@ func upsertSearchedFile(filename string, metakey string) bool {
 		return true
 	}
 	return false
+}
+
+func upsertFileToSearchedStates(filename string, metakey string) {
+	searchStates.Lock()
+	for _, state := range searchStates.m {
+		if files.HasAnyKeyword(filename, state.keywords) {
+			state.files[metakey] = struct {}{}
+		}
+	}
+	searchStates.Unlock()
 }
 
 func checkNumberOfChunks(metakey string, retries int) {
