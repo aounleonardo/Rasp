@@ -19,6 +19,7 @@ func SearchStatesForKeywords(keywords []string) []*message.SearchResult {
 					FileName:     state.Filename,
 					MetafileHash: KeyToHash(metakey),
 					ChunkMap:     BuildChunkmapUpTo(state.Index),
+					ChunkCount:   uint64(len(state.Chunkeys)),
 				},
 			)
 		}
