@@ -332,7 +332,7 @@ func ReconstructFile(key string) (*File, error) {
 		Name:     filename,
 		Size:     size,
 		Metafile: metafile,
-		Metahash: KeyToHash(key),
+		Metahash: KeyToHash(*metakey),
 	},
 		nil
 }
