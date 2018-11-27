@@ -35,6 +35,7 @@ type ClientPacket struct {
 	FileShare   *FileShareRequest
 	Download    *FileDownloadRequest
 	Search      *PerformSearchRequest
+	GetSearches *SearchesRequest
 
 	TestReconstruct *TestFileReconstructRequest
 }

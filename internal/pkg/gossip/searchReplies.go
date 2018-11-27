@@ -77,8 +77,8 @@ func (gossiper *Gossiper) performSearch(
 	for peerAddr, budget := range budgets {
 		bytes := encodeMessage(&message.GossipPacket{
 			SearchRequest: &message.SearchRequest{
-				Origin: origin,
-				Budget: budget,
+				Origin:   origin,
+				Budget:   budget,
 				Keywords: keywords,
 			},
 		})
@@ -257,7 +257,7 @@ func upsertFileToSearchedStates(filename string, metakey string) {
 	searchStates.Lock()
 	for _, state := range searchStates.m {
 		if files.HasAnyKeyword(filename, state.keywords) {
-			state.files[metakey] = struct {}{}
+			state.files[metakey] = struct{}{}
 		}
 	}
 	searchStates.Unlock()
@@ -318,4 +318,20 @@ func getSourceForChunk(chunkey files.Chunkey) (string, error) {
 
 func constructSearchIdentifier(keywords []string) string {
 	return strings.Join(keywords, ",")
+}
+
+func getAllFileMatches() []message.SearchesFile {
+	var searches []message.SearchesFile
+	searchedFiles.RLock()
+	for metakey, file := range searchedFiles.m {
+		if file.isMatched {
+			searches = append(searches, message.SearchesFile{
+				Filename:   file.Name,
+				Metakey:    metakey,
+				ChunkCount: *file.totalChunks,
+			})
+		}
+	}
+	searchedFiles.RUnlock()
+	return searches
 }

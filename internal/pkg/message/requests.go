@@ -91,3 +91,15 @@ type PerformSearchRequest struct {
 	Keywords []string
 	Budget   *uint64
 }
+
+type SearchesRequest struct {}
+
+type SearchesResponse struct {
+	Files []SearchesFile
+}
+
+type SearchesFile struct {
+	Filename   string
+	Metakey    string
+	ChunkCount uint64
+}

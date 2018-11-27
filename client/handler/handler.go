@@ -77,6 +77,11 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		partner, unordered, ordered := getPrivateIndexes(r.RequestURI)
 		return json.Marshal(waitForPrivates(conn, partner, unordered, ordered))
 	}
+	if isSearchRequest, _ :=
+		regexp.MatchString("/searches/", r.RequestURI);
+		isSearchRequest {
+		return json.Marshal(waitForSearches(conn))
+	}
 	return nil, errors.New("unsupported URI")
 }
 
@@ -104,6 +109,13 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		regexp.MatchString("/download-file/", r.RequestURI);
 		isDownloadRequest {
 		return json.Marshal(downloadFile(conn, r))
+	}
+	if isSearchRequest, _ :=
+		regexp.MatchString("/search-for/*/", r.RequestURI);
+		isSearchRequest {
+		return json.Marshal(
+			searchForKeywords(conn, getSearchKeywords(r.RequestURI),
+			))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -331,6 +343,42 @@ func downloadFile(
 				Origin:   &s.Origin,
 			},
 		},
+		response,
+	)
+	return *response
+}
+
+func searchForKeywords(
+	conn *net.UDPConn,
+	keywords []string,
+) message.ValidationResponse {
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			Search: &message.PerformSearchRequest{
+				Keywords: keywords,
+				Budget:   nil,
+			},
+		},
+		response,
+	)
+	return *response
+}
+
+func getSearchKeywords(uri string) []string {
+	keywords := strings.TrimSuffix(
+		strings.TrimPrefix(uri, "/search-for/"),
+		"/",
+	)
+	return strings.Split(keywords, ",")
+}
+
+func waitForSearches(conn *net.UDPConn) message.SearchesResponse {
+	response := &message.SearchesResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{GetSearches: &message.SearchesRequest{}},
 		response,
 	)
 	return *response

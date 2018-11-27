@@ -120,9 +120,9 @@ func (gossiper *Gossiper) handleClientPacket(
 	case packet.Rumor != nil:
 		gossiper.handleRumorRequest(packet.Rumor, clientAddr)
 	case packet.Identifier != nil:
-		gossiper.handleIdentifierRequest(packet.Identifier, clientAddr)
+		gossiper.handleIdentifierRequest(clientAddr)
 	case packet.Peers != nil:
-		gossiper.handlePeersRequest(packet.Peers, clientAddr)
+		gossiper.handlePeersRequest(clientAddr)
 	case packet.Messages != nil:
 		gossiper.handleMessagesRequest(packet.Messages, clientAddr)
 	case packet.AddPeer != nil:
@@ -139,6 +139,8 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handleFileDownloadRequest(packet.Download, clientAddr)
 	case packet.Search != nil:
 		gossiper.handlePerformSearchRequest(packet.Search, clientAddr)
+	case packet.GetSearches != nil:
+		gossiper.handleGetSearchesRequest(clientAddr)
 	default:
 		gossiper.handleTestPacket(packet, clientAddr)
 	}

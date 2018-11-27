@@ -26,7 +26,6 @@ func (gossiper *Gossiper) handleRumorRequest(
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
-	request *message.IdentifierRequest,
 	clientAddr *net.UDPAddr,
 ) {
 	gossiper.sendToClient(
@@ -36,7 +35,6 @@ func (gossiper *Gossiper) handleIdentifierRequest(
 }
 
 func (gossiper *Gossiper) handlePeersRequest(
-	request *message.PeersRequest,
 	clientAddr *net.UDPAddr,
 ) {
 	var peers []string
@@ -295,6 +293,14 @@ func (gossiper *Gossiper) handlePerformSearchRequest(
 	} else {
 		gossiper.performPeriodicSearch(request.Keywords, uint64(2))
 	}
+}
+
+func (gossiper *Gossiper) handleGetSearchesRequest(clientAddr *net.UDPAddr) {
+	searches := getAllFileMatches()
+	gossiper.sendToClient(
+		&message.SearchesResponse{Files: searches},
+		clientAddr,
+	)
 }
 
 func (gossiper *Gossiper) sendToClient(
