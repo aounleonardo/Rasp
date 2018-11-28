@@ -107,8 +107,9 @@ export default class Toolbar extends Component {
                         </FormGroup>
                     </Form>
                 </Col>
-                <Col>
+                <Col md={10}>
                     <FileSearch
+                        style={{backgroundColor: 'red'}}
                         searchFor={this.props.searchFor}
                         searches={this.props.searches}
                         download={this.props.download}

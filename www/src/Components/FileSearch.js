@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Row, Button, Form, FormControl, FormGroup} from 'react-bootstrap';
+import {Button, Form, FormControl, FormGroup, Row} from 'react-bootstrap';
 import SearchesWindow from "./SearchesWindow";
 
 export default class FileSearch extends Component {
@@ -11,12 +11,30 @@ export default class FileSearch extends Component {
         }
     }
 
-    styles = {};
+    styles = {
+        form: {
+            width: '50%',
+        },
+        text: {
+            width: '100%',
+            color: 'MidnightBlue',
+            textAlign: "center",
+            fontSize: '80%',
+            resize: "none",
+        },
+        searchButton: {
+            height: '25%',
+            width: '40%',
+            color: 'dodgerblue',
+            fontSize: '110%',
+            fontWeight: 'bold',
+        },
+    };
 
     render() {
         return (
             <Row>
-                <Form inline onSubmit={this.onSearch}>
+                <Form inline onSubmit={this.onSearch} style={this.styles.form}>
                     <FormGroup controlId={"search"}>
                         <FormControl
                             style={this.styles.text}
@@ -36,6 +54,7 @@ export default class FileSearch extends Component {
                 <SearchesWindow
                     searches={this.props.searches}
                     download={this.props.download}
+                    keywords={this.state.keywords}
                 />
             </Row>
         )
