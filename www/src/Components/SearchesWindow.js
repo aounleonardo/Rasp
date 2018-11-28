@@ -27,8 +27,8 @@ export default class SearchesWindow extends Component {
 const SearchResult = ({filename, chunkCount, metafile, download}) =>
     <Button
         onClick={() => download(
-            filename,
             metafile,
+            filename,
             () => console.log("downloading", filename, chunkCount, metafile),
         )}
         style={{

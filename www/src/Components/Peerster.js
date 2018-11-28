@@ -317,7 +317,9 @@ export default class Peerster extends Component {
             body: JSON.stringify({
                 Metakey: metakey,
                 Filename: filename,
-                Origin: this.state.currentChat,
+                Origin: (this.state.currentChat === "") ?
+                    null :
+                    this.state.currentChat,
             }),
         })
             .then(res => res.json())

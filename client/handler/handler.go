@@ -108,6 +108,7 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isDownloadRequest, _ :=
 		regexp.MatchString("/download-file/", r.RequestURI);
 		isDownloadRequest {
+			fmt.Println("isDownloadRequest")
 		return json.Marshal(downloadFile(conn, r))
 	}
 	if isSearchRequest, _ :=
@@ -327,7 +328,7 @@ func downloadFile(
 	var s struct {
 		Metakey  string
 		Filename string
-		Origin   string
+		Origin   *string
 	}
 	err := decoder.Decode(&s)
 	if err != nil {
@@ -340,7 +341,7 @@ func downloadFile(
 			Download: &message.FileDownloadRequest{
 				Name:     s.Filename,
 				Metahash: files.KeyToHash(s.Metakey),
-				Origin:   &s.Origin,
+				Origin:   s.Origin,
 			},
 		},
 		response,
