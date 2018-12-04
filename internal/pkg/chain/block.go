@@ -3,6 +3,7 @@ package chain
 import (
 	"fmt"
 	"errors"
+	"bytes"
 )
 
 type BlockPublish struct {
@@ -20,8 +21,25 @@ const blockHopLimit = 20
 
 var BlocksChan = make(chan BlockPublish)
 
-func ReceiveBlock(block BlockPublish) {
-
+func ReceiveBlock(block Block) {
+	if !block.verifyHash() {
+		fmt.Println("received malicious block with hash", block.Hash())
+		return
+	}
+	if hasBlock(&block) {
+		fmt.Println("already has block", block.Hash())
+	}
+	if !hasParentOf(&block) && getHeadsCount() > 1 {
+		fmt.Println("received block with no parents in chain", block.Hash())
+		return
+	}
+	var head *[32]byte = nil
+	if isLongest(block.PrevHash) {
+		head = &block.PrevHash
+	}
+	if !block.canAddBlockToHead(head) {
+		fmt.Println("cannot add block", block.Hash())
+	}
 }
 
 func (block *Block) canAddBlockToLedger() bool {
@@ -63,7 +81,7 @@ func canAddFilenamesToHead(
 	blockchain.RLock()
 	headBlock, hasBlock := blockchain.m[head]
 	if !hasBlock {
-		return false, errors.New("missing block in chain")
+		return true, nil
 	}
 	blockchain.RUnlock()
 	if isConflictingBlock(txs, &headBlock) {
@@ -79,6 +97,17 @@ func isConflictingBlock(txs map[string]struct{}, other *Block) bool {
 		}
 	}
 	return false
+}
+
+func (block *Block) verifyHash() bool {
+	return bytes.Equal(block.Hash()[:16], zeroHash)
+}
+
+func hasParentOf(block *Block) bool {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	_, hasParent := blockchain.m[block.PrevHash]
+	return hasParent
 }
 
 func publishBlock(block Block) {

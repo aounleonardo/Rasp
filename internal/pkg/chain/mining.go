@@ -3,7 +3,6 @@ package chain
 import (
 	"fmt"
 	"math/rand"
-	"bytes"
 )
 
 var stop = make(chan struct{})
@@ -25,8 +24,7 @@ func Mine() {
 			return
 		default:
 			newBlock.Nonce = getRandomNonce()
-			hash := newBlock.Hash()
-			if bytes.Equal(hash[:16], zeroHash) {
+			if newBlock.verifyHash() {
 
 			}
 		}
