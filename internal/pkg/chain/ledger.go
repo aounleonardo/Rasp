@@ -9,11 +9,17 @@ var ledger = struct {
 	m: make(map[string]File),
 }
 
+var genesis = [32]byte{}
+
 var blockchain = struct {
 	sync.RWMutex
 	m map[[32]byte]Block
+	heads [][32]byte
+	longest [32]byte
 }{
 	m: make(map[[32]byte]Block),
+	heads: make([][32]byte, 0),
+	longest: genesis,
 }
 
 func isNameClaimed(filename string) bool {

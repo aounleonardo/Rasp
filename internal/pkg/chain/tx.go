@@ -3,6 +3,7 @@ package chain
 import (
 	"sync"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"errors"
 )
 
 type TxPublish struct {
@@ -16,14 +17,16 @@ type File struct {
 	MetafileHash []byte
 }
 
+const txHopLimit = 10
+
 var pendingTransactions = struct {
 	sync.RWMutex
-	l []File
+	l []TxPublish
 }{
-	l: make([]File, 0),
+	l: make([]TxPublish, 0),
 }
 
-func shouldDiscardTransaction(tx *File) bool {
+func (tx *File) shouldDiscardTransaction() bool {
 	if isNameClaimed(tx.Name) {
 		return true
 	}
@@ -31,15 +34,15 @@ func shouldDiscardTransaction(tx *File) bool {
 	pendingTransactions.RLock()
 	defer pendingTransactions.RUnlock()
 	for _, pending := range pendingTransactions.l {
-		if tx.Name == pending.Name {
+		if tx.Name == pending.File.Name {
 			return true
 		}
 	}
 	return false
 }
 
-func ReceiveTransaction(tx File) {
-	if shouldDiscardTransaction(&tx) {
+func ReceiveTransaction(tx TxPublish) {
+	if tx.File.shouldDiscardTransaction() {
 		return
 	}
 
@@ -48,15 +51,37 @@ func ReceiveTransaction(tx File) {
 	pendingTransactions.Unlock()
 }
 
-func BuildTransaction(filename string, filesize uint64, metakey string)  {
+func BuildTransaction(
+	filename string,
+	filesize uint64,
+	metakey string,
+) (TxPublish, error) {
 	size := int64(filesize)
 	if size < 0 {
-		return
+		return TxPublish{}, errors.New("invalid file size")
 	}
-	tx := File{
-		Name: filename,
-		Size: size,
+	file := File{
+		Name:         filename,
+		Size:         size,
 		MetafileHash: files.KeyToHash(metakey),
 	}
-	ReceiveTransaction(tx)
+	tx := TxPublish{File: file, HopLimit: txHopLimit}
+	go ReceiveTransaction(tx)
+	return tx, nil
+}
+
+func removeClaimedPendingTransactions() {
+	pendingTransactions.Lock()
+	ledger.RLock()
+
+	newPendings := make([]TxPublish, 0)
+	for _, tx := range pendingTransactions.l {
+		if !isNameClaimed(tx.File.Name) {
+			newPendings = append(newPendings, tx)
+		}
+	}
+	pendingTransactions.l = newPendings
+
+	ledger.RUnlock()
+	pendingTransactions.Unlock()
 }
