@@ -54,6 +54,16 @@ func hasBlock(block *Block) bool {
 	return hasBlock
 }
 
+func getBlock(hash [32]byte) (*Block, error) {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+
+	if block, hasBlock := blockchain.m[hash]; hasBlock {
+		return &block, nil
+	}
+	return nil, errors.New(fmt.Sprintf("does not have block %s", hash))
+}
+
 func addBlock(block Block) error {
 	upsertHead(block.PrevHash)
 	hash := block.Hash()
@@ -81,15 +91,25 @@ func switchHeadTo(hash [32]byte) error {
 
 	ancestor := getCommonAncestor(currentHead, hash)
 	if ancestor != currentHead {
-		err := rollbackTo(ancestor)
+		stop, err := rollbackTo(ancestor)
 		if err != nil {
+			_, fallback := applyChangesUntil(currentHead, stop)
+			if fallback != nil {
+				errors.New(fmt.Sprintf(
+					"got error %s while applying changes,"+
+						" tried to fallback but %s",
+					err.Error(),
+					fallback.Error(),
+				))
+			}
 			return err
 		}
 	}
 
-	err := applyChangesUntil(hash, ancestor)
+	_, err := applyChangesUntil(hash, ancestor)
 	if err != nil {
-		fallback := applyChangesUntil(currentHead, ancestor)
+		rollbackTo(ancestor)
+		_, fallback := applyChangesUntil(currentHead, ancestor)
 		if fallback != nil {
 			return errors.New(fmt.Sprintf(
 				"got error %s while applying changes,"+
@@ -182,12 +202,36 @@ func getChainHashes(start [32]byte) [][32]byte {
 	return chain
 }
 
-func rollbackTo(hash [32]byte) error {
-	// TODO implement rollback
+func rollbackTo(hash [32]byte) ([32]byte, error) {
+	currentHead, _ := getCurrentHead()
+	pathToRoot := getChainHashes(currentHead)
+	index := 0
+	node := pathToRoot[0]
+	for ; index < len(pathToRoot) && node != hash;
+	index, node = index+1, pathToRoot[index+1] {
+		err := denyBlock(node)
+		if err != nil {
+			return node, err
+		}
+	}
+	fmt.Printf("FORK-LONGER rewind %d blocks", index)
+	return node, nil
+}
+
+func denyBlock(hash [32]byte) error {
+	block, err := getBlock(hash)
+	if err != nil {
+		return err
+	}
+	ledger.Lock()
+	for _, tx := range block.Transactions {
+		delete(ledger.m, tx.File.Name)
+	}
+	ledger.Unlock()
 	return nil
 }
 
-func applyChangesUntil(start [32]byte, ancestor [32]byte) error {
+func applyChangesUntil(stop [32]byte, ancestor [32]byte) ([32]byte, error) {
 	// TODO implement changes
-	return nil
+	return genesis, nil
 }
