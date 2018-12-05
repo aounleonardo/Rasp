@@ -41,11 +41,13 @@ func ReceiveBlock(block Block) {
 		fmt.Println("cannot add block", block.Hash())
 	}
 
+	pauseMining()
 	err := addBlock(block)
 	if err != nil {
 		fmt.Println("error adding block", block.Hash(), err)
 	}
 	removeClaimedPendingTransactions()
+	go Mine()
 }
 
 func (block *Block) canAddBlockToLedger() bool {

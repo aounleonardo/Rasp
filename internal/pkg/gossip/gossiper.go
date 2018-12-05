@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 )
 
 const maxMsgSize = 10000
@@ -85,6 +86,7 @@ func NewGossiper(
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
 	go gossiper.routeRumorMessages(rtimer)
+	go chain.Mine()
 
 	return gossiper
 }

@@ -26,6 +26,13 @@ var pendingTransactions = struct {
 	l: make([]TxPublish, 0),
 }
 
+func hasNoPendingTransactions() bool {
+	pendingTransactions.RLock()
+	defer pendingTransactions.RUnlock()
+
+	return len(pendingTransactions.l) < 1
+}
+
 func (tx *File) shouldDiscardTransaction() bool {
 	if isNameClaimed(tx.Name) {
 		return true

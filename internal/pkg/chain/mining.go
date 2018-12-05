@@ -5,10 +5,17 @@ import (
 	"math/rand"
 )
 
-var stop = make(chan struct{})
+var stopMining = make(chan struct{})
 var zeroHash = ([16]byte{})[:]
 
 func Mine() {
+	for hasNoPendingTransactions() {
+		select {
+		case <-stopMining:
+			return
+		default:
+		}
+	}
 	txs := getNewTransactions()
 	blockchain.RLock()
 	newBlock := Block{
@@ -19,13 +26,13 @@ func Mine() {
 	blockchain.RUnlock()
 	for true {
 		select {
-		case <-stop:
+		case <-stopMining:
 			fmt.Println("is stopped")
 			return
 		default:
 			newBlock.Nonce = getRandomNonce()
 			if newBlock.verifyHash() {
-
+				ReceiveBlock(newBlock)
 			}
 		}
 	}
@@ -44,4 +51,14 @@ func getRandomNonce() [32]byte {
 	var ret [32]byte
 	copy(ret[:], nonce)
 	return ret
+}
+
+func pauseMining() {
+	select {
+	case stopMining <- struct{}{}:
+		fmt.Println("sent stopMining")
+	default:
+		fmt.Println("tried to stop but already stopped")
+	}
+
 }
