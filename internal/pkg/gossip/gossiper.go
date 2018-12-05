@@ -216,6 +216,8 @@ func (gossiper *Gossiper) ReceivePacket(
 		gossiper.receiveSearchRequest(packet.SearchRequest)
 	case packet.SearchReply != nil:
 		gossiper.receiveSearchReply(packet.SearchReply)
+	case packet.TxPublish != nil:
+		gossiper.receiveTxPublish(packet.TxPublish, sender)
 	default:
 		fmt.Println("unknown packet type", packet)
 	}

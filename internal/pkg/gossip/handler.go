@@ -185,6 +185,7 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	if err != nil {
 		fmt.Println("error saving file", hashEncoding, err.Error())
 	}
+	gossiper.indexFile(file)
 	gossiper.sendToClient(
 		&message.FileShareResponse{
 			Name:    request.Name,

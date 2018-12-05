@@ -4,6 +4,8 @@ import (
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
+	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 func (gossiper *Gossiper) publishMinedBlocks() {
@@ -52,4 +54,22 @@ func (gossiper *Gossiper) advertisePublisher(
 		gossiper.gossipConn.WriteToUDP(bytes, gossiper.peers.m[peer])
 		gossiper.peers.RUnlock()
 	}
+}
+
+func (gossiper *Gossiper) receiveTxPublish(
+	tx *chain.TxPublish,
+	fromSender *net.UDPAddr,
+) {
+	chain.ReceiveTransaction(*tx)
+	var sender *string
+	*sender = fromSender.String()
+	gossiper.advertisePublisher(Publish(*tx), sender)
+}
+
+func (gossiper *Gossiper) indexFile(file *files.File) {
+	chain.ReceiveTransaction(chain.BuildTransaction(chain.File{
+		Name:         file.Name,
+		Size:         int64(file.Size),
+		MetafileHash: file.Metahash,
+	}))
 }
