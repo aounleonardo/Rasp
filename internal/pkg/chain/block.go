@@ -117,5 +117,8 @@ func hasParentOf(block *Block) bool {
 }
 
 func publishBlock(block Block) {
-
+	BlocksChan <- BlockPublish{
+		Block:    block,
+		HopLimit: blockHopLimit,
+	}
 }
