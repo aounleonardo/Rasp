@@ -6,7 +6,7 @@ import (
 )
 
 var stopMining = make(chan struct{})
-var zeroHash = ([16]byte{})[:]
+var zeroHash = make([]byte, 16)
 
 func Mine() {
 	for hasNoPendingTransactions() {
