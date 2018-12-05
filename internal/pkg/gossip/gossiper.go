@@ -87,6 +87,7 @@ func NewGossiper(
 	go gossiper.breakEntropy()
 	go gossiper.routeRumorMessages(rtimer)
 	go chain.Mine()
+	go publishBlocks()
 
 	return gossiper
 }

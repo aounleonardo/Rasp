@@ -149,7 +149,7 @@ func findFirstInPath(start [32]byte, path [][32]byte) ([32]byte, error) {
 	defer blockchain.RUnlock()
 
 	node := start
-	for true {
+	for {
 		block, hasNode := blockchain.m[node]
 		if !hasNode {
 			return [32]byte{},
@@ -191,7 +191,7 @@ func getChainHashes(start [32]byte) [][32]byte {
 	defer blockchain.RUnlock()
 
 	node := start
-	for true {
+	for {
 		block, hasNode := blockchain.m[node]
 		if !hasNode {
 			return chain

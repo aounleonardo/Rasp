@@ -13,7 +13,6 @@ func Mine() {
 		select {
 		case <-stopMining:
 			return
-		default:
 		}
 	}
 	txs := getNewTransactions()
@@ -24,7 +23,7 @@ func Mine() {
 		Transactions: txs,
 	}
 	blockchain.RUnlock()
-	for true {
+	for {
 		select {
 		case <-stopMining:
 			fmt.Println("is stopped")
@@ -33,6 +32,7 @@ func Mine() {
 			newBlock.Nonce = getRandomNonce()
 			if newBlock.verifyHash() {
 				ReceiveBlock(newBlock)
+				publishBlock(newBlock)
 			}
 		}
 	}
