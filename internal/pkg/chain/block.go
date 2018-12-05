@@ -45,6 +45,7 @@ func ReceiveBlock(block Block) {
 	if err != nil {
 		fmt.Println("error adding block", block.Hash(), err)
 	}
+	removeClaimedPendingTransactions()
 }
 
 func (block *Block) canAddBlockToLedger() bool {
@@ -79,7 +80,7 @@ func (block *Block) canAddBlockToHead(head *[32]byte) bool {
 func canAddFilenamesToHead(
 	txs map[string]struct{},
 	head [32]byte,
-) (bool, error){
+) (bool, error) {
 	if head == genesis {
 		return true, nil
 	}

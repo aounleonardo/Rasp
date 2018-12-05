@@ -224,9 +224,12 @@ func denyBlock(hash [32]byte) error {
 		return err
 	}
 	ledger.Lock()
+	pendingTransactions.Lock()
 	for _, tx := range block.Transactions {
 		delete(ledger.m, tx.File.Name)
+		pendingTransactions.l = append(pendingTransactions.l, tx)
 	}
+	pendingTransactions.Unlock()
 	ledger.Unlock()
 	return nil
 }
