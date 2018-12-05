@@ -40,6 +40,11 @@ func ReceiveBlock(block Block) {
 	if !block.canAddBlockToHead(head) {
 		fmt.Println("cannot add block", block.Hash())
 	}
+
+	err := addBlock(block)
+	if err != nil {
+		fmt.Println("error adding block", block.Hash(), err)
+	}
 }
 
 func (block *Block) canAddBlockToLedger() bool {

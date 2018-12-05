@@ -93,7 +93,7 @@ func switchHeadTo(hash [32]byte) error {
 	if ancestor != currentHead {
 		stop, err := rollbackTo(ancestor)
 		if err != nil {
-			_, fallback := applyChangesUntil(currentHead, stop)
+			_, fallback := applyChangesUpTo(currentHead, stop)
 			if fallback != nil {
 				errors.New(fmt.Sprintf(
 					"got error %s while applying changes,"+
@@ -106,10 +106,10 @@ func switchHeadTo(hash [32]byte) error {
 		}
 	}
 
-	_, err := applyChangesUntil(hash, ancestor)
+	_, err := applyChangesUpTo(hash, ancestor)
 	if err != nil {
 		rollbackTo(ancestor)
-		_, fallback := applyChangesUntil(currentHead, ancestor)
+		_, fallback := applyChangesUpTo(currentHead, ancestor)
 		if fallback != nil {
 			return errors.New(fmt.Sprintf(
 				"got error %s while applying changes,"+
@@ -231,7 +231,52 @@ func denyBlock(hash [32]byte) error {
 	return nil
 }
 
-func applyChangesUntil(stop [32]byte, ancestor [32]byte) ([32]byte, error) {
-	// TODO implement changes
-	return genesis, nil
+func applyChangesUpTo(stop [32]byte, ancestor [32]byte) ([32]byte, error) {
+	pathToRoot := getChainHashes(stop)
+	if len(pathToRoot) < 1 {
+		return genesis, errors.New(
+			fmt.Sprintf("cannot find path to root from %s", stop),
+		)
+	}
+	ancestorIndex, err := findNodeInPath(pathToRoot, ancestor)
+	if err != nil {
+		return genesis, err
+	}
+	changesToApply := pathToRoot[:ancestorIndex]
+	for _, node := range changesToApply {
+		err := applyBlock(node)
+		if err != nil {
+			return node, err
+		}
+	}
+
+	return stop, nil
+}
+
+func applyBlock(hash [32]byte) error {
+	block, err := getBlock(hash)
+	if err != nil {
+		return err
+	}
+	ledger.Lock()
+	for _, tx := range block.Transactions {
+		if _, nameIsClaimed := ledger.m[tx.File.Name]; !nameIsClaimed {
+			ledger.m[tx.File.Name] = tx.File
+		}
+	}
+	ledger.Unlock()
+	return nil
+}
+
+func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
+	for searchIndex := 0; searchIndex < len(path); searchIndex++ {
+		if path[searchIndex] == node {
+			return searchIndex, nil
+		}
+	}
+	return -1, errors.New(fmt.Sprintf(
+		"cannot find node %s in path %s",
+		node,
+		path,
+	))
 }
