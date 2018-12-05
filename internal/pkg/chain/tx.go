@@ -2,13 +2,19 @@ package chain
 
 import (
 	"sync"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"errors"
 )
 
 type TxPublish struct {
 	File     File
 	HopLimit uint32
+}
+
+func (tx TxPublish) DecrementHopLimit() {
+	tx.HopLimit--
+}
+
+func (tx TxPublish) GetHopLimit() uint32 {
+	return tx.HopLimit
 }
 
 type File struct {
@@ -59,22 +65,11 @@ func ReceiveTransaction(tx TxPublish) {
 }
 
 func BuildTransaction(
-	filename string,
-	filesize uint64,
-	metakey string,
-) (TxPublish, error) {
-	size := int64(filesize)
-	if size < 0 {
-		return TxPublish{}, errors.New("invalid file size")
-	}
-	file := File{
-		Name:         filename,
-		Size:         size,
-		MetafileHash: files.KeyToHash(metakey),
-	}
+	file File,
+) TxPublish {
 	tx := TxPublish{File: file, HopLimit: txHopLimit}
 	go ReceiveTransaction(tx)
-	return tx, nil
+	return tx
 }
 
 func removeClaimedPendingTransactions() {

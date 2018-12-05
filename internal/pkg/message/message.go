@@ -1,5 +1,7 @@
 package message
 
+import "github.com/aounleonardo/Peerster/internal/pkg/chain"
+
 type SimpleMessage struct {
 	OriginalName  string
 	RelayPeerAddr string
@@ -21,6 +23,8 @@ type GossipPacket struct {
 	DataReply     *DataReply
 	SearchRequest *SearchRequest
 	SearchReply   *SearchReply
+	TxPublish     *chain.TxPublish
+	BlockPublish  *chain.BlockPublish
 }
 
 type ClientPacket struct {

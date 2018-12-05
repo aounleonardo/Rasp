@@ -11,6 +11,14 @@ type BlockPublish struct {
 	HopLimit uint32
 }
 
+func (block BlockPublish) DecrementHopLimit() {
+	block.HopLimit--
+}
+
+func (block BlockPublish) GetHopLimit() uint32 {
+	return block.HopLimit
+}
+
 type Block struct {
 	PrevHash     [32]byte
 	Nonce        [32]byte
