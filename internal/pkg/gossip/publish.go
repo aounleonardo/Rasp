@@ -61,9 +61,7 @@ func (gossiper *Gossiper) receiveTxPublish(
 	fromSender *net.UDPAddr,
 ) {
 	chain.ReceiveTransaction(*tx)
-	var sender *string
-	*sender = fromSender.String()
-	gossiper.advertisePublisher(Publish(*tx), sender)
+	gossiper.advertisePublisher(Publish(tx), wrapAddressAsString(fromSender))
 }
 
 func (gossiper *Gossiper) indexFile(file *files.File) {
@@ -72,4 +70,12 @@ func (gossiper *Gossiper) indexFile(file *files.File) {
 		Size:         int64(file.Size),
 		MetafileHash: file.Metahash,
 	}))
+}
+
+func (gossiper *Gossiper) receiveBlockPublish(
+	block *chain.BlockPublish,
+	fromSender *net.UDPAddr,
+) {
+	chain.ReceiveBlock(block.Block)
+	gossiper.advertisePublisher(Publish(block), wrapAddressAsString(fromSender))
 }

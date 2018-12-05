@@ -8,6 +8,7 @@ import (
 	"time"
 	"errors"
 	"log"
+	"net"
 )
 
 type RumorKey struct {
@@ -38,6 +39,14 @@ type ChatHistory struct {
 }
 
 var messageOrdering Ordering
+
+func wrapAddressAsString(addr *net.UDPAddr) *string {
+	if addr == nil {
+		return nil
+	}
+	wrap := addr.String()
+	return &wrap
+}
 
 func (gossiper *Gossiper) createClientRumor(text string) *message.RumorMessage {
 	gossiper.upsertOrigin(gossiper.Name)
