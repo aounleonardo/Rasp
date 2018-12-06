@@ -65,7 +65,8 @@ func getBlock(hash [32]byte) (*Block, error) {
 }
 
 func addBlock(block Block) error {
-	upsertHead(block.PrevHash)
+	_, currentLength := getCurrentHead()
+	didUpsert := upsertHead(block.PrevHash)
 	hash := block.Hash()
 
 	blockchain.Lock()
@@ -77,6 +78,12 @@ func addBlock(block Block) error {
 	err := switchHeadTo(hash)
 	if err != nil {
 		return err
+	}
+	_, newLength := getCurrentHead()
+	if newLength > currentLength {
+		fmt.Println(chainToString())
+	} else if didUpsert {
+		fmt.Printf("FORK-SHORTER %x\n", hash)
 	}
 	return nil
 }
@@ -171,14 +178,15 @@ func getCurrentHead() ([32]byte, int) {
 	return blockchain.longest, blockchain.length
 }
 
-func upsertHead(hash [32]byte) {
+func upsertHead(hash [32]byte) bool {
 	blockchain.Lock()
 	defer blockchain.Unlock()
 
 	if _, hasHead := blockchain.heads[hash]; hasHead {
-		return
+		return false
 	}
 	blockchain.heads[hash] = struct{}{}
+	return true
 }
 
 func getHeadLength(hash [32]byte) int {
@@ -291,4 +299,14 @@ func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
 		node,
 		path,
 	))
+}
+
+func chainToString() string {
+	currentHead, _ := getCurrentHead()
+	pathToRoot := getChainHashes(currentHead)
+	chain := "CHAIN"
+	for _, node := range pathToRoot {
+		chain += fmt.Sprintf(" [%x]", node)
+	}
+	return chain
 }
