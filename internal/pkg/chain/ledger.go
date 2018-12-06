@@ -207,7 +207,13 @@ func getChainHashes(start [32]byte) [][32]byte {
 
 func rollbackTo(hash [32]byte) ([32]byte, error) {
 	currentHead, _ := getCurrentHead()
+	if currentHead == hash {
+		return hash, nil
+	}
 	pathToRoot := getChainHashes(currentHead)
+	if len(pathToRoot) == 0 {
+		return currentHead, errors.New("path to root empty")
+	}
 	index := 0
 	node := pathToRoot[0]
 	for ; index < len(pathToRoot) && node != hash;
