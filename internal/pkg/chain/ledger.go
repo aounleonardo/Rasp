@@ -281,7 +281,7 @@ func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
 		}
 	}
 	return -1, errors.New(fmt.Sprintf(
-		"cannot find node %s in path %s",
+		"cannot find node %x in path %x",
 		node,
 		path,
 	))

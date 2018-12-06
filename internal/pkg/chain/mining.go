@@ -18,19 +18,19 @@ func Mine() {
 	txs := getNewTransactions()
 	blockchain.RLock()
 	newBlock := Block{
-		PrevHash: blockchain.longest,
-		Nonce: [32]byte{},
+		PrevHash:     blockchain.longest,
+		Nonce:        [32]byte{},
 		Transactions: txs,
 	}
 	blockchain.RUnlock()
 	for {
 		select {
 		case <-stopMining:
-			fmt.Println("is stopped")
 			return
 		default:
 			newBlock.Nonce = getRandomNonce()
 			if newBlock.verifyHash() {
+				fmt.Println("FOUND-BLOCK", newBlock.Hash())
 				ReceiveBlock(newBlock)
 				publishBlock(newBlock)
 			}
@@ -56,9 +56,6 @@ func getRandomNonce() [32]byte {
 func pauseMining() {
 	select {
 	case stopMining <- struct{}{}:
-		fmt.Println("sent stopMining")
 	default:
-		fmt.Println("tried to stop but already stopped")
 	}
-
 }
