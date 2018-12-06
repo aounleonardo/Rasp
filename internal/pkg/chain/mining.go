@@ -3,6 +3,7 @@ package chain
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 var stopMining = make(chan struct{}, 1)
@@ -13,6 +14,8 @@ func Mine() {
 		select {
 		case <-stopMining:
 			return
+		default:
+			time.Sleep(time.Second)
 		}
 	}
 	txs := getNewTransactions()
@@ -23,6 +26,8 @@ func Mine() {
 		Transactions: txs,
 	}
 	blockchain.RUnlock()
+
+	miningStartTime := time.Now()
 	for {
 		select {
 		case <-stopMining:
@@ -32,7 +37,11 @@ func Mine() {
 			if newBlock.verifyHash() {
 				fmt.Println("FOUND-BLOCK", newBlock.Hash())
 				ReceiveBlock(newBlock)
-				publishBlock(newBlock)
+				miningDuration := time.Now().Sub(miningStartTime)
+				go func() {
+					time.Sleep(2 * miningDuration)
+					publishBlock(newBlock)
+				}()
 			}
 		}
 	}
