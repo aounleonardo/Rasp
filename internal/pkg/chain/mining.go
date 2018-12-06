@@ -36,10 +36,10 @@ func Mine() {
 			newBlock.Nonce = getRandomNonce()
 			if newBlock.verifyHash() {
 				fmt.Printf("FOUND-BLOCK [%x]\n", newBlock.Hash())
-				ReceiveBlock(newBlock)
 				miningDuration := time.Now().Sub(miningStartTime)
+				time.Sleep(2 * miningDuration)
+				ReceiveBlock(newBlock)
 				go func() {
-					time.Sleep(2 * miningDuration)
 					publishBlock(newBlock)
 				}()
 			}

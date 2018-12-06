@@ -415,5 +415,6 @@ func main() {
 
 	gossiperPort = *gossiper
 	http.HandleFunc("/", multiplexer)
+	fmt.Printf("Listening on %s for gossiper %s", *port, *gossiper)
 	log.Fatal(http.ListenAndServe(":" + *port, nil))
 }

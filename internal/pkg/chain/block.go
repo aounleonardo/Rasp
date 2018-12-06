@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"errors"
 	"bytes"
+	"strings"
 )
 
 type BlockPublish struct {
@@ -132,4 +133,36 @@ func publishBlock(block Block) {
 		Block:    block,
 		HopLimit: blockHopLimit,
 	}
+}
+
+func (block *Block) toString() string {
+	return fmt.Sprintf(
+		"%x:%x:%s",
+		block.Hash(),
+		block.PrevHash,
+		block.describeTransactions(),
+	)
+}
+
+func describeBlock(hash [32]byte) string {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	block, hasBlock := blockchain.m[hash]
+	if hash == genesis || !hasBlock {
+		return fmt.Sprintf("%x", hash)
+	}
+	return fmt.Sprintf(
+		"%x:%x:%s",
+		hash,
+		block.PrevHash,
+		block.describeTransactions(),
+	)
+}
+
+func (block *Block) describeTransactions() string {
+	filenames := make([]string, len(block.Transactions))
+	for i, tx := range block.Transactions {
+		filenames[i] = tx.File.Name
+	}
+	return strings.Join(filenames, ",")
 }

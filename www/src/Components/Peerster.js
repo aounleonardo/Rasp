@@ -8,7 +8,7 @@ import PeerAdder from "./PeerAdder";
 import Chats from "./Chats";
 import Toolbar from "./Toolbar";
 
-const endPoint = "http://127.0.0.1:8000";
+const endPoint = "http://127.0.0.1:" + process.env.REACT_APP_SERVER_PORT;
 
 const maybeIndex =
     (index) => (index === undefined || index === null) ? 0 : index;
@@ -60,6 +60,9 @@ export default class Peerster extends Component {
 
         this.getGossiperSearches();
         setInterval(this.getGossiperSearches, 2000);
+
+        console.log("port:", process.env.REACT_APP_SERVER_PORT)
+        // setInterval(() => console.log("port:", process.env.REACT_APP_SERVER_PORT), 1000);
     }
 
     style = {
