@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"github.com/dedis/protobuf"
 	"fmt"
 	"net"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
@@ -11,6 +10,7 @@ import (
 	"bytes"
 	"os"
 	"strings"
+	"github.com/dedis/protobuf"
 )
 
 func main() {
@@ -63,24 +63,27 @@ func main() {
 	)
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 
-	var clientPacket message.ClientPacket
-	if len(*test) > 0 {
+	var clientPacket *message.ClientPacket
+	switch {
+	case len(*test) > 0:
 		switch *test {
 		case "reconstruct":
-			clientPacket = message.ClientPacket{
+			clientPacket = &message.ClientPacket{
 				TestReconstruct: &message.TestFileReconstructRequest{
 					Metahash: files.KeyToHash(*request),
 					Filename: *file,
 				},
 			}
+		default:
+			fmt.Println("unknown test")
 		}
-	} else if len(*file) > 0 {
+	case len(*file) > 0:
 		if len(*request) > 0 {
 			var destination *string = nil
 			if len(*dest) > 0 {
 				destination = dest
 			}
-			clientPacket = message.ClientPacket{
+			clientPacket = &message.ClientPacket{
 				Download: &message.FileDownloadRequest{
 					Name:     *file,
 					Metahash: files.KeyToHash(*request),
@@ -88,45 +91,50 @@ func main() {
 				},
 			}
 		} else {
-			clientPacket = message.ClientPacket{FileShare: shareFile(*file)}
+			clientPacket = &message.ClientPacket{FileShare: shareFile(*file)}
 		}
-	} else if len(*dest) > 0 {
-		clientPacket = message.ClientPacket{
+	case len(*dest) > 0:
+		clientPacket = &message.ClientPacket{
 			SendPrivate: &message.PrivatePutRequest{
 				Contents:    *msg,
 				Destination: *dest,
 			},
 		}
-	} else if len(*keywords) > 0 {
+	case len(*keywords) > 0:
 		keywordsList := strings.Split(*keywords, ",")
 		var searchBudget *uint64 = nil
 		if *budget >= 0 {
 			*searchBudget = uint64(*budget)
 		}
-		clientPacket = message.ClientPacket{
+		clientPacket = &message.ClientPacket{
 			Search: &message.PerformSearchRequest{
 				Keywords: keywordsList,
 				Budget:   searchBudget,
 			},
 		}
-	} else {
-		clientPacket = message.ClientPacket{
+	default:
+		clientPacket = &message.ClientPacket{
 			Rumor: &message.RumorRequest{Contents: *msg},
 		}
 	}
+	if clientPacket != nil {
+		sendClientPacket(clientPacket, conn)
+	}
 
-	buf, err := protobuf.Encode(&clientPacket)
+	defer conn.Close()
+}
+
+func sendClientPacket(clientPacket *message.ClientPacket, conn *net.UDPConn) {
+	buf, err := protobuf.Encode(clientPacket)
 	if err != nil {
-		fmt.Println("Protobuf error:", err, "while encoding:", clientPacket)
+		fmt.Println("Protobuf error:", err.Error(), "while encoding:", clientPacket)
 		return
 	}
 
 	_, sendErr := conn.Write(buf)
 	if sendErr != nil {
-		fmt.Println("Error while sending packet from client", err)
+		fmt.Println("Error while sending packet from client", sendErr.Error())
 	}
-
-	defer conn.Close()
 }
 
 func shareFile(filename string) *message.FileShareRequest {
