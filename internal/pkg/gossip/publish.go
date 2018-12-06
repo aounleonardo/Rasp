@@ -22,8 +22,8 @@ type Publish interface {
 	GetHopLimit() uint32
 }
 
-func getGossipPacket(pub Publish) *message.GossipPacket {
-	switch t := pub.(type) {
+func getPublishPacket(pub *Publish) *message.GossipPacket {
+	switch t := (*pub).(type) {
 	case chain.BlockPublish:
 		return &message.GossipPacket{BlockPublish: &t}
 	case chain.TxPublish:
@@ -49,7 +49,7 @@ func (gossiper *Gossiper) advertisePublisher(
 	}
 	filteredPeers := gossiper.getFilteredPeers(except)
 	for _, peer := range filteredPeers {
-		bytes := encodeMessage(getGossipPacket(pub))
+		bytes := encodeMessage(getPublishPacket(&pub))
 		gossiper.peers.RLock()
 		gossiper.gossipConn.WriteToUDP(bytes, gossiper.peers.m[peer])
 		gossiper.peers.RUnlock()
@@ -61,7 +61,7 @@ func (gossiper *Gossiper) receiveTxPublish(
 	fromSender *net.UDPAddr,
 ) {
 	chain.ReceiveTransaction(*tx)
-	gossiper.advertisePublisher(Publish(tx), wrapAddressAsString(fromSender))
+	gossiper.advertisePublisher(Publish(*tx), wrapAddressAsString(fromSender))
 }
 
 func (gossiper *Gossiper) indexFile(file *files.File) {
@@ -77,5 +77,5 @@ func (gossiper *Gossiper) receiveBlockPublish(
 	fromSender *net.UDPAddr,
 ) {
 	chain.ReceiveBlock(block.Block)
-	gossiper.advertisePublisher(Publish(block), wrapAddressAsString(fromSender))
+	gossiper.advertisePublisher(Publish(*block), wrapAddressAsString(fromSender))
 }
