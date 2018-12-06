@@ -22,7 +22,7 @@ var blockchain = struct {
 	longest [32]byte
 	length  int
 }{
-	m:       make(map[[32]byte]Block),
+	m:       map[[32]byte]Block{genesis: {}},
 	heads:   map[[32]byte]struct{}{genesis: {}},
 	longest: genesis,
 	length:  0,
@@ -197,6 +197,9 @@ func getChainHashes(start [32]byte) [][32]byte {
 			return chain
 		}
 		chain = append(chain, node)
+		if node == genesis {
+			return chain
+		}
 		node = block.PrevHash
 	}
 	return chain
