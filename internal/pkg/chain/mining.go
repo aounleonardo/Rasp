@@ -5,8 +5,8 @@ import (
 	"math/rand"
 )
 
-var stopMining = make(chan struct{})
-var zeroHash = make([]byte, 16)
+var stopMining = make(chan struct{}, 1)
+var zeroHash = make([]byte, 2)
 
 func Mine() {
 	for hasNoPendingTransactions() {

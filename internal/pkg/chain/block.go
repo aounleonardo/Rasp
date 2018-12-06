@@ -117,7 +117,7 @@ func isConflictingBlock(txs map[string]struct{}, other *Block) bool {
 
 func (block *Block) verifyHash() bool {
 	hash := block.Hash()
-	return bytes.Equal(hash[:16], zeroHash)
+	return bytes.Equal(hash[:2], zeroHash)
 }
 
 func hasParentOf(block *Block) bool {
