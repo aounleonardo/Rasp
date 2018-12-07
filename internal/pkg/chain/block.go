@@ -144,19 +144,21 @@ func (block *Block) toString() string {
 	)
 }
 
-func describeBlock(hash [32]byte) string {
+func describeBlock(hash [32]byte) *string {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
 	block, hasBlock := blockchain.m[hash]
 	if hash == genesis || !hasBlock {
-		return fmt.Sprintf("%x", hash)
+		return nil
 	}
-	return fmt.Sprintf(
+	var description *string
+	*description = fmt.Sprintf(
 		"%x:%x:%s",
 		hash,
 		block.PrevHash,
 		block.describeTransactions(),
 	)
+	return description
 }
 
 func (block *Block) describeTransactions() string {

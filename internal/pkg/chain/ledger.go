@@ -306,7 +306,10 @@ func chainToString() string {
 	pathToRoot := getChainHashes(currentHead)
 	chain := "CHAIN"
 	for _, node := range pathToRoot {
-		chain += fmt.Sprintf(" [%s]", describeBlock(node))
+		description := describeBlock(node)
+		if description != nil {
+			chain += fmt.Sprintf(" %s", *description)
+		}
 	}
 	return chain
 }
