@@ -97,8 +97,11 @@ func switchHeadTo(hash [32]byte) error {
 	}
 
 	ancestor := getCommonAncestor(currentHead, hash)
-	if ancestor != currentHead {
-		stop, err := rollbackTo(ancestor)
+	if ancestor == nil {
+		ancestor = &genesis
+	}
+	if *ancestor != currentHead {
+		stop, err := rollbackTo(*ancestor)
 		if err != nil {
 			_, fallback := applyChangesUpTo(currentHead, stop)
 			if fallback != nil {
@@ -113,10 +116,10 @@ func switchHeadTo(hash [32]byte) error {
 		}
 	}
 
-	_, err := applyChangesUpTo(hash, ancestor)
+	_, err := applyChangesUpTo(hash, *ancestor)
 	if err != nil {
-		rollbackTo(ancestor)
-		_, fallback := applyChangesUpTo(currentHead, ancestor)
+		rollbackTo(*ancestor)
+		_, fallback := applyChangesUpTo(currentHead, *ancestor)
 		if fallback != nil {
 			return errors.New(fmt.Sprintf(
 				"got error %s while applying changes,"+
@@ -134,7 +137,7 @@ func switchHeadTo(hash [32]byte) error {
 	return nil
 }
 
-func getCommonAncestor(block [32]byte, other [32]byte) [32]byte {
+func getCommonAncestor(block [32]byte, other [32]byte) *[32]byte {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
 
@@ -142,9 +145,9 @@ func getCommonAncestor(block [32]byte, other [32]byte) [32]byte {
 	ancestor, err := findFirstInPath(other, pathToRoot)
 	if err != nil {
 		fmt.Println("error when searching for common ancestor", block, other)
-		return block
+		return nil
 	}
-	return ancestor
+	return &ancestor
 }
 
 func findFirstInPath(start [32]byte, path [][32]byte) ([32]byte, error) {
@@ -157,6 +160,9 @@ func findFirstInPath(start [32]byte, path [][32]byte) ([32]byte, error) {
 
 	node := start
 	for {
+		if node == genesis {
+			return genesis, nil
+		}
 		block, hasNode := blockchain.m[node]
 		if !hasNode {
 			return [32]byte{},
@@ -204,10 +210,10 @@ func getChainHashes(start [32]byte) [][32]byte {
 		if !hasNode {
 			return chain
 		}
-		chain = append(chain, node)
 		if node == genesis {
 			return chain
 		}
+		chain = append(chain, node)
 		node = block.PrevHash
 	}
 	return chain
@@ -220,18 +226,22 @@ func rollbackTo(hash [32]byte) ([32]byte, error) {
 	}
 	pathToRoot := getChainHashes(currentHead)
 	if len(pathToRoot) == 0 {
-		return currentHead, errors.New("path to root empty")
+		return currentHead, nil
 	}
 	index := 0
 	node := pathToRoot[0]
 	for ; index < len(pathToRoot) && node != hash;
-	index, node = index+1, pathToRoot[index+1] {
+	index = index + 1 {
+		node = pathToRoot[index]
 		err := denyBlock(node)
 		if err != nil {
+			if hash == genesis {
+				return genesis, nil
+			}
 			return node, err
 		}
 	}
-	fmt.Printf("FORK-LONGER rewind %d blocks", index)
+	fmt.Printf("FORK-LONGER rewind %d blocks\n", index)
 	return node, nil
 }
 
@@ -242,9 +252,16 @@ func denyBlock(hash [32]byte) error {
 	}
 	ledger.Lock()
 	pendingTransactions.Lock()
+	pending := make(map[string]struct{}, len(pendingTransactions.l))
+	for _, pendingTx := range pendingTransactions.l {
+		pending[pendingTx.File.Name] = struct{}{}
+	}
 	for _, tx := range block.Transactions {
 		delete(ledger.m, tx.File.Name)
-		pendingTransactions.l = append(pendingTransactions.l, tx)
+		if _, hasPending := pending[tx.File.Name]; !hasPending {
+			pendingTransactions.l = append(pendingTransactions.l, tx)
+			pending[tx.File.Name] = struct{}{}
+		}
 	}
 	pendingTransactions.Unlock()
 	ledger.Unlock()
@@ -260,7 +277,11 @@ func applyChangesUpTo(stop [32]byte, ancestor [32]byte) ([32]byte, error) {
 	}
 	ancestorIndex, err := findNodeInPath(pathToRoot, ancestor)
 	if err != nil {
-		return genesis, err
+		if ancestor == genesis {
+			ancestorIndex = len(pathToRoot)
+		} else {
+			return genesis, err
+		}
 	}
 	changesToApply := pathToRoot[:ancestorIndex]
 	for _, node := range changesToApply {

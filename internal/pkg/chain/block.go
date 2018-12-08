@@ -38,12 +38,8 @@ func ReceiveBlock(block Block) {
 	if hasBlock(&block) {
 		fmt.Println("already has block", block.Hash())
 	}
-	if !hasParentOf(&block) && getHeadsCount() > 1 {
-		fmt.Println("received block with no parents in chain", block.Hash())
-		return
-	}
 	var head *[32]byte = nil
-	if isLongest(block.PrevHash) {
+	if !isLongest(block.PrevHash) {
 		head = &block.PrevHash
 	}
 	if !block.canAddBlockToHead(head) {
@@ -96,11 +92,11 @@ func canAddFilenamesToHead(
 		return true, nil
 	}
 	blockchain.RLock()
+	defer blockchain.RUnlock()
 	headBlock, hasBlock := blockchain.m[head]
 	if !hasBlock {
 		return true, nil
 	}
-	blockchain.RUnlock()
 	if isConflictingBlock(txs, &headBlock) {
 		return false, errors.New("conflicting block")
 	}
@@ -119,13 +115,6 @@ func isConflictingBlock(txs map[string]struct{}, other *Block) bool {
 func (block *Block) verifyHash() bool {
 	hash := block.Hash()
 	return bytes.Equal(hash[:2], zeroHash)
-}
-
-func hasParentOf(block *Block) bool {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-	_, hasParent := blockchain.m[block.PrevHash]
-	return hasParent
 }
 
 func publishBlock(block Block) {
@@ -151,14 +140,13 @@ func describeBlock(hash [32]byte) *string {
 	if hash == genesis || !hasBlock {
 		return nil
 	}
-	var description *string
-	*description = fmt.Sprintf(
+	description := fmt.Sprintf(
 		"%x:%x:%s",
 		hash,
 		block.PrevHash,
 		block.describeTransactions(),
 	)
-	return description
+	return &description
 }
 
 func (block *Block) describeTransactions() string {
