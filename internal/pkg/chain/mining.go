@@ -8,7 +8,7 @@ import (
 
 var stopMining = make(chan struct{}, 1)
 var zeroHash = make([]byte, 2)
-var first = false
+var first = true
 
 func Mine() {
 	for hasNoPendingTransactions() {
@@ -38,14 +38,14 @@ func Mine() {
 			if newBlock.verifyHash() {
 				fmt.Printf("FOUND-BLOCK %x\n", newBlock.Hash())
 				miningDuration := time.Now().Sub(miningStartTime)
-				if first {
-					time.Sleep(5 * time.Second)
-					first = true
-				} else {
-					time.Sleep(2 * miningDuration)
-				}
 				ReceiveBlock(newBlock)
+				wait := 2 * miningDuration
+				if first {
+					first = false
+					wait = 5 * time.Second
+				}
 				go func() {
+					time.Sleep(wait)
 					publishBlock(newBlock)
 				}()
 			}
