@@ -25,6 +25,11 @@ type GossipPacket struct {
 	SearchReply   *SearchReply
 	TxPublish     *chain.TxPublish
 	BlockPublish  *chain.BlockPublish
+
+	RaspRequest  *RaspRequest
+	RaspResponse *RaspResponse
+	RaspAttack   *RaspAttack
+	RaspDefence  *RaspDefence
 }
 
 type ClientPacket struct {
