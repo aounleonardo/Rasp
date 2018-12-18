@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"crypto/rsa"
 )
 
 const maxMsgSize = 10000
@@ -35,6 +36,7 @@ type Gossiper struct {
 	routing    Routes
 	privates   Privates
 	files      Files
+	raspKey    *rsa.PrivateKey
 }
 
 func NewGossiper(
@@ -83,10 +85,12 @@ func NewGossiper(
 		files:      Files{m: make(map[string]files.File)},
 	}
 
+	key := chain.StartGame()
+	gossiper.raspKey = key
+
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
 	go gossiper.routeRumorMessages(rtimer)
-	go chain.Mine()
 	go gossiper.publishMinedBlocks()
 
 	return gossiper

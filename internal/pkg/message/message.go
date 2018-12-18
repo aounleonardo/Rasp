@@ -46,6 +46,9 @@ type ClientPacket struct {
 	Search      *PerformSearchRequest
 	GetSearches *SearchesRequest
 
+	CreateMatch *CreateMatchRequest
+	AcceptMatch *AcceptMatchRequest
+
 	TestReconstruct *TestFileReconstructRequest
 }
 
