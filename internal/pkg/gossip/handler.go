@@ -297,7 +297,7 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 	var explanation error
 	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
 
-	_, err := chain.CreateMatch(
+	raspRequest, err := chain.CreateMatch(
 		request.Destination,
 		request.Bet,
 		request.Move,
@@ -311,7 +311,8 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 	}
 
 	if request.Destination == nil {
-		// TODO send rumour
+		rumour := gossiper.createRaspRumour(raspRequest)
+		go gossiper.rumormonger(rumour, gossiper.gossipAddr)
 	} else {
 		// TODO send pm
 	}

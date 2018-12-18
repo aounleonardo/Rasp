@@ -148,7 +148,7 @@ func (gossiper *Gossiper) handleClientPacket(
 	case packet.GetSearches != nil:
 		gossiper.handleGetSearchesRequest(clientAddr)
 	case packet.CreateMatch != nil:
-
+		gossiper.handleCreateMatchRequest(packet.CreateMatch, clientAddr)
 	default:
 		gossiper.handleTestPacket(packet, clientAddr)
 	}
