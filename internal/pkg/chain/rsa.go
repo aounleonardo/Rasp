@@ -11,8 +11,6 @@ import (
 const keySize = 1024
 const hashFunctionType = crypto.SHA256
 var hashFunction = sha256.Sum256
-type uid = uint64
-type bet = uint32
 
 type RequestSignature struct {
 	Identifier uid
