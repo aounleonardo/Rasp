@@ -327,6 +327,37 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 	}
 }
 
+func (gossiper *Gossiper) handleAcceptMatchRequest(
+	request *chain.AcceptMatchRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+
+	raspResponse, err := chain.AcceptMatch(
+		request.Identifier,
+		request.Move,
+		gossiper.Name,
+		gossiper.raspKey,
+	)
+
+	if err != nil {
+		explanation = err
+		success = false
+		return
+	}
+
+	gossiper.handleSendPrivateRequest(
+		&message.PrivatePutRequest{
+			Contents: "",
+			Destination: raspResponse.Destination,
+		},
+		&message.RaspMessage{RaspResponse: raspResponse},
+		clientAddr,
+	)
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,
