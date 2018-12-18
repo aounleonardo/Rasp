@@ -10,11 +10,12 @@ import (
 
 const keySize = 1024
 const hashFunctionType = crypto.SHA256
+
 var hashFunction = sha256.Sum256
 
 type RequestSignature struct {
-	Identifier uid
-	Bet bet
+	Identifier Uid
+	Bet        Bet
 }
 
 type ResponseSignature struct {
@@ -22,25 +23,25 @@ type ResponseSignature struct {
 }
 
 type AttackSignature1 struct {
-	Identifier uid
-	Bet uint32
+	Identifier Uid
+	Bet        uint32
 }
 
 type AttackSignature2 struct {
-	Identifier uid
-	Move int
-	Nonce uint64
+	Identifier Uid
+	Move       int
+	Nonce      uint64
 }
 
 type DefenceSignature struct {
-	Identifier uid
-	Move int
+	Identifier Uid
+	Move       int
 }
 
 type RevealSignature struct {
-	Identifier uid
-	Move int
-	Nonce uint64
+	Identifier Uid
+	Move       int
+	Nonce      uint64
 }
 
 func GenerateKeys() (private *rsa.PrivateKey, public *rsa.PublicKey, err error) {
@@ -71,13 +72,13 @@ func verify(public *rsa.PublicKey, enc []byte, sig []byte) (ok bool) {
 
 	hash := hashFunction(enc)
 
-	ok =  rsa.VerifyPKCS1v15(public, hashFunctionType, hash[:], sig) == nil
+	ok = rsa.VerifyPKCS1v15(public, hashFunctionType, hash[:], sig) == nil
 
 	return
 
 }
 
-func SignRequest(private *rsa.PrivateKey, id uid, b bet) (sig []byte, err error) {
+func SignRequest(private *rsa.PrivateKey, id Uid, b Bet) (sig []byte, err error) {
 
 	req := &RequestSignature{id, b}
 
@@ -93,7 +94,7 @@ func SignRequest(private *rsa.PrivateKey, id uid, b bet) (sig []byte, err error)
 
 }
 
-func VerifyRequest(public *rsa.PublicKey, id uid, b bet, sig []byte) (ok bool, err error) {
+func VerifyRequest(public *rsa.PublicKey, id Uid, b Bet, sig []byte) (ok bool, err error) {
 
 	req := &RequestSignature{id, b}
 
@@ -109,7 +110,7 @@ func VerifyRequest(public *rsa.PublicKey, id uid, b bet, sig []byte) (ok bool, e
 
 }
 
-func SignResponse(private *rsa.PrivateKey, id uid) (sig []byte, err error) {
+func SignResponse(private *rsa.PrivateKey, id Uid) (sig []byte, err error) {
 
 	res := &ResponseSignature{id}
 
@@ -124,7 +125,7 @@ func SignResponse(private *rsa.PrivateKey, id uid) (sig []byte, err error) {
 	return
 }
 
-func VerifyResponse(public *rsa.PublicKey, id uid, sig []byte) (ok bool, err error) {
+func VerifyResponse(public *rsa.PublicKey, id Uid, sig []byte) (ok bool, err error) {
 
 	req := &ResponseSignature{id}
 
@@ -140,33 +141,33 @@ func VerifyResponse(public *rsa.PublicKey, id uid, sig []byte) (ok bool, err err
 
 }
 
-func SignAttack(private *rsa.PrivateKey, id uid, b bet,
-	move int, nonce uint64)(sig1 []byte, sig2 []byte, err error) {
+func SignAttack(private *rsa.PrivateKey, id Uid, b Bet,
+	move int, nonce uint64) (sig1 []byte, sig2 []byte, err error) {
 
-		att1 := &AttackSignature1{id, b}
-		att2 := &AttackSignature2{id, move, nonce}
+	att1 := &AttackSignature1{id, b}
+	att2 := &AttackSignature2{id, move, nonce}
 
-		enc1, err := protobuf.Encode(att1)
+	enc1, err := protobuf.Encode(att1)
 
-		if err == nil {
-			sig1, err = sign(private, enc1)
-		}
+	if err == nil {
+		sig1, err = sign(private, enc1)
+	}
 
-		if err != nil {
-			return
-		}
-
-		enc2, err := protobuf.Encode(att2)
-
-		if err == nil {
-			sig2, err = sign(private, enc2)
-		}
-
+	if err != nil {
 		return
+	}
+
+	enc2, err := protobuf.Encode(att2)
+
+	if err == nil {
+		sig2, err = sign(private, enc2)
+	}
+
+	return
 
 }
 
-func VerifyAttack(public *rsa.PublicKey, id uid, b bet,
+func VerifyAttack(public *rsa.PublicKey, id Uid, b Bet,
 	move int, nonce uint64, sig1 []byte, sig2 []byte) (ok bool, err error) {
 
 	att1 := &AttackSignature1{id, b}
@@ -194,7 +195,7 @@ func VerifyAttack(public *rsa.PublicKey, id uid, b bet,
 
 }
 
-func SignDefence(private *rsa.PrivateKey, id uid, move int) (sig []byte, err error) {
+func SignDefence(private *rsa.PrivateKey, id Uid, move int) (sig []byte, err error) {
 
 	def := &DefenceSignature{id, move}
 
@@ -210,7 +211,7 @@ func SignDefence(private *rsa.PrivateKey, id uid, move int) (sig []byte, err err
 
 }
 
-func VerifyDefence(public *rsa.PublicKey, id uid, move int, sig []byte) (ok bool, err error) {
+func VerifyDefence(public *rsa.PublicKey, id Uid, move int, sig []byte) (ok bool, err error) {
 
 	def := &DefenceSignature{id, move}
 
@@ -226,7 +227,7 @@ func VerifyDefence(public *rsa.PublicKey, id uid, move int, sig []byte) (ok bool
 
 }
 
-func SignReveal(private *rsa.PrivateKey, id uid, move int, nonce uint64)(sig []byte, err error) {
+func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64) (sig []byte, err error) {
 
 	rev := &RevealSignature{id, move, nonce}
 
@@ -242,7 +243,7 @@ func SignReveal(private *rsa.PrivateKey, id uid, move int, nonce uint64)(sig []b
 
 }
 
-func VerifyReveal(public *rsa.PublicKey, id uid, move int, nonce uint64, sig []byte) (ok bool, err error) {
+func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, sig []byte) (ok bool, err error) {
 
 	rev := &RevealSignature{id, move, nonce}
 

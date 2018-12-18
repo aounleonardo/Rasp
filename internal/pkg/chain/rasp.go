@@ -3,6 +3,10 @@ package chain
 import (
 	"crypto"
 	"sync"
+	"math/rand"
+	"time"
+	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 )
 
 const (
@@ -19,8 +23,10 @@ const (
 	Scissors = iota
 )
 
-type uid = uint64
-type bet = uint32
+type Uid = uint64
+type Bet = uint32
+type Move = int
+type Stage = int
 
 type Player struct {
 	Key     crypto.PublicKey
@@ -29,10 +35,10 @@ type Player struct {
 
 type GameAction struct {
 	Type       int
-	Identifier uint64
+	Identifier Uid
 	Attacker   string
 	Defender   string
-	Bet        uint32
+	Bet        Bet
 	Special    []byte
 }
 
@@ -41,25 +47,44 @@ type ChallengeState struct {
 	Attacker    string
 	Defender    *string
 	Bet         uint32
-	AttackMove  *int
-	DefenceMove *int
+	AttackMove  *Move
+	DefenceMove *Move
 	Nonce       *uint64
-	Stage       int
+	Stage       Stage
 }
 
 var raspState = struct {
 	sync.Mutex
-	challenges map[uid]*ChallengeState
-	proposed   []uid
-	pending    []uid
-	accepted   []uid
-	ongoing    []uid
-	finished   []uid
+	challenges map[Uid]*ChallengeState
+	proposed   []Uid
+	pending    []Uid
+	accepted   []Uid
+	ongoing    []Uid
+	finished   []Uid
 }{
-	challenges: make(map[uid]*ChallengeState),
-	proposed:   make([]uid, 0),
-	pending:    make([]uid, 0),
-	accepted:   make([]uid, 0),
-	ongoing:    make([]uid, 0),
-	finished:   make([]uid, 0),
+	challenges: make(map[Uid]*ChallengeState),
+	proposed:   make([]Uid, 0),
+	pending:    make([]Uid, 0),
+	accepted:   make([]Uid, 0),
+	ongoing:    make([]Uid, 0),
+	finished:   make([]Uid, 0),
+}
+
+func StartGame() {
+	rand.Seed(time.Now().UnixNano())
+	time.Sleep(time.Second)
+	fmt.Println("Starting Game")
+	go Mine()
+}
+
+func createChallengeUID() Uid {
+	return rand.Uint64()
+}
+
+func CreateChallenge(
+	destination *string,
+	bet Bet,
+	move Move,
+) (request message.RaspRequest, err error) {
+	return
 }
