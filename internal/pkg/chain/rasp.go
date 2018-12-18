@@ -58,7 +58,7 @@ type Match struct {
 }
 
 var raspState = struct {
-	sync.Mutex
+	sync.RWMutex
 	matches  map[Uid]*Match
 	proposed map[Uid]struct{}
 	pending  map[Uid]struct{}
@@ -140,4 +140,11 @@ func CreateMatch(
 		Signature:   signature,
 	}
 	return
+}
+
+func HasSeenMatch(id Uid) bool {
+	raspState.RLock()
+	defer raspState.RUnlock()
+	_, exists := raspState.matches[id]
+	return exists
 }
