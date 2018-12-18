@@ -3,6 +3,7 @@ package chain
 import (
 	"math/rand"
 	"testing"
+	"crypto/x509"
 )
 
 func TestSignRequest(t *testing.T) {
@@ -63,4 +64,29 @@ func TestSignAttack(t *testing.T) {
 		t.Error("Verify failed")
 	}
 
+}
+
+func TestProtobufKey(t *testing.T) {
+	_, public, _ := GenerateKeys()
+
+	enc := x509.MarshalPKCS1PublicKey(public)
+
+	dec, err := x509.ParsePKCS1PublicKey(enc)
+
+	if err != nil {
+		t.Error("error decoding key", err.Error())
+		return
+	}
+
+	if dec.Size() != public.Size() {
+		t.Error("not same size", public.Size(), dec.Size())
+	}
+
+	if dec.N.Cmp(public.N) != 0 {
+		t.Error("not same N", *public.N, *dec.N)
+	}
+
+	if dec.E != public.E {
+		t.Error("not same E", public.E, dec.E)
+	}
 }
