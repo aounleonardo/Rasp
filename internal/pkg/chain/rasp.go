@@ -141,9 +141,48 @@ func CreateMatch(
 	return
 }
 
+func AcceptMatch(
+	id Uid,
+	move Move,
+	gossiper string,
+	privateKey *rsa.PrivateKey,
+) (response *RaspResponse, err error) {
+	if !isMatchPending(id) {
+		err = errors.New(fmt.Sprintf("match %d is not pending", id))
+		return
+	}
+	raspState.Lock()
+	defer raspState.Unlock()
+
+	// TODO check balances
+
+	raspState.matches[id].DefenceMove = &move
+	delete(raspState.pending, id)
+	raspState.accepted[id] = struct{}{}
+
+	// TODO put a timeout to check if it is not ongoing -> set pending again ?
+
+	signature, err := SignResponse(privateKey, id)
+
+	response = &RaspResponse{
+		Destination: raspState.matches[id].Attacker,
+		Origin:      gossiper,
+		Identifier:  id,
+		Signature:   signature,
+	}
+	return
+}
+
 func HasSeenMatch(id Uid) bool {
 	raspState.RLock()
 	defer raspState.RUnlock()
 	_, exists := raspState.matches[id]
+	return exists
+}
+
+func isMatchPending(id Uid) bool {
+	raspState.RLock()
+	defer raspState.RUnlock()
+	_, exists := raspState.pending[id]
 	return exists
 }
