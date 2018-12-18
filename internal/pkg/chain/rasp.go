@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"time"
 	"fmt"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"crypto/rsa"
 	"github.com/dedis/onet/log"
 	"errors"
@@ -101,7 +100,7 @@ func CreateMatch(
 	move Move,
 	gossiper string,
 	privateKey *rsa.PrivateKey,
-) (request *message.RaspRequest, err error) {
+) (request *RaspRequest, err error) {
 	/* TODO
 		verify both players exists
 		have enough balance
@@ -132,7 +131,7 @@ func CreateMatch(
 		)
 	}
 
-	request = &message.RaspRequest{
+	request = &RaspRequest{
 		Identifier:  uid,
 		Bet:         bet,
 		Destination: destination,

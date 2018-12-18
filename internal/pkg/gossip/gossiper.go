@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"crypto/rsa"
 )
 
@@ -85,8 +84,8 @@ func NewGossiper(
 		files:      Files{m: make(map[string]files.File)},
 	}
 
-	key := chain.StartGame()
-	gossiper.raspKey = key
+	// key := chain.StartGame()
+	// gossiper.raspKey = key
 
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()

@@ -290,14 +290,14 @@ func (gossiper *Gossiper) handleGetSearchesRequest(clientAddr *net.UDPAddr) {
 }
 
 func (gossiper *Gossiper) handleCreateMatchRequest(
-	request *message.CreateMatchRequest,
+	request *chain.CreateMatchRequest,
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
 	var explanation error
 	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
 
-	raspRequest, err := chain.CreateMatch(
+	_, err := chain.CreateMatch(
 		request.Destination,
 		request.Bet,
 		request.Move,
@@ -310,11 +310,10 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 		return
 	}
 
-	packet := &message.GossipPacket{RaspRequest: raspRequest}
 	if request.Destination == nil {
 		// TODO send rumour
 	} else {
-		gossiper.relayGossipPacket(packet, *request.Destination)
+		// TODO send pm
 	}
 }
 
