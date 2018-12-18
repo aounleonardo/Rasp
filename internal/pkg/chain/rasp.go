@@ -101,7 +101,7 @@ func CreateMatch(
 	move Move,
 	gossiper string,
 	privateKey *rsa.PrivateKey,
-) (request message.RaspRequest, err error) {
+) (request *message.RaspRequest, err error) {
 	/* TODO
 		verify both players exists
 		have enough balance
@@ -132,7 +132,7 @@ func CreateMatch(
 		)
 	}
 
-	request = message.RaspRequest{
+	request = &message.RaspRequest{
 		Identifier:  uid,
 		Bet:         bet,
 		Destination: destination,

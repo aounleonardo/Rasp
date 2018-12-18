@@ -6,6 +6,7 @@ import (
 	"github.com/dedis/protobuf"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -22,7 +23,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	} else {
 		go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 	}
-	gossiper.sendValidationToClient(&success, clientAddr)
+	gossiper.sendValidationToClient(&success, nil, clientAddr)
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
@@ -65,7 +66,7 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	address, err := net.ResolveUDPAddr(
 		"udp4",
 		fmt.Sprintf("%s:%s", request.Address, request.Port),
@@ -96,7 +97,7 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	gossiper.routing.RLock()
 	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
 		success = false
@@ -201,7 +202,7 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 ) {
 	metakey := files.HashToKey(request.Metahash)
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	if files.IsChunkPresent(request.Metahash) {
 		if !files.IsUndergoneMetafile(request.Metahash) {
 			success = false
@@ -288,6 +289,35 @@ func (gossiper *Gossiper) handleGetSearchesRequest(clientAddr *net.UDPAddr) {
 	)
 }
 
+func (gossiper *Gossiper) handleCreateMatchRequest(
+	request *message.CreateMatchRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+
+	raspRequest, err := chain.CreateMatch(
+		request.Destination,
+		request.Bet,
+		request.Move,
+		gossiper.Name,
+		gossiper.raspKey,
+	)
+	if err != nil {
+		explanation = err
+		success = false
+		return
+	}
+
+	packet := &message.GossipPacket{RaspRequest: raspRequest}
+	if request.Destination == nil {
+		// TODO send rumour
+	} else {
+		gossiper.relayGossipPacket(packet, *request.Destination)
+	}
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,
@@ -303,10 +333,18 @@ func (gossiper *Gossiper) sendToClient(
 
 func (gossiper *Gossiper) sendValidationToClient(
 	success *bool,
+	err *error,
 	clientAddr *net.UDPAddr,
 ) {
+	explanation := ""
+	if err != nil && (*err) != nil {
+		explanation = (*err).Error()
+	}
 	gossiper.sendToClient(
-		&message.ValidationResponse{Success: *success},
+		&message.ValidationResponse{
+			Success: *success,
+			Error: explanation,
+		},
 		clientAddr,
 	)
 }

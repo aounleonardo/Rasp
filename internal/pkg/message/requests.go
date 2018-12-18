@@ -37,6 +37,7 @@ type MessagesResponse struct {
 
 type ValidationResponse struct {
 	Success bool
+	Error   string
 }
 
 type AddPeerRequest struct {
@@ -92,7 +93,7 @@ type PerformSearchRequest struct {
 	Budget   *uint64
 }
 
-type SearchesRequest struct {}
+type SearchesRequest struct{}
 
 type SearchesResponse struct {
 	Files []SearchesFile
