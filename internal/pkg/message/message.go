@@ -65,6 +65,10 @@ type PrivateMessage struct {
 	Destination string
 	HopLimit    uint32
 
+	Rasp        *RaspMessage
+}
+
+type RaspMessage struct {
 	RaspRequest  *chain.RaspRequest
 	RaspResponse *chain.RaspResponse
 	RaspAttack   *chain.RaspAttack

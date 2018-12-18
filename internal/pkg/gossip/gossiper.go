@@ -136,7 +136,7 @@ func (gossiper *Gossiper) handleClientPacket(
 	case packet.Chats != nil:
 		gossiper.handleChatsRequest(packet.Chats, clientAddr)
 	case packet.SendPrivate != nil:
-		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
+		gossiper.handleSendPrivateRequest(packet.SendPrivate, nil, clientAddr)
 	case packet.GetPrivate != nil:
 		gossiper.handleGetPrivateRequest(packet.GetPrivate, clientAddr)
 	case packet.FileShare != nil:

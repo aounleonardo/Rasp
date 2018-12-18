@@ -94,6 +94,7 @@ func (gossiper *Gossiper) handleChatsRequest(
 
 func (gossiper *Gossiper) handleSendPrivateRequest(
 	request *message.PrivatePutRequest,
+	raspMessage *message.RaspMessage,
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
@@ -119,6 +120,7 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 		Text:        request.Contents,
 		Destination: request.Destination,
 		HopLimit:    hopLimit,
+		Rasp:        raspMessage,
 	}
 	gossiper.privates.RUnlock()
 	gossiper.receivePrivateMessage(private)
@@ -314,7 +316,14 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 		rumour := gossiper.createRaspRumour(raspRequest)
 		go gossiper.rumormonger(rumour, gossiper.gossipAddr)
 	} else {
-		// TODO send pm
+		gossiper.handleSendPrivateRequest(
+			&message.PrivatePutRequest{
+				Contents: "",
+				Destination: *request.Destination,
+			},
+			&message.RaspMessage{RaspRequest: raspRequest},
+			clientAddr,
+		)
 	}
 }
 
@@ -343,7 +352,7 @@ func (gossiper *Gossiper) sendValidationToClient(
 	gossiper.sendToClient(
 		&message.ValidationResponse{
 			Success: *success,
-			Error: explanation,
+			Error:   explanation,
 		},
 		clientAddr,
 	)
