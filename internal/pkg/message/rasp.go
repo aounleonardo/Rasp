@@ -1,27 +1,29 @@
 package message
 
+type Signature = []byte
+
 type RaspRequest struct {
 	Identifier  uint64
 	Bet         uint32
-	Destination string
+	Destination *string
 	Origin      string
-	Signature   uint64
+	Signature   Signature
 }
 
 type RaspResponse struct {
 	Destination string
 	Origin      string
-	Signature   uint64
+	Signature   Signature
 }
 
 type RaspAttack struct {
 	Destination string
 	Origin      string
-	SignedMove  uint64
+	SignedMove  Signature
 }
 
 type RaspDefence struct {
 	Destination string
 	Origin      string
-	SignedMove  uint64
+	SignedMove  Signature
 }
