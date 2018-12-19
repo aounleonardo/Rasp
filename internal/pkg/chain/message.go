@@ -4,7 +4,6 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/dedis/protobuf"
 )
 
 type Signature = []byte
@@ -152,8 +151,6 @@ func ReceiveRaspAttack(
 	attack RaspAttack,
 	privateKey *rsa.PrivateKey,
 ) (defence *RaspDefence, err error) {
-	att1 := &AttackSignature1{attack.Identifier, attack.Bet}
-	enc1, err := protobuf.Encode(att1)
 	opponent, opponentExists := getPlayer(attack.Origin)
 	if !opponentExists{
 		err = errors.New(
@@ -162,11 +159,7 @@ func ReceiveRaspAttack(
 		return
 	}
 	attackerPublic := opponent.Key
-	var ok = false
-	if err == nil {
-
-		ok = verify(&attackerPublic, enc1, attack.SignedBet)
-	}
+	ok, err := VerifyAttack(&attackerPublic, attack.Identifier, attack.Bet, attack.SignedBet )
 	if !ok{
 		err = errors.New(
 			fmt.Sprintf("Unable to verify the signedBet from %s",
