@@ -26,8 +26,10 @@ func (t *TxPublish) Hash() (out [32]byte) {
 	h.Write([]byte(t.Action.Attacker))
 	h.Write([]byte(t.Action.Defender))
 	binary.Write(h, binary.LittleEndian, uint32(t.Action.Bet))
-	h.Write(t.Action.Special)
+	binary.Write(h, binary.LittleEndian, uint32(t.Action.Move))
+	binary.Write(h, binary.LittleEndian, uint64(t.Action.Nonce))
+	h.Write(t.Action.HiddenMove)
+	h.Write(t.Action.SignedSpecial)
 	copy(out[:], h.Sum(nil))
 	return
-
 }
