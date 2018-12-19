@@ -136,6 +136,7 @@ func CreateMatch(
 	verify both players exists
 	have enough balance
 	throw otherwise
+	create hidden move
 	*/
 	uid := createUID()
 	nonce := createNonce()
