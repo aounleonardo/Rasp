@@ -203,7 +203,7 @@ func AcceptMatch(
 	defer raspState.Unlock()
 	match := raspState.matches[id]
 
-	player , playerExists:= getPlayer(gossiper)
+	player, playerExists := getPlayer(gossiper)
 	opponent, opponentExists := getPlayer(match.Attacker)
 	if !playerExists || !opponentExists {
 		err = errors.New(fmt.Sprintf(
