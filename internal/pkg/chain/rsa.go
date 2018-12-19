@@ -13,6 +13,7 @@ const keySize = 1024
 const hashFunctionType = crypto.SHA256
 
 var hashFunction = sha256.Sum256
+const pad = 968113537
 
 type RequestSignature struct {
 	Identifier Uid
@@ -26,6 +27,7 @@ type ResponseSignature struct {
 type AttackSignature struct {
 	Identifier Uid
 	Bet        uint32
+	Pad uint32
 }
 
 type HiddenMoveSignature struct {
@@ -157,6 +159,7 @@ func SignHiddenMove(
 	move int,
 	nonce uint64,
 ) (hiddenMove []byte, err error) {
+
 	signature := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
 	encoding, err := protobuf.Encode(signature)
 
@@ -174,7 +177,7 @@ func SignAttack(
 	b Bet,
 ) (sig []byte, err error) {
 
-	att := &AttackSignature{Identifier: id, Bet: b}
+	att := &AttackSignature{Identifier: id, Bet: b, Pad: pad}
 
 	enc, err := protobuf.Encode(att)
 
@@ -194,12 +197,16 @@ func VerifyHiddenMove(
 	nonce uint64,
 	signature []byte,
 ) (ok bool, err error) {
+
 	hiddenMove := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
 	encoding, err := protobuf.Encode(hiddenMove)
+
 	if err != nil {
 		return
 	}
+
 	ok = verify(public, encoding, signature)
+
 	return
 }
 
@@ -210,7 +217,7 @@ func VerifyAttack(
 	sig []byte,
 ) (ok bool, err error) {
 
-	att := &AttackSignature{id, b}
+	att := &AttackSignature{id, b, pad}
 
 	enc, err := protobuf.Encode(att)
 
@@ -219,6 +226,7 @@ func VerifyAttack(
 	}
 
 	ok = verify(public, enc, sig)
+
 	return
 }
 
@@ -283,5 +291,18 @@ func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, sig []b
 	}
 
 	return
+
+}
+
+
+// TODO could change name, I simply call signResponse bc it's the same code but I didn't want to break calls
+func SignCancel(private *rsa.PrivateKey, id Uid) ([]byte, error) {
+
+	return SignResponse(private, id)
+}
+
+func VerifyCancel(public *rsa.PublicKey, id Uid, sig []byte) (bool, error) {
+
+	return VerifyResponse(public, id, sig)
 
 }
