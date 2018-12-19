@@ -106,6 +106,10 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 		RumorKey{origin: rumor.Origin, messageID: rumor.ID},
 	)
 	messageOrdering.Unlock()
+
+	if rumor.RaspRequest != nil {
+		chain.ReceiveRaspRequest(*rumor.RaspRequest)
+	}
 }
 
 func (gossiper *Gossiper) getMessagesSince(
@@ -133,30 +137,106 @@ func (gossiper *Gossiper) getMessagesSince(
 func (gossiper *Gossiper) receivePrivateMessage(
 	private *message.PrivateMessage,
 ) {
-	if private.Destination == gossiper.Name {
-		fmt.Printf(
-			"PRIVATE origin %s hop-limit %d contents %s\n",
-			private.Origin,
-			private.HopLimit,
-			private.Text,
-		)
-		gossiper.savePrivateMessage(private)
+	if private.Destination != gossiper.Name {
+		relayed := *private
+		relayed.HopLimit -= 1
+		if relayed.HopLimit < 1 {
+			return
+		}
+		gossiper.relayPrivateMessage(&relayed)
 		return
 	}
-	relayed := *private
-	relayed.HopLimit -= 1
-	if relayed.HopLimit < 1 {
-		return
+
+	fmt.Printf(
+		"PRIVATE origin %s hop-limit %d contents %s\n",
+		private.Origin,
+		private.HopLimit,
+		private.Text,
+	)
+	gossiper.savePrivateMessage(private)
+
+	if private.Rasp != nil {
+		gossiper.receiveRaspMessage(private.Rasp, private.Origin)
 	}
-	gossiper.sendPrivateMessage(&relayed)
+}
+
+func (gossiper *Gossiper) receiveRaspMessage(
+	rasp *message.RaspMessage,
+	origin string,
+) {
+	var raspToSend *message.RaspMessage
+	switch {
+	case rasp.Request != nil:
+		chain.ReceiveRaspRequest(*rasp.Request)
+	case rasp.Response != nil:
+		attack, err :=
+			chain.ReceiveRaspResponse(*rasp.Response, gossiper.raspKey)
+		if err != nil {
+			fmt.Println(
+				"error receiving response",
+				*rasp.Response,
+				err.Error(),
+			)
+			return
+		}
+		raspToSend = &message.RaspMessage{
+			Attack: attack,
+		}
+	case rasp.Attack != nil:
+		defence, err := chain.ReceiveRaspAttack(*rasp.Attack, gossiper.raspKey)
+		if err != nil {
+			fmt.Println("error receiving attack", *rasp.Attack, err.Error())
+			return
+		}
+		raspToSend = &message.RaspMessage{
+			Defence: defence,
+		}
+	case rasp.Defence != nil:
+		chain.ReceiveRaspDefence(*rasp.Defence, gossiper.raspKey)
+	}
+	if raspToSend != nil {
+		err := gossiper.sendPrivateMessage("", origin, raspToSend)
+		if err != nil {
+			fmt.Println("error sending rasp", *raspToSend, err.Error())
+		}
+	}
 }
 
 func (gossiper *Gossiper) sendPrivateMessage(
+	contents string,
+	destination string,
+	rasp *message.RaspMessage,
+) (err error) {
+	gossiper.routing.RLock()
+	if _, knowsRoute := gossiper.routing.m[destination]; !knowsRoute {
+		err = errors.New(fmt.Sprintf(
+			"does not know route to destination: %s\n",
+			destination,
+		))
+		return
+	}
+	gossiper.routing.RUnlock()
+	gossiper.upsertChatter(destination)
+	gossiper.privates.RLock()
+	chatHistory, _ := gossiper.privates.m[destination]
+	id := chatHistory.nextSend
+	chatHistory.nextSend += 1
+	private := &message.PrivateMessage{
+		Origin:      gossiper.Name,
+		ID:          id,
+		Text:        contents,
+		Destination: destination,
+		HopLimit:    hopLimit,
+		Rasp:        rasp,
+	}
+	gossiper.privates.RUnlock()
+	gossiper.receivePrivateMessage(private)
+	return
+}
+
+func (gossiper *Gossiper) relayPrivateMessage(
 	private *message.PrivateMessage,
 ) {
-	if private.Origin == gossiper.Name {
-		gossiper.savePrivateMessage(private)
-	}
 	gossiper.relayGossipPacket(
 		&message.GossipPacket{Private: private},
 		private.Destination,
