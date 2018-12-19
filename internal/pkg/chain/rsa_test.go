@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"crypto/x509"
 	"math/rand"
 	"testing"
 )
@@ -66,17 +65,12 @@ func TestSignAttack(t *testing.T) {
 
 }
 
-func TestProtobufKey(t *testing.T) {
+func TestKeyEncoding(t *testing.T) {
 	_, public, _ := GenerateKeys()
 
-	enc := x509.MarshalPKCS1PublicKey(public)
+	enc := encodeKey(public)
 
-	dec, err := x509.ParsePKCS1PublicKey(enc)
-
-	if err != nil {
-		t.Error("error decoding key", err.Error())
-		return
-	}
+	dec := decodeKey(enc)
 
 	if dec.Size() != public.Size() {
 		t.Error("not same size", public.Size(), dec.Size())

@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"github.com/dedis/protobuf"
+	"crypto/x509"
 )
 
 const keySize = 1024
@@ -56,6 +57,15 @@ func GenerateKeys() (private *rsa.PrivateKey, public *rsa.PublicKey, err error) 
 
 	return
 
+}
+
+func encodeKey(public *rsa.PublicKey) []byte {
+	return x509.MarshalPKCS1PublicKey(public)
+}
+
+func decodeKey(bytes []byte) *rsa.PublicKey {
+	key, _ := x509.ParsePKCS1PublicKey(bytes)
+	return key
 }
 
 func sign(private *rsa.PrivateKey, enc []byte) (sig []byte, err error) {

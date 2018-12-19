@@ -33,6 +33,15 @@ var pendingTransactions = struct {
 	},
 }
 
+var TxsChan = make(chan TxPublish)
+
+func publishAction(action GameAction) {
+	TxsChan <- TxPublish{
+		Action: action,
+		HopLimit: txHopLimit,
+	}
+}
+
 func getNewSpawns(tmpBalances map[string]int64) []TxPublish {
 	pendingTransactions.RLock()
 	var validSpawns = []TxPublish(nil)

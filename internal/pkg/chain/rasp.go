@@ -87,20 +87,37 @@ var raspState = struct {
 	finished: make(map[Uid]struct{}),
 }
 
-func StartGame() *rsa.PrivateKey {
+func StartGame(gossiper string) *rsa.PrivateKey {
 	rand.Seed(time.Now().UnixNano())
 	private, public, err := GenerateKeys()
 	if err != nil {
 		log.Fatal("error generating keys", err.Error())
 	}
-	// TODO advertise public key, and create random identifier
-	time.Sleep(time.Second)
-	fmt.Println("Starting Game", public)
+	fmt.Println("Connecting with other players, they don't seem really nice")
+
+	time.Sleep(3 * time.Second)
+	fmt.Println("Introducing myself, letting them know who's the boss!")
+
+	publishKey(gossiper, public)
+
+	time.Sleep(3 * time.Second)
+	fmt.Println("Starting Game, gonna beat the shit out of them!")
+
 	go Mine()
 	return private
 }
 
-func createMatchUID() Uid {
+func publishKey(gossiper string, public *rsa.PublicKey) {
+	newSpawn := GameAction{
+		Type:          Spawn,
+		Identifier:    createUID(),
+		Attacker:      gossiper,
+		SignedSpecial: encodeKey(public),
+	}
+	go publishAction(newSpawn)
+}
+
+func createUID() Uid {
 	return rand.Uint64()
 }
 
@@ -120,7 +137,7 @@ func CreateMatch(
 	have enough balance
 	throw otherwise
 	*/
-	uid := createMatchUID()
+	uid := createUID()
 	nonce := createNonce()
 	newMatch := &Match{
 		Identifier:  uid,

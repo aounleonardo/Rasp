@@ -7,9 +7,11 @@ import (
 	"net"
 )
 
-func (gossiper *Gossiper) publishMinedBlocks() {
+func (gossiper *Gossiper) publishChainContents() {
 	for {
 		select {
+		case tx := <-chain.TxsChan:
+			gossiper.advertisePublisher(tx, nil)
 		case block := <-chain.BlocksChan:
 			gossiper.advertisePublisher(block, nil)
 		}

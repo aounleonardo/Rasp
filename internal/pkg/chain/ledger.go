@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"sync"
@@ -75,7 +74,7 @@ func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
 
 func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	for _, action := range txs[Spawn] {
-		key, _ := x509.ParsePKCS1PublicKey(action.SignedSpecial)
+		key := decodeKey(action.SignedSpecial)
 		ledger.players[action.Attacker] = &Player{Balance: initialBalance, Key: key}
 	}
 	for identifier, action := range txs[Attack] {
@@ -133,12 +132,6 @@ func getBalancesUnsafe(ledger ledger) map[string]int64 {
 		balances[name] = player.Balance
 	}
 	return balances
-}
-
-func spawnNotClaimed(newPlayer string) bool {
-	_, ok := getPlayer(newPlayer)
-	return !ok
-
 }
 
 func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {

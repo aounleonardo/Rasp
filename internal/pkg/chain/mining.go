@@ -28,7 +28,6 @@ func Mine() {
 	}
 	blockchain.RUnlock()
 
-	miningStartTime := time.Now()
 	for {
 		select {
 		case <-stopMining:
@@ -37,17 +36,8 @@ func Mine() {
 			newBlock.Nonce = getRandomNonce()
 			if newBlock.verifyHash() {
 				fmt.Printf("FOUND-BLOCK %x\n", newBlock.Hash())
-				miningDuration := time.Now().Sub(miningStartTime)
 				ReceiveBlock(newBlock)
-				wait := 2 * miningDuration
-				if first {
-					first = false
-					wait = 5 * time.Second
-				}
-				go func() {
-					time.Sleep(wait)
-					publishBlock(newBlock)
-				}()
+				go publishBlock(newBlock)
 			}
 		}
 	}

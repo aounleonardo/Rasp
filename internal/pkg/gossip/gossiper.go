@@ -9,6 +9,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 )
 
 const maxMsgSize = 10000
@@ -84,13 +85,13 @@ func NewGossiper(
 		files:      Files{m: make(map[string]files.File)},
 	}
 
-	// key := chain.StartGame()
-	// gossiper.raspKey = key
-
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
 	go gossiper.routeRumorMessages(rtimer)
-	go gossiper.publishMinedBlocks()
+	go gossiper.publishChainContents()
+
+	key := chain.StartGame(gossiper.Name)
+	gossiper.raspKey = key
 
 	return gossiper
 }
