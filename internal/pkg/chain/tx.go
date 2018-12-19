@@ -37,7 +37,7 @@ var TxsChan = make(chan TxPublish)
 
 func publishAction(action GameAction) {
 	TxsChan <- TxPublish{
-		Action: action,
+		Action:   action,
 		HopLimit: txHopLimit,
 	}
 }
