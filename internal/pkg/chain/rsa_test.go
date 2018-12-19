@@ -47,16 +47,28 @@ func TestSignAttack(t *testing.T) {
 		t.Error("Error in key generation")
 	}
 
-	sig1, sig2, err := SignAttack(private, id, b, move, nonce)
+	sig, err := SignAttack(private, id, b)
 
 	if err != nil {
-		t.Error("Error during signing")
+		t.Error("Error while signing attack")
 	}
 
-	ok, err := VerifyAttack(public, id, b, move, nonce, sig1, sig2)
+	hiddenMove, err := SignHiddenMove(private, id, move, nonce)
 
 	if err != nil {
-		t.Error("Error during verifying")
+		t.Error("Error while signing hiddenMove")
+	}
+
+	ok, err := VerifyAttack(public, id, b, sig)
+
+	if err != nil {
+		t.Error("Error while verifying attack")
+	}
+
+	ok, err = VerifyHiddenMove(public, id, move, nonce, hiddenMove)
+
+	if err != nil {
+		t.Error("Error while verifying hiddenMove")
 	}
 
 	if !ok {

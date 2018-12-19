@@ -124,25 +124,17 @@ func ReceiveRaspResponse(
 	delete(raspState.proposed, response.Identifier)
 	raspState.ongoing[response.Identifier] = struct{}{}
 
-
-	signedBet, hiddenMove, err := SignAttack(
-		privateKey,
-		match.Identifier,
-		match.Bet,
-		*match.AttackMove,
-		*match.Nonce,
-	)
 	if err != nil {
 		return
 	}
+
+	// TODO sign attack
 	action := GameAction{
 		Type: Attack,
 		Identifier: response.Identifier,
 		Attacker: response.Destination,
 		Defender: response.Origin,
 		Bet: match.Bet,
-		HiddenMove: hiddenMove,
-		SignedSpecial: signedBet,
 	}
 	publishAction(action)
 
@@ -151,8 +143,6 @@ func ReceiveRaspResponse(
 		Origin: response.Destination,
 		Identifier: response.Identifier,
 		Bet: match.Bet,
-		SignedBet: signedBet,
-		HiddenMove: hiddenMove,
 	}
 	return
 }

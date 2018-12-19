@@ -23,12 +23,12 @@ type ResponseSignature struct {
 	Identifier uint64
 }
 
-type AttackSignature1 struct {
+type AttackSignature struct {
 	Identifier Uid
 	Bet        uint32
 }
 
-type AttackSignature2 struct {
+type HiddenMoveSignature struct {
 	Identifier Uid
 	Move       int
 	Nonce      uint64
@@ -151,58 +151,75 @@ func VerifyResponse(public *rsa.PublicKey, id Uid, sig []byte) (ok bool, err err
 
 }
 
-func SignAttack(private *rsa.PrivateKey, id Uid, b Bet,
-	move int, nonce uint64) (sig1 []byte, sig2 []byte, err error) {
-
-	att1 := &AttackSignature1{id, b}
-	att2 := &AttackSignature2{id, move, nonce}
-
-	enc1, err := protobuf.Encode(att1)
-
-	if err == nil {
-		sig1, err = sign(private, enc1)
-	}
+func SignHiddenMove(
+	private *rsa.PrivateKey,
+	id Uid,
+	move int,
+	nonce uint64,
+) (hiddenMove []byte, err error) {
+	signature := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
+	encoding, err := protobuf.Encode(signature)
 
 	if err != nil {
 		return
 	}
 
-	enc2, err := protobuf.Encode(att2)
-
-	if err == nil {
-		sig2, err = sign(private, enc2)
-	}
-
+	hiddenMove, err = sign(private, encoding)
 	return
-
 }
 
-func VerifyAttack(public *rsa.PublicKey, id Uid, b Bet,
-	move int, nonce uint64, sig1 []byte, sig2 []byte) (ok bool, err error) {
+func SignAttack(
+	private *rsa.PrivateKey,
+	id Uid,
+	b Bet,
+)(sig []byte, err error) {
 
-	att1 := &AttackSignature1{id, b}
-	att2 := &AttackSignature2{id, move, nonce}
+	att := &AttackSignature{Identifier: id, Bet: b}
 
-	enc1, err := protobuf.Encode(att1)
-
-	if err == nil {
-
-		ok = verify(public, enc1, sig1)
-	}
+	enc, err := protobuf.Encode(att)
 
 	if err != nil {
 		return
 	}
 
-	enc2, err := protobuf.Encode(att2)
-
-	if err == nil {
-
-		ok = verify(public, enc2, sig2)
-	}
+	sig, err = sign(private, enc)
 
 	return
+}
 
+func VerifyHiddenMove(
+	public *rsa.PublicKey,
+	id Uid,
+	move int,
+	nonce uint64,
+	signature []byte,
+) (ok bool, err error) {
+	hiddenMove := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
+	encoding, err := protobuf.Encode(hiddenMove)
+	if err != nil {
+		return
+	}
+	ok = verify(public, encoding, signature)
+	return
+}
+
+func VerifyAttack(
+	public *rsa.PublicKey,
+	id Uid,
+	b Bet,
+	sig []byte,
+) (ok bool, err error) {
+
+	att := &AttackSignature{id, b}
+
+	enc, err := protobuf.Encode(att)
+
+	if err != nil {
+		return
+	}
+
+	ok = verify(public, enc, sig)
+	return
 }
 
 func SignDefence(private *rsa.PrivateKey, id Uid, move int) (sig []byte, err error) {
