@@ -128,21 +128,29 @@ func ReceiveRaspResponse(
 		return
 	}
 
-	// TODO sign attack
+	signature, err := SignAttack(
+		privateKey,
+		match.Identifier,
+		match.Bet,
+	)
 	action := GameAction{
-		Type: Attack,
-		Identifier: response.Identifier,
-		Attacker: response.Destination,
-		Defender: response.Origin,
-		Bet: match.Bet,
+		Type:          Attack,
+		Identifier:    response.Identifier,
+		Attacker:      response.Destination,
+		Defender:      response.Origin,
+		Bet:           match.Bet,
+		HiddenMove:    match.HiddenMove,
+		SignedSpecial: signature,
 	}
 	publishAction(action)
 
 	attack = &RaspAttack{
 		Destination: response.Origin,
-		Origin: response.Destination,
-		Identifier: response.Identifier,
-		Bet: match.Bet,
+		Origin:      response.Destination,
+		Identifier:  response.Identifier,
+		Bet:         match.Bet,
+		SignedBet:   signature,
+		HiddenMove:  match.HiddenMove,
 	}
 	return
 }

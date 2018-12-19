@@ -7,9 +7,9 @@ import (
 )
 
 type ledger struct {
-	players    map[string]*Player
+	players map[string]*Player
 	matches map[uint64]*Match
-	length     int
+	length  int
 }
 
 var genesis = [32]byte{}
@@ -22,9 +22,9 @@ var blockchain = struct {
 }{
 	m: map[[32]byte]Block{genesis: {}},
 	heads: map[[32]byte]ledger{genesis: {
-		length:     0,
+		length:  0,
 		matches: make(map[uint64]*Match),
-		players:    make(map[string]*Player)},
+		players: make(map[string]*Player)},
 	},
 	longest: genesis,
 }
@@ -81,7 +81,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 		key := decodeKey(action.SignedSpecial)
 		ledger.players[action.Attacker] = &Player{
 			Balance: initialBalance,
-			Key: *key,
+			Key:     *key,
 		}
 	}
 	for identifier, action := range txs[Attack] {
@@ -124,9 +124,9 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 
 func buildLedger(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
 	var newLedger = ledger{
-		players:    map[string]*Player{},
+		players: map[string]*Player{},
 		matches: map[uint64]*Match{},
-		length:     length,
+		length:  length,
 	}
 	applyTxsToLedger(ForkTxs, &newLedger)
 	return newLedger
@@ -291,9 +291,9 @@ func addBlockUnsafe(block Block) {
 	oldLedger := blockchain.heads[block.PrevHash]
 	blockchain.heads[hash] = oldLedger
 	blockchain.heads[hash] = ledger{
-		players:    oldLedger.players,
+		players: oldLedger.players,
 		matches: oldLedger.matches,
-		length:     oldLedger.length + 1,
+		length:  oldLedger.length + 1,
 	}
 
 	applyBlockUnsafe(hash)
