@@ -132,14 +132,29 @@ func CreateMatch(
 	gossiper string,
 	privateKey *rsa.PrivateKey,
 ) (request *RaspRequest, err error) {
-	/* TODO
-	verify both players exists
-	have enough balance
-	throw otherwise
-	create hidden move
-	*/
+	player, exists := getPlayer(gossiper)
+	if !exists {
+		err = errors.New(fmt.Sprintf(
+			"%s do not exist on the current ledger",
+			gossiper,
+		))
+		return
+	}
+	if !player.hasEnoughMoney(bet) {
+		err = errors.New(fmt.Sprintf(
+			"%s does not have enough money on the current ledger",
+			gossiper,
+		))
+		return
+	}
+
 	uid := createUID()
 	nonce := createNonce()
+	hiddenMove, err := SignHiddenMove(privateKey, uid, move, nonce)
+	if err != nil {
+		return
+	}
+
 	newMatch := &Match{
 		Identifier:  uid,
 		Attacker:    gossiper,
@@ -148,6 +163,7 @@ func CreateMatch(
 		AttackMove:  &move,
 		DefenceMove: nil,
 		Nonce:       &nonce,
+		HiddenMove:  hiddenMove,
 		Stage:       Spawn,
 	}
 

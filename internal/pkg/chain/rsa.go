@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"github.com/dedis/protobuf"
 	"crypto/x509"
+	"github.com/dedis/protobuf"
 )
 
 const keySize = 1024
@@ -172,7 +172,7 @@ func SignAttack(
 	private *rsa.PrivateKey,
 	id Uid,
 	b Bet,
-)(sig []byte, err error) {
+) (sig []byte, err error) {
 
 	att := &AttackSignature{Identifier: id, Bet: b}
 

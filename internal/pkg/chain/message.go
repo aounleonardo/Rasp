@@ -128,21 +128,29 @@ func ReceiveRaspResponse(
 		return
 	}
 
-	// TODO sign attack
+	signature, err := SignAttack(
+		privateKey,
+		match.Identifier,
+		match.Bet,
+	)
 	action := GameAction{
-		Type: Attack,
-		Identifier: response.Identifier,
-		Attacker: response.Destination,
-		Defender: response.Origin,
-		Bet: match.Bet,
+		Type:          Attack,
+		Identifier:    response.Identifier,
+		Attacker:      response.Destination,
+		Defender:      response.Origin,
+		Bet:           match.Bet,
+		HiddenMove:    match.HiddenMove,
+		SignedSpecial: signature,
 	}
 	publishAction(action)
 
 	attack = &RaspAttack{
 		Destination: response.Origin,
-		Origin: response.Destination,
-		Identifier: response.Identifier,
-		Bet: match.Bet,
+		Origin:      response.Destination,
+		Identifier:  response.Identifier,
+		Bet:         match.Bet,
+		SignedBet:   signature,
+		HiddenMove:  match.HiddenMove,
 	}
 	return
 }
@@ -152,29 +160,29 @@ func ReceiveRaspAttack(
 	privateKey *rsa.PrivateKey,
 ) (defence *RaspDefence, err error) {
 	opponent, opponentExists := getPlayer(attack.Origin)
-	if !opponentExists{
+	if !opponentExists {
 		err = errors.New(
-		fmt.Sprintf("%s does not exist", attack.Origin),
+			fmt.Sprintf("%s does not exist", attack.Origin),
 		)
 		return
 	}
 	attackerPublic := opponent.Key
-	ok, err := VerifyAttack(&attackerPublic, attack.Identifier, attack.Bet, attack.SignedBet )
-	if !ok{
+	ok, err := VerifyAttack(&attackerPublic, attack.Identifier, attack.Bet, attack.SignedBet)
+	if !ok {
 		err = errors.New(
 			fmt.Sprintf("Unable to verify the signedBet from %s",
 				attack.Origin),
-			)
+		)
 		return
 	}
 	raspState.RLock()
-	_ ,ok = raspState.accepted[attack.Identifier]
+	_, ok = raspState.accepted[attack.Identifier]
 	raspState.RUnlock()
 	if !ok {
 		err = errors.New(
 			fmt.Sprintf("Unable to find the corresponding match in Accepted %d",
 				attack.Identifier),
-			)
+		)
 		return
 	}
 	raspState.Lock()
@@ -187,7 +195,7 @@ func ReceiveRaspAttack(
 		privateKey,
 		attack.Identifier,
 		*defenseMove)
-	if err != nil{
+	if err != nil {
 		err = errors.New(
 			fmt.Sprintf("Unable to sign the defence move %d",
 				defenseMove),
@@ -196,22 +204,22 @@ func ReceiveRaspAttack(
 	}
 
 	action := GameAction{
-		Type: Defence,
-		Identifier: attack.Identifier,
-		Attacker: attack.Origin,
-		Defender: attack.Destination,
-		Bet: attack.Bet,
-		Move: *defenseMove,
+		Type:          Defence,
+		Identifier:    attack.Identifier,
+		Attacker:      attack.Origin,
+		Defender:      attack.Destination,
+		Bet:           attack.Bet,
+		Move:          *defenseMove,
 		SignedSpecial: defenceSpecial,
 	}
 	publishAction(action)
 
 	defence = &RaspDefence{
 		Destination: attack.Origin,
-		Origin: attack.Destination,
-		Identifier: attack.Identifier,
-		Move: *defenseMove,
-		SignedMove:defenceSpecial,
+		Origin:      attack.Destination,
+		Identifier:  attack.Identifier,
+		Move:        *defenseMove,
+		SignedMove:  defenceSpecial,
 	}
 	return
 }
