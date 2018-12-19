@@ -172,7 +172,7 @@ func ReceiveRaspAttack(
 	raspState.RUnlock()
 	if !ok {
 		err = errors.New(
-			fmt.Sprintf("Unable to find the corresponding match in Accpter %d",
+			fmt.Sprintf("Unable to find the corresponding match in Accepted %d",
 				attack.Identifier),
 			)
 		return
@@ -217,5 +217,48 @@ func ReceiveRaspAttack(
 }
 
 func ReceiveRaspDefence(defence RaspDefence, privateKey *rsa.PrivateKey) {
-	// TODO ReceiveRaspDefence
+	defender, defenderExists := getPlayer(defence.Origin)
+	if !defenderExists{
+			fmt.Printf("RaspDefence error: %s does not exist\n", defence.Origin)
+		return
+	}
+	defenderPublic := defender.Key
+	ok, err := VerifyDefence(&defenderPublic,
+		defence.Identifier,
+		defence.Move,
+		defence.SignedMove,
+		)
+	if !ok{
+		fmt.Println("RaspDefence error: Unable to verify signed move", err)
+		return
+	}
+	raspState.RLock()
+	_, ok = raspState.accepted[defence.Identifier]
+	raspState.RUnlock()
+	if !ok {
+			fmt.Printf("Unable to find the corresponding match in Ongoing %d\n",
+				defence.Identifier)
+		return
+	}
+	raspState.RLock()
+	attackMove :=raspState.matches[defence.Identifier].AttackMove
+	nonce := raspState.matches[defence.Identifier].Nonce
+	raspState.RUnlock()
+
+	revealSign, err := SignReveal(privateKey,defence.Identifier,*attackMove,*nonce)
+	if err != nil{
+		fmt.Println("Unable to sign the reveal")
+		return
+	}
+
+	action := GameAction{
+		Type: Reveal,
+		Identifier: defence.Identifier,
+		Attacker: defence.Destination,
+		Defender: defence.Origin,
+		Move: *attackMove,
+		Nonce: *nonce,
+		SignedSpecial:revealSign,
+	}
+	publishAction(action)
 }
