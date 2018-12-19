@@ -142,8 +142,8 @@ func spawnNotClaimed(newPlayer string) bool {
 }
 
 func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {
-	//check that defence not in pending
-	//check that state is in Attack
+	// check that defence not in pending
+	// check that state is in Attack
 	state, exist := getMatch(cancel.Action.Identifier)
 	if !exist {
 		return false
@@ -155,8 +155,8 @@ func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {
 }
 
 func isValidReveal(reveal TxPublish, validDefences []TxPublish) bool {
-	//Check that challenge state is set to defence in ledger
-	//or that the defense is in results
+	// Check that challenge state is set to defence in ledger
+	// or that the defense is in results
 	state, exist := getMatch(reveal.Action.Identifier)
 	if !exist {
 		return false
@@ -176,15 +176,12 @@ func hasDefenceInResults(reveal TxPublish, defences []TxPublish) bool {
 }
 
 func isValidDefence(defence TxPublish, validAttacks []TxPublish) bool {
-	//check cancel in ledger
-	//check attack in ledger or in validAttacks
+	// check cancel in ledger
+	// check attack in ledger or in validAttacks
 	state, exists := getMatch(defence.Action.Identifier)
 	if !exists {
 		return false
 	}
-	//if state.Stage == Cancel{
-	//	return false
-	//}
 	return state.Stage == Attack || hasAttackInResults(defence, validAttacks)
 }
 
@@ -236,13 +233,6 @@ func haveEnoughMoney(action GameAction, balances map[string]int64) bool {
 		balances[action.Defender]-int64(action.Bet) >= 0
 }
 
-//func isNameClaimed(filename string) bool {
-//	ledger.RLock()
-//	defer ledger.RUnlock()
-//	_, hasTx := ledger.m[filename]
-//	return hasTx
-//}
-
 func isSpawnClaimed(name string) bool {
 	_, exists := getPlayer(name)
 	return exists
@@ -279,18 +269,6 @@ func isCancelClaimed(identifier uint64) bool {
 	return false
 }
 
-func getHeadsCount() int {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-	return len(blockchain.heads)
-}
-
-func isLongest(head [32]byte) bool {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-	return head == blockchain.longest
-}
-
 func hasParent(block *Block) bool {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
@@ -303,16 +281,6 @@ func hasBlock(block *Block) bool {
 	defer blockchain.RUnlock()
 	_, hasBlock := blockchain.m[block.Hash()]
 	return hasBlock
-}
-
-func getBlock(hash [32]byte) (*Block, error) {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-
-	if block, hasBlock := blockchain.m[hash]; hasBlock {
-		return &block, nil
-	}
-	return nil, errors.New(fmt.Sprintf("does not have block %s", hash))
 }
 
 func addBlockUnsafe(block Block) {
@@ -407,17 +375,4 @@ func applyBlockUnsafe(hash [32]byte) {
 	ledger := blockchain.heads[hash]
 	txs := createTxsMap(block.Transactions)
 	applyTxsToLedger(txs, &ledger)
-}
-
-func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
-	for searchIndex := 0; searchIndex < len(path); searchIndex++ {
-		if path[searchIndex] == node {
-			return searchIndex, nil
-		}
-	}
-	return -1, errors.New(fmt.Sprintf(
-		"cannot find node %x in path %x",
-		node,
-		path,
-	))
 }

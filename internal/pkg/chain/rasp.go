@@ -47,15 +47,15 @@ type Player struct {
 }
 
 type GameAction struct {
-	Type          int
+	Type          Stage
 	Identifier    Uid
 	Attacker      string
 	Defender      string
 	Bet           Bet
-	Move          int
-	Nonce         uint64
-	HiddenMove    []byte
-	SignedSpecial []byte
+	Move          Move
+	Nonce         Nonce
+	HiddenMove    Signature
+	SignedSpecial Signature
 }
 
 type Match struct {
@@ -65,8 +65,8 @@ type Match struct {
 	Bet         Bet
 	AttackMove  *Move
 	DefenceMove *Move
-	Nonce       *uint64
-	HiddenMove  []byte
+	Nonce       *Nonce
+	HiddenMove  Signature
 	Stage       Stage
 }
 
