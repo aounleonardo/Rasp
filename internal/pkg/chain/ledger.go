@@ -8,7 +8,7 @@ import (
 
 type ledger struct {
 	players    map[string]*Player
-	challenges map[uint64]*Match
+	matches map[uint64]*Match
 	length     int
 }
 
@@ -23,7 +23,7 @@ var blockchain = struct {
 	m: map[[32]byte]Block{genesis: {}},
 	heads: map[[32]byte]ledger{genesis: {
 		length:     0,
-		challenges: make(map[uint64]*Match),
+		matches: make(map[uint64]*Match),
 		players:    make(map[string]*Player)},
 	},
 	longest: genesis,
@@ -39,7 +39,7 @@ func getPlayer(name string) (Player, bool) {
 func getMatch(identifier uint64) (Match, bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	state, exists := blockchain.heads[blockchain.longest].challenges[identifier]
+	state, exists := blockchain.heads[blockchain.longest].matches[identifier]
 	return *state, exists
 }
 
@@ -82,7 +82,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	}
 	for identifier, action := range txs[Attack] {
 		ledger.players[action.Attacker].Balance -= int64(action.Bet)
-		ledger.challenges[identifier] = &Match{
+		ledger.matches[identifier] = &Match{
 			Identifier: identifier,
 			Attacker:   action.Attacker,
 			Defender:   &action.Defender,
@@ -93,12 +93,12 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	}
 	for identifier, action := range txs[Defence] {
 		ledger.players[action.Defender].Balance += int64(action.Bet)
-		match := ledger.challenges[identifier]
+		match := ledger.matches[identifier]
 		match.Stage = Defence
 		match.DefenceMove = &action.Move
 	}
 	for identifier, action := range txs[Reveal] {
-		match := ledger.challenges[identifier]
+		match := ledger.matches[identifier]
 		match.Stage = Reveal
 		match.AttackMove = &action.Move
 		match.Nonce = &action.Nonce
@@ -112,7 +112,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 		}
 	}
 	for identifier, action := range txs[Cancel] {
-		match := ledger.challenges[identifier]
+		match := ledger.matches[identifier]
 		match.Stage = Cancel
 		ledger.players[action.Attacker].Balance += int64(match.Bet)
 	}
@@ -121,7 +121,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 func buildLedger(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
 	var newLedger = ledger{
 		players:    map[string]*Player{},
-		challenges: map[uint64]*Match{},
+		matches: map[uint64]*Match{},
 		length:     length,
 	}
 	applyTxsToLedger(ForkTxs, &newLedger)
@@ -288,7 +288,7 @@ func addBlockUnsafe(block Block) {
 	blockchain.heads[hash] = oldLedger
 	blockchain.heads[hash] = ledger{
 		players:    oldLedger.players,
-		challenges: oldLedger.challenges,
+		matches: oldLedger.matches,
 		length:     oldLedger.length + 1,
 	}
 

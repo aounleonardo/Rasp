@@ -246,7 +246,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		}
 		_, attackExists := attacks[tx.Action.Identifier]
 		if !attackExists {
-			match, matchExists := ledger.challenges[tx.Action.Identifier]
+			match, matchExists := ledger.matches[tx.Action.Identifier]
 			if !matchExists || match.Stage != Attack {
 				return false
 			}
@@ -259,7 +259,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		}
 		_, defenceExists := defences[tx.Action.Identifier]
 		if !defenceExists {
-			match, matchExists := ledger.challenges[tx.Action.Identifier]
+			match, matchExists := ledger.matches[tx.Action.Identifier]
 			if !matchExists || match.Stage != Defence {
 				return false
 			}
@@ -276,7 +276,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if _, exists := attacks[tx.Action.Identifier]; exists {
 			return true
 		}
-		if match, exists := ledger.challenges[tx.Action.Identifier]; !exists || match.Stage != Attack {
+		if match, exists := ledger.matches[tx.Action.Identifier]; !exists || match.Stage != Attack {
 			return false
 		}
 		cancels[tx.Action.Identifier] = struct{}{}
