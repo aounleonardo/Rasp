@@ -201,19 +201,37 @@ func AcceptMatch(
 	}
 	raspState.Lock()
 	defer raspState.Unlock()
+	match := raspState.matches[id]
 
-	// TODO check balances
+	player , playerExists:= getPlayer(gossiper)
+	opponent, opponentExists := getPlayer(match.Attacker)
+	if !playerExists || !opponentExists {
+		err = errors.New(fmt.Sprintf(
+			"%s and %s do not both exist in the current ledger",
+			gossiper,
+			match.Attacker,
+		))
+		return
+	}
+	if !player.hasEnoughMoney(match.Bet) ||
+		!opponent.hasEnoughMoney(match.Bet) {
+		err = errors.New(fmt.Sprintf(
+			"%s and %s do not have enough money in the current ledger",
+			gossiper,
+			match.Attacker,
+		))
+		return
+	}
 
-	raspState.matches[id].DefenceMove = &move
+	match.DefenceMove = &move
 	delete(raspState.pending, id)
 	raspState.accepted[id] = struct{}{}
 
 	// TODO put a timeout to check if it is not ongoing -> set pending again ?
 
 	signature, err := SignResponse(privateKey, id)
-
 	response = &RaspResponse{
-		Destination: raspState.matches[id].Attacker,
+		Destination: match.Attacker,
 		Origin:      gossiper,
 		Identifier:  id,
 		Signature:   signature,
