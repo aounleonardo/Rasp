@@ -1,12 +1,12 @@
 package gossip
 
 import (
-	"net"
 	"fmt"
-	"github.com/dedis/protobuf"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/dedis/protobuf"
+	"net"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -318,7 +318,7 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 	} else {
 		gossiper.handleSendPrivateRequest(
 			&message.PrivatePutRequest{
-				Contents: "",
+				Contents:    "",
 				Destination: *request.Destination,
 			},
 			&message.RaspMessage{RaspRequest: raspRequest},
@@ -350,7 +350,7 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 
 	gossiper.handleSendPrivateRequest(
 		&message.PrivatePutRequest{
-			Contents: "",
+			Contents:    "",
 			Destination: raspResponse.Destination,
 		},
 		&message.RaspMessage{RaspResponse: raspResponse},

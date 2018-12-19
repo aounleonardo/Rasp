@@ -22,6 +22,11 @@ type ResponseSignature struct {
 	Identifier uint64
 }
 
+type AttackSignature struct {
+	Sig1 []byte
+	Sig2 []byte
+}
+
 type AttackSignature1 struct {
 	Identifier Uid
 	Bet        uint32

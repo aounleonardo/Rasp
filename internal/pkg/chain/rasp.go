@@ -2,13 +2,13 @@ package chain
 
 import (
 	"crypto"
-	"sync"
-	"math/rand"
-	"time"
-	"fmt"
 	"crypto/rsa"
-	"github.com/dedis/onet/log"
 	"errors"
+	"fmt"
+	"github.com/dedis/onet/log"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 const (
@@ -79,7 +79,7 @@ func StartGame() *rsa.PrivateKey {
 	if err != nil {
 		log.Fatal("error generating keys", err.Error())
 	}
-	// TODO advertise public key
+	// TODO advertise public key, and create random identifier
 	time.Sleep(time.Second)
 	fmt.Println("Starting Game", public)
 	go Mine()
@@ -102,9 +102,9 @@ func CreateMatch(
 	privateKey *rsa.PrivateKey,
 ) (request *RaspRequest, err error) {
 	/* TODO
-		verify both players exists
-		have enough balance
-		throw otherwise
+	verify both players exists
+	have enough balance
+	throw otherwise
 	*/
 	uid := createMatchUID()
 	nonce := createNonce()

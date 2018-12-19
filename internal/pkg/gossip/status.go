@@ -1,10 +1,10 @@
 package gossip
 
 import (
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
-	"strings"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
+	"strings"
 )
 
 func describeStatusPacket(packet *message.StatusPacket) string {
@@ -32,7 +32,7 @@ func (gossiper *Gossiper) receiveStatusPacket(
 	acks.Lock()
 	if acks.expected[sender.String()] > 0 {
 		acks.queue[sender.String()] <- status
-		acks.expected[sender.String()] --
+		acks.expected[sender.String()]--
 		acks.Unlock()
 		return
 	}
@@ -119,6 +119,6 @@ func (gossiper *Gossiper) sendMissingRumor(
 	fmt.Printf("MONGERING with %s\n", recipient.String())
 	gossiper.gossipConn.WriteToUDP(bytes, recipient)
 	acks.Lock()
-	acks.expected[recipient.String()] ++
+	acks.expected[recipient.String()]++
 	acks.Unlock()
 }

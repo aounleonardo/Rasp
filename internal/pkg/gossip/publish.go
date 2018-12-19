@@ -1,11 +1,11 @@
 package gossip
 
 import (
-	"github.com/aounleonardo/Peerster/internal/pkg/chain"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
-	"net"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"net"
 )
 
 func (gossiper *Gossiper) publishMinedBlocks() {

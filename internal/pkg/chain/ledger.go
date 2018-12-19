@@ -1,9 +1,9 @@
 package chain
 
 import (
-	"sync"
 	"errors"
 	"fmt"
+	"sync"
 )
 
 var ledger = struct {
@@ -230,8 +230,7 @@ func rollbackTo(hash [32]byte) ([32]byte, error) {
 	}
 	index := 0
 	node := pathToRoot[0]
-	for ; index < len(pathToRoot) && node != hash;
-	index = index + 1 {
+	for ; index < len(pathToRoot) && node != hash; index = index + 1 {
 		node = pathToRoot[index]
 		err := denyBlock(node)
 		if err != nil {

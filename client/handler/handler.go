@@ -1,21 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"net"
-	"github.com/dedis/protobuf"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"regexp"
+	"bytes"
 	"encoding/json"
 	"errors"
-	"strings"
-	"strconv"
-	"bytes"
-	"io"
 	"flag"
+	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/dedis/protobuf"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 var port string
@@ -67,19 +67,16 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		return json.Marshal(waitForMessages(conn, start))
 	}
 	if isChatRequest, _ :=
-		regexp.MatchString("/chats/", r.RequestURI);
-		isChatRequest {
+		regexp.MatchString("/chats/", r.RequestURI); isChatRequest {
 		return json.Marshal(waitForChats(conn))
 	}
 	if isPrivateMessageRequest, _ :=
-		regexp.MatchString("/pm/*/*/*/", r.RequestURI);
-		isPrivateMessageRequest {
+		regexp.MatchString("/pm/*/*/*/", r.RequestURI); isPrivateMessageRequest {
 		partner, unordered, ordered := getPrivateIndexes(r.RequestURI)
 		return json.Marshal(waitForPrivates(conn, partner, unordered, ordered))
 	}
 	if isSearchRequest, _ :=
-		regexp.MatchString("/searches/", r.RequestURI);
-		isSearchRequest {
+		regexp.MatchString("/searches/", r.RequestURI); isSearchRequest {
 		return json.Marshal(waitForSearches(conn))
 	}
 	return nil, errors.New("unsupported URI")
@@ -87,36 +84,29 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 
 func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 	if isMessagesRequest, _ :=
-		regexp.MatchString("/message/", r.RequestURI);
-		isMessagesRequest {
+		regexp.MatchString("/message/", r.RequestURI); isMessagesRequest {
 		return json.Marshal(readMessage(conn, r))
 	}
-	if isPeerRequest, _ := regexp.MatchString("/peers/", r.RequestURI);
-		isPeerRequest {
+	if isPeerRequest, _ := regexp.MatchString("/peers/", r.RequestURI); isPeerRequest {
 		return json.Marshal(addPeer(conn, r))
 	}
 	if isPrivateMessageRequest, _ :=
-		regexp.MatchString("/pm/", r.RequestURI);
-		isPrivateMessageRequest {
+		regexp.MatchString("/pm/", r.RequestURI); isPrivateMessageRequest {
 		return json.Marshal(sendPrivateMessage(conn, r))
 	}
 	if isFileShareRequest, _ :=
-		regexp.MatchString("/share-file/", r.RequestURI);
-		isFileShareRequest {
+		regexp.MatchString("/share-file/", r.RequestURI); isFileShareRequest {
 		return json.Marshal(shareFile(conn, r))
 	}
 	if isDownloadRequest, _ :=
-		regexp.MatchString("/download-file/", r.RequestURI);
-		isDownloadRequest {
-			fmt.Println("isDownloadRequest")
+		regexp.MatchString("/download-file/", r.RequestURI); isDownloadRequest {
+		fmt.Println("isDownloadRequest")
 		return json.Marshal(downloadFile(conn, r))
 	}
 	if isSearchRequest, _ :=
-		regexp.MatchString("/search-for/*/", r.RequestURI);
-		isSearchRequest {
+		regexp.MatchString("/search-for/*/", r.RequestURI); isSearchRequest {
 		return json.Marshal(
-			searchForKeywords(conn, getSearchKeywords(r.RequestURI),
-			))
+			searchForKeywords(conn, getSearchKeywords(r.RequestURI)))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -416,5 +406,5 @@ func main() {
 	gossiperPort = *gossiper
 	http.HandleFunc("/", multiplexer)
 	fmt.Printf("Listening on %s for gossiper %s", *port, *gossiper)
-	log.Fatal(http.ListenAndServe(":" + *port, nil))
+	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }

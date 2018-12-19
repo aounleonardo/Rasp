@@ -1,11 +1,11 @@
 package gossip
 
 import (
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"time"
-	"math/rand"
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"math/rand"
 	"net"
+	"time"
 )
 
 func (gossiper *Gossiper) receiveRumorPacket(
@@ -80,7 +80,7 @@ func (gossiper *Gossiper) rumormongerWith(
 	fmt.Printf("MONGERING with %s\n", peer.String())
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
 	acks.Lock()
-	acks.expected[peer.String()] ++
+	acks.expected[peer.String()]++
 	acks.Unlock()
 
 	for {
@@ -95,7 +95,7 @@ func (gossiper *Gossiper) rumormongerWith(
 			operation, missing = NOP, message.PeerStatus{}
 			acks.Lock()
 			if acks.expected[peer.String()] > 0 {
-				acks.expected[peer.String()] --
+				acks.expected[peer.String()]--
 			}
 			acks.Unlock()
 		}

@@ -1,9 +1,9 @@
 package chain
 
 import (
-	"fmt"
-	"errors"
 	"bytes"
+	"errors"
+	"fmt"
 	"strings"
 )
 

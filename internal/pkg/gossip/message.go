@@ -1,15 +1,15 @@
 package gossip
 
 import (
-	"sync"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"fmt"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"time"
 	"errors"
+	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"log"
 	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"sync"
+	"time"
 )
 
 type RumorKey struct {
@@ -71,9 +71,9 @@ func (gossiper *Gossiper) createRaspRumour(
 	gossiper.wants.RLock()
 	id := gossiper.wants.m[gossiper.Name]
 	msg := &message.RumorMessage{
-		Origin: gossiper.Name,
-		ID:     id,
-		Text:   "",
+		Origin:      gossiper.Name,
+		ID:          id,
+		Text:        "",
 		RaspRequest: request,
 	}
 	gossiper.wants.RUnlock()
@@ -81,7 +81,6 @@ func (gossiper *Gossiper) createRaspRumour(
 	gossiper.memorizeRumor(msg)
 	return msg
 }
-
 
 func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 	gossiper.upsertOrigin(rumor.Origin)

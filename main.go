@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"strings"
-	"math/rand"
-	"time"
 	"github.com/aounleonardo/Peerster/internal/pkg/gossip"
+	"math/rand"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	var rtimer = flag.Int(
 		"rtimer",
 		0,
-		"route rumors sending period in seconds, 0 to disable sending " +
+		"route rumors sending period in seconds, 0 to disable sending "+
 			"of route rumors (default 0)",
 	)
 	var simple = flag.Bool(

@@ -1,9 +1,9 @@
 package chain
 
 import (
+	"crypto/x509"
 	"math/rand"
 	"testing"
-	"crypto/x509"
 )
 
 func TestSignRequest(t *testing.T) {

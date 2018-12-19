@@ -1,16 +1,16 @@
 package main
 
 import (
-	"flag"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"fmt"
-	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"io/ioutil"
 	"bytes"
+	"flag"
+	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/dedis/protobuf"
+	"io/ioutil"
+	"net"
 	"os"
 	"strings"
-	"github.com/dedis/protobuf"
 )
 
 func main() {
@@ -59,7 +59,7 @@ func main() {
 
 	destinationAddr, _ := net.ResolveUDPAddr(
 		"udp4",
-		"127.0.0.1:" + *uiPort,
+		"127.0.0.1:"+*uiPort,
 	)
 	conn, _ := net.DialUDP("udp4", nil, destinationAddr)
 

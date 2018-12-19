@@ -1,9 +1,9 @@
 package gossip
 
 import (
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 func (gossiper *Gossiper) handleTestPacket(

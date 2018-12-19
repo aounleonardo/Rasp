@@ -1,17 +1,17 @@
 package gossip
 
 import (
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"time"
-	"sync"
-	"strings"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"fmt"
 	"errors"
-	"math/rand"
-	"strconv"
-	"net"
+	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/onet/log"
+	"math/rand"
+	"net"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 const searchPeriod = 1 * time.Second
@@ -116,10 +116,9 @@ func (gossiper *Gossiper) performPeriodicSearch(
 	searchKey := constructSearchIdentifier(keywords)
 	searchStates.RLock()
 	defer searchStates.RUnlock()
-	if state, hasState := searchStates.m[searchKey];
-		!hasState ||
-			budget > maxBudget ||
-			state.nbMatches > maxMatches {
+	if state, hasState := searchStates.m[searchKey]; !hasState ||
+		budget > maxBudget ||
+		state.nbMatches > maxMatches {
 		return
 	}
 
