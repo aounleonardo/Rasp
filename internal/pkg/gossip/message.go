@@ -106,6 +106,10 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 		RumorKey{origin: rumor.Origin, messageID: rumor.ID},
 	)
 	messageOrdering.Unlock()
+
+	if rumor.RaspRequest != nil {
+		chain.ReceiveRaspRequest(*rumor.RaspRequest)
+	}
 }
 
 func (gossiper *Gossiper) getMessagesSince(

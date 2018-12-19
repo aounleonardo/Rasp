@@ -64,6 +64,6 @@ func (gossiper *Gossiper) sendRouteRumor(peer *net.UDPAddr) {
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
 }
 
-func isRouteRumor(rumor *message.RumorMessage) bool {
-	return len(rumor.Text) == 0
+func isRouteRumor(rumour *message.RumorMessage) bool {
+	return len(rumour.Text) == 0 && rumour.RaspRequest == nil
 }
