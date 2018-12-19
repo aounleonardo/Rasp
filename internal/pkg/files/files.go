@@ -1,16 +1,16 @@
 package files
 
 import (
+	"bytes"
 	"crypto/sha256"
-	"sync"
-	"io/ioutil"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"bytes"
-	"os"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"io/ioutil"
 	"math"
-	"encoding/hex"
+	"os"
+	"sync"
 )
 
 const MaxFileChunkSize = 8 * 1024
@@ -230,8 +230,8 @@ func NextHash(hashValue []byte) ([]byte, *Chunkey, error) {
 	}
 	FileStates.m[metakey].Index += 1
 	return KeyToHash(
-		FileStates.m[metakey].Chunkeys[FileStates.m[metakey].Index-1],
-	),
+			FileStates.m[metakey].Chunkeys[FileStates.m[metakey].Index-1],
+		),
 		&Chunkey{Metakey: metakey, Index: FileStates.m[metakey].Index},
 		nil
 }
@@ -319,11 +319,11 @@ func ReconstructFile(key string) (*File, error) {
 			errors.New("could not find metafile for metakey" + key)
 	}
 	return &File{
-		Name:     filename,
-		Size:     size,
-		Metafile: metafile,
-		Metahash: KeyToHash(*metakey),
-	},
+			Name:     filename,
+			Size:     size,
+			Metafile: metafile,
+			Metahash: KeyToHash(*metakey),
+		},
 		nil
 }
 

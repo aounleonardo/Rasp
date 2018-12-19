@@ -1,9 +1,9 @@
 package gossip
 
 import (
+	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
-	"fmt"
 	"time"
 )
 
@@ -19,9 +19,8 @@ func (gossiper *Gossiper) updateNextHop(
 	sender *net.UDPAddr,
 ) {
 	gossiper.routing.Lock()
-	if route, hasRoute := gossiper.routing.m[rumor.Origin];
-		!hasRoute ||
-			rumor.ID > route.sequenceNumber {
+	if route, hasRoute := gossiper.routing.m[rumor.Origin]; !hasRoute ||
+		rumor.ID > route.sequenceNumber {
 		gossiper.routing.m[rumor.Origin] = RouteInfo{
 			nextHop: sender, sequenceNumber: rumor.ID,
 		}

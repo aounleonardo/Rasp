@@ -1,14 +1,14 @@
 package gossip
 
 import (
-	"sync"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"errors"
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"time"
-	"errors"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"log"
 	"net"
+	"sync"
+	"time"
 )
 
 type RumorKey struct {

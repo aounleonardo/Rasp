@@ -21,10 +21,13 @@ func (b *Block) Hash() (out [32]byte) {
 
 func (t *TxPublish) Hash() (out [32]byte) {
 	h := sha256.New()
-	binary.Write(h, binary.LittleEndian,
-		uint32(len(t.File.Name)))
-	h.Write([]byte(t.File.Name))
-	h.Write(t.File.MetafileHash)
+	binary.Write(h, binary.LittleEndian, uint64(t.Action.Identifier))
+	binary.Write(h, binary.LittleEndian, uint32(t.Action.Type))
+	h.Write([]byte(t.Action.Attacker))
+	h.Write([]byte(t.Action.Defender))
+	binary.Write(h, binary.LittleEndian, uint32(t.Action.Bet))
+	h.Write(t.Action.Special)
 	copy(out[:], h.Sum(nil))
 	return
+
 }

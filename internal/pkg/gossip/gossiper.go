@@ -1,14 +1,14 @@
 package gossip
 
 import (
-	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/protobuf"
+	"net"
 	"strings"
 	"time"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
-	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 )
 
 const maxMsgSize = 10000

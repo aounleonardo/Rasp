@@ -1,10 +1,10 @@
 package gossip
 
 import (
-	"sync"
-	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"net"
+	"sync"
 )
 
 type Peers struct {
@@ -24,7 +24,7 @@ type Rumors struct {
 
 type Acks struct {
 	sync.RWMutex
-	queue map[string]chan *message.StatusPacket
+	queue    map[string]chan *message.StatusPacket
 	expected map[string]int
 }
 

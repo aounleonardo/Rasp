@@ -1,16 +1,16 @@
 package chain
 
 import (
-	"sync"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"sync"
 )
 
-var ledger = struct {
-	sync.RWMutex
-	m map[string]File
-}{
-	m: make(map[string]File),
+type ledger struct {
+	players    map[string]*Player
+	challenges map[uint64]*ChallengeState
+	length     int
 }
 
 var genesis = [32]byte{}
@@ -18,21 +18,265 @@ var genesis = [32]byte{}
 var blockchain = struct {
 	sync.RWMutex
 	m       map[[32]byte]Block
-	heads   map[[32]byte]struct{}
+	heads   map[[32]byte]ledger
 	longest [32]byte
-	length  int
 }{
-	m:       map[[32]byte]Block{genesis: {}},
-	heads:   map[[32]byte]struct{}{genesis: {}},
+	m: map[[32]byte]Block{genesis: {}},
+	heads: map[[32]byte]ledger{genesis: {
+		length:     0,
+		challenges: make(map[uint64]*ChallengeState),
+		players:    make(map[string]*Player)},
+	},
 	longest: genesis,
-	length:  0,
 }
 
-func isNameClaimed(filename string) bool {
-	ledger.RLock()
-	defer ledger.RUnlock()
-	_, hasTx := ledger.m[filename]
-	return hasTx
+func getPlayer(name string) (Player, bool) {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	player, exists := blockchain.heads[blockchain.longest].players[name]
+	return *player, exists
+}
+
+func getChallengeState(identifier uint64) (ChallengeState, bool) {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	state, exists := blockchain.heads[blockchain.longest].challenges[identifier]
+	return *state, exists
+}
+
+func createForkLedgerUnsafe(
+	ForkTxs map[int]map[uint64]GameAction,
+	head [32]byte,
+	length int,
+) ledger {
+	if head == genesis {
+		return buildLedger(ForkTxs, length)
+	}
+	for _, tx := range blockchain.m[head].Transactions {
+		ForkTxs[tx.Action.Type][tx.Action.Identifier] = tx.Action
+	}
+
+	return createForkLedgerUnsafe(ForkTxs, blockchain.m[head].PrevHash, length+1)
+}
+
+func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
+	var txsMap = map[int]map[uint64]GameAction{
+		Spawn:   make(map[uint64]GameAction),
+		Attack:  make(map[uint64]GameAction),
+		Defence: make(map[uint64]GameAction),
+		Reveal:  make(map[uint64]GameAction),
+		Cancel:  make(map[uint64]GameAction),
+	}
+	for _, tx := range txs {
+		txsMap[tx.Action.Type][tx.Action.Identifier] = tx.Action
+	}
+	return txsMap
+}
+
+func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
+	for _, action := range txs[Spawn] {
+		key, _ := x509.ParsePKCS1PublicKey(action.SignedSpecial)
+		ledger.players[action.Attacker] = &Player{Balance: initialBalance, Key: key}
+	}
+	for identifier, action := range txs[Attack] {
+		ledger.players[action.Attacker].Balance -= int64(action.Bet)
+		ledger.challenges[identifier] = &ChallengeState{
+			Identifier: identifier,
+			Attacker:   action.Attacker,
+			Defender:   &action.Defender,
+			Bet:        action.Bet,
+			Stage:      Attack,
+			HiddenMove: action.HiddenMove,
+		}
+	}
+	for identifier, action := range txs[Defence] {
+		ledger.players[action.Defender].Balance += int64(action.Bet)
+		match := ledger.challenges[identifier]
+		match.Stage = Defence
+		match.DefenceMove = &action.Move
+	}
+	for identifier, action := range txs[Reveal] {
+		match := ledger.challenges[identifier]
+		match.Stage = Reveal
+		match.AttackMove = &action.Move
+		match.Nonce = &action.Nonce
+		switch whoWon(*match.AttackMove, *match.DefenceMove) {
+		case Attacker:
+			ledger.players[action.Attacker].Balance += 2 * int64(match.Bet)
+			ledger.players[action.Defender].Balance -= 2 * int64(match.Bet)
+		case Draw:
+			ledger.players[action.Attacker].Balance += int64(match.Bet)
+			ledger.players[action.Defender].Balance -= int64(match.Bet)
+		}
+	}
+	for identifier, action := range txs[Cancel] {
+		match := ledger.challenges[identifier]
+		match.Stage = Cancel
+		ledger.players[action.Attacker].Balance += int64(match.Bet)
+	}
+}
+
+func buildLedger(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
+	var newLedger = ledger{
+		players:    map[string]*Player{},
+		challenges: map[uint64]*ChallengeState{},
+		length:     length,
+	}
+	applyTxsToLedger(ForkTxs, &newLedger)
+	return newLedger
+}
+
+// lock blockchain before using
+func getBalancesUnsafe(ledger ledger) map[string]int64 {
+	balances := make(map[string]int64, len(ledger.players))
+	for name, player := range ledger.players {
+		balances[name] = player.Balance
+	}
+	return balances
+}
+
+func spawnNotClaimed(newPlayer string) bool {
+	_, ok := getPlayer(newPlayer)
+	return !ok
+
+}
+
+func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {
+	//check that defence not in pending
+	//check that state is in Attack
+	state, exist := getChallengeState(cancel.Action.Identifier)
+	if !exist {
+		return false
+	}
+	if hasDefenceInResults(cancel, validDefences) {
+		return false
+	}
+	return state.Stage == Attack
+}
+
+func isValidReveal(reveal TxPublish, validDefences []TxPublish) bool {
+	//Check that challenge state is set to defence in ledger
+	//or that the defense is in results
+	state, exist := getChallengeState(reveal.Action.Identifier)
+	if !exist {
+		return false
+	}
+	return state.Stage == Defence || hasDefenceInResults(reveal, validDefences)
+
+}
+
+func hasDefenceInResults(reveal TxPublish, defences []TxPublish) bool {
+	id := reveal.Action.Identifier
+	for _, defence := range defences {
+		if defence.Action.Identifier == id {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidDefence(defence TxPublish, validAttacks []TxPublish) bool {
+	//check cancel in ledger
+	//check attack in ledger or in validAttacks
+	state, exists := getChallengeState(defence.Action.Identifier)
+	if !exists {
+		return false
+	}
+	//if state.Stage == Cancel{
+	//	return false
+	//}
+	return state.Stage == Attack || hasAttackInResults(defence, validAttacks)
+}
+
+func hasAttackInResults(defence TxPublish, attacks []TxPublish) bool {
+	id := defence.Action.Identifier
+	for _, attack := range attacks {
+		if attack.Action.Identifier == id {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidAttack(attack TxPublish, balances map[string]int64) bool {
+	if !hasSeenPlayer(attack.Action.Attacker, balances) ||
+		!hasSeenPlayer(attack.Action.Defender, balances) {
+		return false
+	}
+	upsertBalance(balances, attack.Action.Attacker)
+	upsertBalance(balances, attack.Action.Defender)
+	return haveEnoughMoney(attack.Action, balances)
+}
+
+func hasSeenPlayer(player string, balances map[string]int64) bool {
+	if _, ok := balances[player]; ok {
+		return true
+	}
+	if _, ok := getPlayer(player); ok {
+		return true
+	}
+	return false
+}
+
+func upsertBalance(balances map[string]int64, name string) error {
+	if _, ok := balances[name]; ok {
+		return nil
+	}
+	player, ok := getPlayer(name)
+	if !ok {
+		return errors.New(fmt.Sprintf("unexpected error %s has no balance", name))
+
+	}
+	balances[name] = player.Balance
+	return nil
+}
+
+func haveEnoughMoney(action GameAction, balances map[string]int64) bool {
+	return balances[action.Attacker]-int64(action.Bet) >= 0 &&
+		balances[action.Defender]-int64(action.Bet) >= 0
+}
+
+//func isNameClaimed(filename string) bool {
+//	ledger.RLock()
+//	defer ledger.RUnlock()
+//	_, hasTx := ledger.m[filename]
+//	return hasTx
+//}
+
+func isSpawnClaimed(name string) bool {
+	_, exists := getPlayer(name)
+	return exists
+}
+
+func isAttackClaimed(identifier uint64) bool {
+	_, exist := getChallengeState(identifier)
+	return exist
+}
+
+func isDefenceClaimed(identifier uint64) bool {
+	challenge, exists := getChallengeState(identifier)
+	if exists {
+		return challenge.Stage > Attack
+	}
+	return false
+}
+
+func isRevealClaimed(identifier uint64) bool {
+	challenge, exists := getChallengeState(identifier)
+	if exists {
+		if challenge.Stage == Reveal || challenge.Stage == Cancel {
+			return true
+		}
+	}
+	return false
+}
+
+func isCancelClaimed(identifier uint64) bool {
+	challenge, exist := getChallengeState(identifier)
+	if exist {
+		return challenge.Stage == Attack
+	}
+	return false
 }
 
 func getHeadsCount() int {
@@ -45,6 +289,13 @@ func isLongest(head [32]byte) bool {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
 	return head == blockchain.longest
+}
+
+func hasParent(block *Block) bool {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	_, exists := blockchain.m[block.Hash()]
+	return exists
 }
 
 func hasBlock(block *Block) bool {
@@ -64,249 +315,98 @@ func getBlock(hash [32]byte) (*Block, error) {
 	return nil, errors.New(fmt.Sprintf("does not have block %s", hash))
 }
 
-func addBlock(block Block) error {
-	_, currentLength := getCurrentHead()
-	didUpsert := upsertHead(block.PrevHash)
+func addBlockUnsafe(block Block) {
+	currentHead, currentLength := getCurrentHeadUnsafe()
 	hash := block.Hash()
 
-	blockchain.Lock()
 	blockchain.m[hash] = block
+	oldLedger := blockchain.heads[block.PrevHash]
+	blockchain.heads[hash] = oldLedger
+	blockchain.heads[hash] = ledger{
+		players:    oldLedger.players,
+		challenges: oldLedger.challenges,
+		length:     oldLedger.length + 1,
+	}
+
+	applyBlockUnsafe(hash)
 	delete(blockchain.heads, block.PrevHash)
-	blockchain.heads[hash] = struct{}{}
-	blockchain.Unlock()
 
-	err := switchHeadTo(hash)
-	if err != nil {
-		return err
+	if oldLedger.length < currentLength {
+		return
 	}
-	_, newLength := getCurrentHead()
-	if newLength > currentLength {
-		fmt.Println(chainToString())
-	} else if didUpsert {
-		fmt.Printf("FORK-SHORTER %x\n", hash)
+
+	if block.PrevHash == currentHead {
+		return
 	}
-	return nil
+
+	switchHeadFromUnsafe(currentHead)
 }
 
-func switchHeadTo(hash [32]byte) error {
-	currentHead, currentLength := getCurrentHead()
-	newLength := getHeadLength(hash)
+func switchHeadFromUnsafe(previousHead [32]byte) {
+	ancestor := getCommonAncestorUnsafe(previousHead)
 
-	if currentLength >= newLength {
-		return nil
-	}
+	for hash := previousHead; hash != ancestor; {
+		block := blockchain.m[hash]
 
-	ancestor := getCommonAncestor(currentHead, hash)
-	if ancestor == nil {
-		ancestor = &genesis
-	}
-	if *ancestor != currentHead {
-		stop, err := rollbackTo(*ancestor)
-		if err != nil {
-			_, fallback := applyChangesUpTo(currentHead, stop)
-			if fallback != nil {
-				errors.New(fmt.Sprintf(
-					"got error %s while applying changes,"+
-						" tried to fallback but %s",
-					err.Error(),
-					fallback.Error(),
-				))
+		for _, tx := range block.Transactions {
+			if !tx.Action.shouldDiscardTransactionUnsafe() {
+				pendingTransactions.m[tx.Action.Type] =
+					append(pendingTransactions.m[tx.Action.Type], tx)
 			}
-			return err
 		}
-	}
 
-	_, err := applyChangesUpTo(hash, *ancestor)
-	if err != nil {
-		rollbackTo(*ancestor)
-		_, fallback := applyChangesUpTo(currentHead, *ancestor)
-		if fallback != nil {
-			return errors.New(fmt.Sprintf(
-				"got error %s while applying changes,"+
-					" tried to fallback but %s",
-				err.Error(),
-				fallback.Error(),
-			))
-		}
-		return err
+		hash = block.PrevHash
 	}
-	blockchain.Lock()
-	blockchain.longest = hash
-	blockchain.length = newLength
-	blockchain.Unlock()
-	return nil
 }
 
-func getCommonAncestor(block [32]byte, other [32]byte) *[32]byte {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-
-	pathToRoot := getChainHashes(block)
-	ancestor, err := findFirstInPath(other, pathToRoot)
-	if err != nil {
-		fmt.Println("error when searching for common ancestor", block, other)
-		return nil
-	}
-	return &ancestor
+func getCommonAncestorUnsafe(other [32]byte) [32]byte {
+	hashesToRoot := getChainHashesUnsafe()
+	ancestor := findFirstInPathUnsafe(other, hashesToRoot)
+	return ancestor
 }
 
-func findFirstInPath(start [32]byte, path [][32]byte) ([32]byte, error) {
-	nodesInPath := make(map[[32]byte]struct{}, len(path))
-	for _, node := range path {
-		nodesInPath[node] = struct{}{}
-	}
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-
-	node := start
+func findFirstInPathUnsafe(
+	start [32]byte,
+	hashesToRoot map[[32]byte]struct{},
+) [32]byte {
+	hash := start
 	for {
-		if node == genesis {
-			return genesis, nil
+		if hash == genesis {
+			return genesis
 		}
-		block, hasNode := blockchain.m[node]
-		if !hasNode {
-			return [32]byte{},
-				errors.New("unexpected error: can't find node")
+		block, _ := blockchain.m[hash]
+		if _, inPath := hashesToRoot[hash]; inPath {
+			return hash
 		}
-		if _, inPath := nodesInPath[node]; inPath {
-			return node, nil
-		}
-		node = block.PrevHash
+		hash = block.PrevHash
 	}
-	return [32]byte{},
-		errors.New("unexpected error: can't find node")
 }
 
-func getCurrentHead() ([32]byte, int) {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-
-	return blockchain.longest, blockchain.length
+func getCurrentHeadUnsafe() ([32]byte, int) {
+	return blockchain.longest, blockchain.heads[blockchain.longest].length
 }
 
-func upsertHead(hash [32]byte) bool {
-	blockchain.Lock()
-	defer blockchain.Unlock()
+func getChainHashesUnsafe() map[[32]byte]struct{} {
+	length := blockchain.heads[blockchain.longest].length
+	chain := make(map[[32]byte]struct{}, length)
 
-	if _, hasHead := blockchain.heads[hash]; hasHead {
-		return false
-	}
-	blockchain.heads[hash] = struct{}{}
-	return true
-}
-
-func getHeadLength(hash [32]byte) int {
-	return len(getChainHashes(hash))
-}
-
-func getChainHashes(start [32]byte) [][32]byte {
-	chain := make([][32]byte, 0)
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-
-	node := start
+	hash := blockchain.longest
 	for {
-		block, hasNode := blockchain.m[node]
-		if !hasNode {
+		block, _ := blockchain.m[hash]
+		if hash == genesis {
 			return chain
 		}
-		if node == genesis {
-			return chain
-		}
-		chain = append(chain, node)
-		node = block.PrevHash
+		chain[hash] = struct{}{}
+		hash = block.PrevHash
 	}
 	return chain
 }
 
-func rollbackTo(hash [32]byte) ([32]byte, error) {
-	currentHead, _ := getCurrentHead()
-	if currentHead == hash {
-		return hash, nil
-	}
-	pathToRoot := getChainHashes(currentHead)
-	if len(pathToRoot) == 0 {
-		return currentHead, nil
-	}
-	index := 0
-	node := pathToRoot[0]
-	for ; index < len(pathToRoot) && node != hash;
-	index = index + 1 {
-		node = pathToRoot[index]
-		err := denyBlock(node)
-		if err != nil {
-			if hash == genesis {
-				return genesis, nil
-			}
-			return node, err
-		}
-	}
-	fmt.Printf("FORK-LONGER rewind %d blocks\n", index)
-	return node, nil
-}
-
-func denyBlock(hash [32]byte) error {
-	block, err := getBlock(hash)
-	if err != nil {
-		return err
-	}
-	ledger.Lock()
-	pendingTransactions.Lock()
-	pending := make(map[string]struct{}, len(pendingTransactions.l))
-	for _, pendingTx := range pendingTransactions.l {
-		pending[pendingTx.File.Name] = struct{}{}
-	}
-	for _, tx := range block.Transactions {
-		delete(ledger.m, tx.File.Name)
-		if _, hasPending := pending[tx.File.Name]; !hasPending {
-			pendingTransactions.l = append(pendingTransactions.l, tx)
-			pending[tx.File.Name] = struct{}{}
-		}
-	}
-	pendingTransactions.Unlock()
-	ledger.Unlock()
-	return nil
-}
-
-func applyChangesUpTo(stop [32]byte, ancestor [32]byte) ([32]byte, error) {
-	pathToRoot := getChainHashes(stop)
-	if len(pathToRoot) < 1 {
-		return genesis, errors.New(
-			fmt.Sprintf("cannot find path to root from %s", stop),
-		)
-	}
-	ancestorIndex, err := findNodeInPath(pathToRoot, ancestor)
-	if err != nil {
-		if ancestor == genesis {
-			ancestorIndex = len(pathToRoot)
-		} else {
-			return genesis, err
-		}
-	}
-	changesToApply := pathToRoot[:ancestorIndex]
-	for _, node := range changesToApply {
-		err := applyBlock(node)
-		if err != nil {
-			return node, err
-		}
-	}
-
-	return stop, nil
-}
-
-func applyBlock(hash [32]byte) error {
-	block, err := getBlock(hash)
-	if err != nil {
-		return err
-	}
-	ledger.Lock()
-	for _, tx := range block.Transactions {
-		if _, nameIsClaimed := ledger.m[tx.File.Name]; !nameIsClaimed {
-			ledger.m[tx.File.Name] = tx.File
-		}
-	}
-	ledger.Unlock()
-	return nil
+func applyBlockUnsafe(hash [32]byte) {
+	block := blockchain.m[hash]
+	ledger := blockchain.heads[hash]
+	txs := createTxsMap(block.Transactions)
+	applyTxsToLedger(txs, &ledger)
 }
 
 func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
@@ -320,17 +420,4 @@ func findNodeInPath(path [][32]byte, node [32]byte) (int, error) {
 		node,
 		path,
 	))
-}
-
-func chainToString() string {
-	currentHead, _ := getCurrentHead()
-	pathToRoot := getChainHashes(currentHead)
-	chain := "CHAIN"
-	for _, node := range pathToRoot {
-		description := describeBlock(node)
-		if description != nil {
-			chain += fmt.Sprintf(" %s", *description)
-		}
-	}
-	return chain
 }

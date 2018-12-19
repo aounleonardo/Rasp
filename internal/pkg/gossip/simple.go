@@ -1,9 +1,9 @@
 package gossip
 
 import (
+	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
-	"fmt"
 )
 
 func (gossiper *Gossiper) receiveSimplePacket(

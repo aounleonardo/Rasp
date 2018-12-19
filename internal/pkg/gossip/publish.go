@@ -1,11 +1,10 @@
 package gossip
 
 import (
+	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"fmt"
 	"net"
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
 )
 
 func (gossiper *Gossiper) publishMinedBlocks() {
@@ -62,14 +61,6 @@ func (gossiper *Gossiper) receiveTxPublish(
 ) {
 	chain.ReceiveTransaction(*tx)
 	gossiper.advertisePublisher(Publish(*tx), wrapAddressAsString(fromSender))
-}
-
-func (gossiper *Gossiper) indexFile(file *files.File) {
-	chain.ReceiveTransaction(chain.BuildTransaction(chain.File{
-		Name:         file.Name,
-		Size:         int64(file.Size),
-		MetafileHash: file.Metahash,
-	}))
 }
 
 func (gossiper *Gossiper) receiveBlockPublish(

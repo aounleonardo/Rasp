@@ -1,11 +1,11 @@
 package gossip
 
 import (
-	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"errors"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
-	"time"
 	"sync"
+	"time"
 )
 
 var receivedSearchRequests = struct {
@@ -22,8 +22,7 @@ func (gossiper *Gossiper) saveFile(file *files.File) error {
 	defer gossiper.files.Unlock()
 
 	metakey := files.HashToKey(file.Metahash)
-	if _, hasMetakey := gossiper.files.m[metakey];
-		hasMetakey {
+	if _, hasMetakey := gossiper.files.m[metakey]; hasMetakey {
 		return errors.New("file already exists " + metakey)
 	}
 	gossiper.files.m[metakey] = *file

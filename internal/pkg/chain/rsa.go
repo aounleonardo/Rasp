@@ -10,18 +10,18 @@ type ResponseSignature struct {
 
 type AttackSignature struct {
 	Identifier uint64
-	Bet uint32
-	Hash []byte // X, B, Move, Nonce
+	Bet        uint32
+	Hash       []byte // X, B, Move, Nonce
 }
 
 type DefenceSignature struct {
 	Identifier uint64
-	Move int
-	Hash []byte // X, Move
+	Move       int
+	Hash       []byte // X, Move
 }
 
 type RevealSignature struct {
-	Move int
+	Move  int
 	Nonce uint64
-	Hash []byte // X, Move, Nonce
+	Hash  []byte // X, Move, Nonce
 }

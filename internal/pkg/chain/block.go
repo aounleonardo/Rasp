@@ -1,10 +1,8 @@
 package chain
 
 import (
-	"fmt"
-	"errors"
 	"bytes"
-	"strings"
+	"fmt"
 )
 
 type BlockPublish struct {
@@ -37,79 +35,70 @@ func ReceiveBlock(block Block) {
 	}
 	if hasBlock(&block) {
 		fmt.Println("already has block", block.Hash())
+		return
 	}
-	var head *[32]byte = nil
-	if !isLongest(block.PrevHash) {
-		head = &block.PrevHash
+	if !hasParent(&block) {
+		fmt.Println("block has no known parents")
+		return
+
 	}
-	if !block.canAddBlockToHead(head) {
+
+	head := block.PrevHash
+	if !block.canAddBlockToUpsertedHead(head) {
 		fmt.Println("cannot add block", block.Hash())
 	}
 
 	pauseMining()
-	err := addBlock(block)
-	if err != nil {
-		fmt.Println("error adding block", block.Hash(), err)
-	}
-	removeClaimedPendingTransactions()
+	blockchain.Lock()
+	addBlockUnsafe(block)
+	removeClaimedPendingTransactionsUnsafe()
+	blockchain.Unlock()
 	go Mine()
 }
 
-func (block *Block) canAddBlockToLedger() bool {
+// Unsafe lock blockchain before using
+func (block *Block) canAddBlockToLedgerUnsafe(ledger ledger) bool {
+	var currentStage = Spawn
+	var tmpBalances = getBalancesUnsafe(ledger)
+	var attacks = make(map[uint64]struct{})
+	var defences = make(map[uint64]struct{})
+	var reveals = make(map[uint64]struct{})
+	var cancels = make(map[uint64]struct{})
 	for _, tx := range block.Transactions {
-		if isNameClaimed(tx.File.Name) {
+		if tx.Action.Type < currentStage {
+			return false
+		}
+		currentStage = tx.Action.Type
+		if canAdd := tx.canAddToLedgerUnsafe(
+			ledger,
+			tmpBalances,
+			attacks,
+			defences,
+			reveals,
+			cancels,
+		); !canAdd {
 			return false
 		}
 	}
 	return true
 }
 
-func (block *Block) canAddBlockToHead(head *[32]byte) bool {
-	if head == nil {
-		return block.canAddBlockToLedger()
+func (block *Block) canAddBlockToUpsertedHead(head [32]byte) bool {
+	blockchain.Lock()
+	defer blockchain.Unlock()
+	if ledger, exists := blockchain.heads[head]; exists {
+		return block.canAddBlockToLedgerUnsafe(ledger)
 	}
-	txs := make(map[string]struct{}, len(block.Transactions))
-	for _, tx := range block.Transactions {
-		txs[tx.File.Name] = struct{}{}
+	var forkTxs = map[int]map[uint64]GameAction{
+		Spawn:   make(map[uint64]GameAction),
+		Attack:  make(map[uint64]GameAction),
+		Defence: make(map[uint64]GameAction),
+		Reveal:  make(map[uint64]GameAction),
+		Cancel:  make(map[uint64]GameAction),
 	}
-	canAdd, err := canAddFilenamesToHead(txs, *head)
-	if err != nil {
-		fmt.Printf(
-			"cannot add block %s to head %s: %s",
-			block.Hash(),
-			*head,
-			err.Error(),
-		)
-	}
-	return canAdd
-}
-
-func canAddFilenamesToHead(
-	txs map[string]struct{},
-	head [32]byte,
-) (bool, error) {
-	if head == genesis {
-		return true, nil
-	}
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-	headBlock, hasBlock := blockchain.m[head]
-	if !hasBlock {
-		return true, nil
-	}
-	if isConflictingBlock(txs, &headBlock) {
-		return false, errors.New("conflicting block")
-	}
-	return canAddFilenamesToHead(txs, headBlock.PrevHash)
-}
-
-func isConflictingBlock(txs map[string]struct{}, other *Block) bool {
-	for _, tx := range other.Transactions {
-		if _, hasTx := txs[tx.File.Name]; hasTx {
-			return true
-		}
-	}
-	return false
+	newLedger := createForkLedgerUnsafe(forkTxs, head, 0)
+	blockchain.heads[head] = newLedger
+	return block.canAddBlockToLedgerUnsafe(newLedger)
 }
 
 func (block *Block) verifyHash() bool {
@@ -122,37 +111,4 @@ func publishBlock(block Block) {
 		Block:    block,
 		HopLimit: blockHopLimit,
 	}
-}
-
-func (block *Block) toString() string {
-	return fmt.Sprintf(
-		"%x:%x:%s",
-		block.Hash(),
-		block.PrevHash,
-		block.describeTransactions(),
-	)
-}
-
-func describeBlock(hash [32]byte) *string {
-	blockchain.RLock()
-	defer blockchain.RUnlock()
-	block, hasBlock := blockchain.m[hash]
-	if hash == genesis || !hasBlock {
-		return nil
-	}
-	description := fmt.Sprintf(
-		"%x:%x:%s",
-		hash,
-		block.PrevHash,
-		block.describeTransactions(),
-	)
-	return &description
-}
-
-func (block *Block) describeTransactions() string {
-	filenames := make([]string, len(block.Transactions))
-	for i, tx := range block.Transactions {
-		filenames[i] = tx.File.Name
-	}
-	return strings.Join(filenames, ",")
 }

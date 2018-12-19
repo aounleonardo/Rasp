@@ -54,9 +54,18 @@ func Mine() {
 }
 
 func getNewTransactions() []TxPublish {
-	pendingTransactions.RLock()
-	newTransactions := pendingTransactions.l
-	pendingTransactions.RUnlock()
+	var newTransactions = []TxPublish(nil)
+	var tmpBalances = make(map[string]int64)
+	spawns := getNewSpawns(tmpBalances)
+	newTransactions = append(newTransactions, spawns...)
+	attacks := getNewAttacks(tmpBalances)
+	newTransactions = append(newTransactions, attacks...)
+	defences := getNewDefences(attacks)
+	newTransactions = append(newTransactions, defences...)
+	reveals := getNewReveals(defences)
+	newTransactions = append(newTransactions, reveals...)
+	cancels := getNewCancels(defences)
+	newTransactions = append(newTransactions, cancels...)
 	return newTransactions
 }
 

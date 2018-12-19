@@ -1,11 +1,11 @@
 package gossip
 
 import (
-	"net"
 	"fmt"
-	"github.com/dedis/protobuf"
-	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
+	"github.com/aounleonardo/Peerster/internal/pkg/message"
+	"github.com/dedis/protobuf"
+	"net"
 )
 
 func (gossiper *Gossiper) handleRumorRequest(
@@ -185,7 +185,6 @@ func (gossiper *Gossiper) handleFileShareRequest(
 	if err != nil {
 		fmt.Println("error saving file", hashEncoding, err.Error())
 	}
-	gossiper.indexFile(file)
 	gossiper.sendToClient(
 		&message.FileShareResponse{
 			Name:    request.Name,
