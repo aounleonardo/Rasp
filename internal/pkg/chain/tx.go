@@ -116,6 +116,10 @@ func hasNoPendingTransactions() bool {
 }
 
 func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
+
+	attacker := blockchain.heads[blockchain.longest].matches[action.Identifier].Attacker
+	defender := *blockchain.heads[blockchain.longest].matches[action.Identifier].Defender
+
 	switch action.Type {
 	case Spawn:
 		if isSpawnClaimed(action.Attacker) {
@@ -133,7 +137,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			return true
 		}
 
-		player, _ := getPlayer(action.Attacker)
+		player := blockchain.heads[blockchain.longest].players[attacker]
 
 		ok, err := VerifyAttack(&player.Key, action.Identifier, action.Bet, action.SignedSpecial)
 
@@ -153,7 +157,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			return true
 		}
 
-		player, _ := getPlayer(action.Defender)
+		player := blockchain.heads[blockchain.longest].players[defender]
 
 		ok, err := VerifyDefence(&player.Key, action.Identifier, action.Move, action.SignedSpecial)
 
@@ -175,7 +179,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			return true
 		}
 
-		player, _ := getPlayer(action.Attacker)
+		player := blockchain.heads[blockchain.longest].players[attacker]
 
 		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
 
@@ -203,7 +207,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			return true
 		}
 
-		// TODOs
+		// TODO verify sign
 
 		pendingTransactions.RLock()
 		defer pendingTransactions.RUnlock()
@@ -261,6 +265,9 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 
 	action := tx.Action
 
+	attacker := blockchain.heads[blockchain.longest].matches[action.Identifier].Attacker
+	defender := *blockchain.heads[blockchain.longest].matches[action.Identifier].Defender
+
 	switch action.Type {
 	case Spawn:
 		_, exists := tmpBalances[tx.Action.Attacker]
@@ -279,7 +286,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 			return false
 		}
 
-		player, _ := getPlayer(action.Attacker)
+		player := blockchain.heads[blockchain.longest].players[attacker]
 
 		ok, err := VerifyAttack(&player.Key, action.Identifier, action.Bet, action.SignedSpecial)
 
@@ -302,7 +309,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 			}
 		}
 
-		player, _ := getPlayer(action.Defender)
+		player := blockchain.heads[blockchain.longest].players[defender]
 
 		ok, err := VerifyDefence(&player.Key, action.Identifier, action.Move, action.SignedSpecial)
 
@@ -324,7 +331,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 			}
 		}
 
-		player, _ := getPlayer(action.Attacker)
+		player := blockchain.heads[blockchain.longest].players[attacker]
 
 		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
 
@@ -355,6 +362,9 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if match, exists := ledger.matches[tx.Action.Identifier]; !exists || match.Stage != Attack {
 			return false
 		}
+
+		// TODO verify sign
+
 		cancels[tx.Action.Identifier] = struct{}{}
 	}
 	return true
