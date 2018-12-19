@@ -76,7 +76,7 @@ func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
 	return txsMap
 }
 
-func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
+func applyTxsToLedgerUnsafe(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	for _, action := range txs[Spawn] {
 		key := decodeKey(action.SignedSpecial)
 		ledger.players[action.Attacker] = &Player{
@@ -374,5 +374,5 @@ func applyBlockUnsafe(hash [32]byte) {
 	block := blockchain.m[hash]
 	ledger := blockchain.heads[hash]
 	txs := createTxsMap(block.Transactions)
-	applyTxsToLedger(txs, &ledger)
+	applyTxsToLedgerUnsafe(txs, &ledger)
 }
