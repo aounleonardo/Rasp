@@ -69,10 +69,10 @@ type PrivateMessage struct {
 }
 
 type RaspMessage struct {
-	RaspRequest  *chain.RaspRequest
-	RaspResponse *chain.RaspResponse
-	RaspAttack   *chain.RaspAttack
-	RaspDefence  *chain.RaspDefence
+	Request  *chain.RaspRequest
+	Response *chain.RaspResponse
+	Attack   *chain.RaspAttack
+	Defence  *chain.RaspDefence
 }
 
 type DataRequest struct {

@@ -161,9 +161,10 @@ func ReceiveRaspAttack(
 	attack RaspAttack,
 	privateKey *rsa.PrivateKey,
 ) (defence *RaspDefence, err error) {
+	// TODO ReceiveRaspAttack
 	return
 }
 
 func ReceiveRaspDefence(defence RaspDefence, privateKey *rsa.PrivateKey) {
-
+	// TODO ReceiveRaspDefence
 }

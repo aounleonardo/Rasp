@@ -98,32 +98,13 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
-	gossiper.routing.RLock()
-	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
-		success = false
-		fmt.Printf(
-			"does not know route to destination: %s\n",
-			request.Destination,
-		)
-		return
-	}
-	gossiper.routing.RUnlock()
-	gossiper.upsertChatter(request.Destination)
-	gossiper.privates.RLock()
-	chatHistory, _ := gossiper.privates.m[request.Destination]
-	id := chatHistory.nextSend
-	chatHistory.nextSend += 1
-	private := &message.PrivateMessage{
-		Origin:      gossiper.Name,
-		ID:          id,
-		Text:        request.Contents,
-		Destination: request.Destination,
-		HopLimit:    hopLimit,
-		Rasp:        raspMessage,
-	}
-	gossiper.privates.RUnlock()
-	gossiper.receivePrivateMessage(private)
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+	explanation = gossiper.sendPrivateMessage(
+		request.Contents,
+		request.Destination,
+		raspMessage,
+	)
 }
 
 func (gossiper *Gossiper) handleGetPrivateRequest(
@@ -315,13 +296,10 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 		rumour := gossiper.createRaspRumour(raspRequest)
 		go gossiper.rumormonger(rumour, gossiper.gossipAddr)
 	} else {
-		gossiper.handleSendPrivateRequest(
-			&message.PrivatePutRequest{
-				Contents:    "",
-				Destination: *request.Destination,
-			},
-			&message.RaspMessage{RaspRequest: raspRequest},
-			clientAddr,
+		explanation = gossiper.sendPrivateMessage(
+			"",
+			*request.Destination,
+			&message.RaspMessage{Request: raspRequest},
 		)
 	}
 }
@@ -347,13 +325,10 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 		return
 	}
 
-	gossiper.handleSendPrivateRequest(
-		&message.PrivatePutRequest{
-			Contents:    "",
-			Destination: raspResponse.Destination,
-		},
-		&message.RaspMessage{RaspResponse: raspResponse},
-		clientAddr,
+	explanation = gossiper.sendPrivateMessage(
+		"",
+		raspResponse.Destination,
+		&message.RaspMessage{Response: raspResponse},
 	)
 }
 
@@ -375,6 +350,9 @@ func (gossiper *Gossiper) sendValidationToClient(
 	err *error,
 	clientAddr *net.UDPAddr,
 ) {
+	if clientAddr == nil {
+		return
+	}
 	explanation := ""
 	if err != nil && (*err) != nil {
 		explanation = (*err).Error()
