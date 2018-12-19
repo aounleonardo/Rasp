@@ -13,6 +13,7 @@ const keySize = 1024
 const hashFunctionType = crypto.SHA256
 
 var hashFunction = sha256.Sum256
+const pad = 968113537
 
 type RequestSignature struct {
 	Identifier Uid
@@ -26,6 +27,7 @@ type ResponseSignature struct {
 type AttackSignature struct {
 	Identifier Uid
 	Bet        uint32
+	Pad uint32
 }
 
 type HiddenMoveSignature struct {
@@ -175,7 +177,7 @@ func SignAttack(
 	b Bet,
 ) (sig []byte, err error) {
 
-	att := &AttackSignature{Identifier: id, Bet: b}
+	att := &AttackSignature{Identifier: id, Bet: b, Pad: pad}
 
 	enc, err := protobuf.Encode(att)
 
@@ -215,7 +217,7 @@ func VerifyAttack(
 	sig []byte,
 ) (ok bool, err error) {
 
-	att := &AttackSignature{id, b}
+	att := &AttackSignature{id, b, pad}
 
 	enc, err := protobuf.Encode(att)
 
