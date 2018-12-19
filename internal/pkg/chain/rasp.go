@@ -1,6 +1,17 @@
 package chain
 
-import "crypto"
+import (
+	"crypto"
+	"crypto/rsa"
+	"errors"
+	"fmt"
+	"github.com/dedis/onet/log"
+	"math/rand"
+	"sync"
+	"time"
+)
+
+type Stage = int
 
 const (
 	Spawn   = iota
@@ -9,6 +20,8 @@ const (
 	Reveal  = iota
 	Cancel  = iota
 )
+
+type Move = int
 
 const (
 	Rock     = iota
@@ -24,6 +37,10 @@ const (
 	Defender = iota
 )
 
+type Uid = uint64
+type Nonce = uint64
+type Bet = uint32
+
 type Player struct {
 	Key     crypto.PublicKey
 	Balance int64
@@ -31,32 +48,160 @@ type Player struct {
 
 type GameAction struct {
 	Type          int
-	Identifier    uint64
+	Identifier    Uid
 	Attacker      string
 	Defender      string
-	Bet           uint32
+	Bet           Bet
 	Move          int
 	Nonce         uint64
 	HiddenMove    []byte
 	SignedSpecial []byte
 }
 
-type ChallengeState struct {
-	Identifier  uint64
+type Match struct {
+	Identifier  Uid
 	Attacker    string
 	Defender    *string
-	Bet         uint32
-	AttackMove  *int
-	DefenceMove *int
+	Bet         Bet
+	AttackMove  *Move
+	DefenceMove *Move
 	Nonce       *uint64
 	HiddenMove  []byte
-	Stage       int
+	Stage       Stage
+}
+
+var raspState = struct {
+	sync.RWMutex
+	matches  map[Uid]*Match
+	proposed map[Uid]struct{}
+	pending  map[Uid]struct{}
+	accepted map[Uid]struct{}
+	ongoing  map[Uid]struct{}
+	finished map[Uid]struct{}
+}{
+	matches:  make(map[Uid]*Match),
+	proposed: make(map[Uid]struct{}),
+	pending:  make(map[Uid]struct{}),
+	accepted: make(map[Uid]struct{}),
+	ongoing:  make(map[Uid]struct{}),
+	finished: make(map[Uid]struct{}),
+}
+
+func StartGame() *rsa.PrivateKey {
+	rand.Seed(time.Now().UnixNano())
+	private, public, err := GenerateKeys()
+	if err != nil {
+		log.Fatal("error generating keys", err.Error())
+	}
+	// TODO advertise public key, and create random identifier
+	time.Sleep(time.Second)
+	fmt.Println("Starting Game", public)
+	go Mine()
+	return private
+}
+
+func createMatchUID() Uid {
+	return rand.Uint64()
+}
+
+func createNonce() Nonce {
+	return rand.Uint64()
+}
+
+func CreateMatch(
+	destination *string,
+	bet Bet,
+	move Move,
+	gossiper string,
+	privateKey *rsa.PrivateKey,
+) (request *RaspRequest, err error) {
+	/* TODO
+	verify both players exists
+	have enough balance
+	throw otherwise
+	*/
+	uid := createMatchUID()
+	nonce := createNonce()
+	newMatch := &Match{
+		Identifier:  uid,
+		Attacker:    gossiper,
+		Defender:    destination,
+		Bet:         bet,
+		AttackMove:  &move,
+		DefenceMove: nil,
+		Nonce:       &nonce,
+		Stage:       Spawn,
+	}
+
+	raspState.Lock()
+	raspState.matches[uid] = newMatch
+	raspState.proposed[uid] = struct{}{}
+	raspState.Unlock()
+
+	signature, err := SignRequest(privateKey, uid, bet)
+	if err != nil {
+		err = errors.New(
+			fmt.Sprintf("error signing request %s", err.Error()),
+		)
+	}
+
+	request = &RaspRequest{
+		Identifier:  uid,
+		Bet:         bet,
+		Destination: destination,
+		Origin:      gossiper,
+		Signature:   signature,
+	}
+	return
+}
+
+func AcceptMatch(
+	id Uid,
+	move Move,
+	gossiper string,
+	privateKey *rsa.PrivateKey,
+) (response *RaspResponse, err error) {
+	if !isMatchPending(id) {
+		err = errors.New(fmt.Sprintf("match %d is not pending", id))
+		return
+	}
+	raspState.Lock()
+	defer raspState.Unlock()
+
+	// TODO check balances
+
+	raspState.matches[id].DefenceMove = &move
+	delete(raspState.pending, id)
+	raspState.accepted[id] = struct{}{}
+
+	// TODO put a timeout to check if it is not ongoing -> set pending again ?
+
+	signature, err := SignResponse(privateKey, id)
+
+	response = &RaspResponse{
+		Destination: raspState.matches[id].Attacker,
+		Origin:      gossiper,
+		Identifier:  id,
+		Signature:   signature,
+	}
+	return
+}
+
+func HasSeenMatch(id Uid) bool {
+	raspState.RLock()
+	defer raspState.RUnlock()
+	_, exists := raspState.matches[id]
+	return exists
+}
+
+func isMatchPending(id Uid) bool {
+	raspState.RLock()
+	defer raspState.RUnlock()
+	_, exists := raspState.pending[id]
+	return exists
 }
 
 func whoWon(attackerMove int, defenderMove int) Winner {
-	if attackerMove == defenderMove {
-		return Draw
-	}
 	switch attackerMove {
 	case Rock:
 		switch defenderMove {
@@ -80,4 +225,5 @@ func whoWon(attackerMove int, defenderMove int) Winner {
 			return Attacker
 		}
 	}
+	return Draw
 }

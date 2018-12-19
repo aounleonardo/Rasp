@@ -9,7 +9,7 @@ import (
 
 type ledger struct {
 	players    map[string]*Player
-	challenges map[uint64]*ChallengeState
+	challenges map[uint64]*Match
 	length     int
 }
 
@@ -24,7 +24,7 @@ var blockchain = struct {
 	m: map[[32]byte]Block{genesis: {}},
 	heads: map[[32]byte]ledger{genesis: {
 		length:     0,
-		challenges: make(map[uint64]*ChallengeState),
+		challenges: make(map[uint64]*Match),
 		players:    make(map[string]*Player)},
 	},
 	longest: genesis,
@@ -37,7 +37,7 @@ func getPlayer(name string) (Player, bool) {
 	return *player, exists
 }
 
-func getChallengeState(identifier uint64) (ChallengeState, bool) {
+func getMatch(identifier uint64) (Match, bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
 	state, exists := blockchain.heads[blockchain.longest].challenges[identifier]
@@ -80,7 +80,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	}
 	for identifier, action := range txs[Attack] {
 		ledger.players[action.Attacker].Balance -= int64(action.Bet)
-		ledger.challenges[identifier] = &ChallengeState{
+		ledger.challenges[identifier] = &Match{
 			Identifier: identifier,
 			Attacker:   action.Attacker,
 			Defender:   &action.Defender,
@@ -119,7 +119,7 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 func buildLedger(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
 	var newLedger = ledger{
 		players:    map[string]*Player{},
-		challenges: map[uint64]*ChallengeState{},
+		challenges: map[uint64]*Match{},
 		length:     length,
 	}
 	applyTxsToLedger(ForkTxs, &newLedger)
@@ -144,7 +144,7 @@ func spawnNotClaimed(newPlayer string) bool {
 func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {
 	//check that defence not in pending
 	//check that state is in Attack
-	state, exist := getChallengeState(cancel.Action.Identifier)
+	state, exist := getMatch(cancel.Action.Identifier)
 	if !exist {
 		return false
 	}
@@ -157,7 +157,7 @@ func isValidCancel(cancel TxPublish, validDefences []TxPublish) bool {
 func isValidReveal(reveal TxPublish, validDefences []TxPublish) bool {
 	//Check that challenge state is set to defence in ledger
 	//or that the defense is in results
-	state, exist := getChallengeState(reveal.Action.Identifier)
+	state, exist := getMatch(reveal.Action.Identifier)
 	if !exist {
 		return false
 	}
@@ -178,7 +178,7 @@ func hasDefenceInResults(reveal TxPublish, defences []TxPublish) bool {
 func isValidDefence(defence TxPublish, validAttacks []TxPublish) bool {
 	//check cancel in ledger
 	//check attack in ledger or in validAttacks
-	state, exists := getChallengeState(defence.Action.Identifier)
+	state, exists := getMatch(defence.Action.Identifier)
 	if !exists {
 		return false
 	}
@@ -249,12 +249,12 @@ func isSpawnClaimed(name string) bool {
 }
 
 func isAttackClaimed(identifier uint64) bool {
-	_, exist := getChallengeState(identifier)
+	_, exist := getMatch(identifier)
 	return exist
 }
 
 func isDefenceClaimed(identifier uint64) bool {
-	challenge, exists := getChallengeState(identifier)
+	challenge, exists := getMatch(identifier)
 	if exists {
 		return challenge.Stage > Attack
 	}
@@ -262,7 +262,7 @@ func isDefenceClaimed(identifier uint64) bool {
 }
 
 func isRevealClaimed(identifier uint64) bool {
-	challenge, exists := getChallengeState(identifier)
+	challenge, exists := getMatch(identifier)
 	if exists {
 		if challenge.Stage == Reveal || challenge.Stage == Cancel {
 			return true
@@ -272,7 +272,7 @@ func isRevealClaimed(identifier uint64) bool {
 }
 
 func isCancelClaimed(identifier uint64) bool {
-	challenge, exist := getChallengeState(identifier)
+	challenge, exist := getMatch(identifier)
 	if exist {
 		return challenge.Stage == Attack
 	}

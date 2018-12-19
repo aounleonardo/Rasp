@@ -12,6 +12,8 @@ type RumorMessage struct {
 	Origin string
 	ID     uint32
 	Text   string
+
+	RaspRequest *chain.RaspRequest
 }
 
 type GossipPacket struct {
@@ -25,11 +27,6 @@ type GossipPacket struct {
 	SearchReply   *SearchReply
 	TxPublish     *chain.TxPublish
 	BlockPublish  *chain.BlockPublish
-
-	RaspRequest  *RaspRequest
-	RaspResponse *RaspResponse
-	RaspAttack   *RaspAttack
-	RaspDefence  *RaspDefence
 }
 
 type ClientPacket struct {
@@ -45,6 +42,9 @@ type ClientPacket struct {
 	Download    *FileDownloadRequest
 	Search      *PerformSearchRequest
 	GetSearches *SearchesRequest
+
+	CreateMatch *chain.CreateMatchRequest
+	AcceptMatch *chain.AcceptMatchRequest
 
 	TestReconstruct *TestFileReconstructRequest
 }
@@ -64,6 +64,15 @@ type PrivateMessage struct {
 	Text        string
 	Destination string
 	HopLimit    uint32
+
+	Rasp *RaspMessage
+}
+
+type RaspMessage struct {
+	RaspRequest  *chain.RaspRequest
+	RaspResponse *chain.RaspResponse
+	RaspAttack   *chain.RaspAttack
+	RaspDefence  *chain.RaspDefence
 }
 
 type DataRequest struct {

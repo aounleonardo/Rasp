@@ -3,6 +3,7 @@ package gossip
 import (
 	"errors"
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"log"
@@ -56,6 +57,24 @@ func (gossiper *Gossiper) createClientRumor(text string) *message.RumorMessage {
 		Origin: gossiper.Name,
 		ID:     id,
 		Text:   text,
+	}
+	gossiper.wants.RUnlock()
+
+	gossiper.memorizeRumor(msg)
+	return msg
+}
+
+func (gossiper *Gossiper) createRaspRumour(
+	request *chain.RaspRequest,
+) *message.RumorMessage {
+	gossiper.upsertOrigin(gossiper.Name)
+	gossiper.wants.RLock()
+	id := gossiper.wants.m[gossiper.Name]
+	msg := &message.RumorMessage{
+		Origin:      gossiper.Name,
+		ID:          id,
+		Text:        "",
+		RaspRequest: request,
 	}
 	gossiper.wants.RUnlock()
 

@@ -37,6 +37,7 @@ type MessagesResponse struct {
 
 type ValidationResponse struct {
 	Success bool
+	Error   string
 }
 
 type AddPeerRequest struct {

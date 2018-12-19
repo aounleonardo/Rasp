@@ -3,6 +3,7 @@ package gossip
 import (
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
+	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
 )

@@ -2,6 +2,7 @@ package gossip
 
 import (
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/protobuf"
@@ -22,7 +23,7 @@ func (gossiper *Gossiper) handleRumorRequest(
 	} else {
 		go gossiper.rumormonger(msg.Rumor, gossiper.gossipAddr)
 	}
-	gossiper.sendValidationToClient(&success, clientAddr)
+	gossiper.sendValidationToClient(&success, nil, clientAddr)
 }
 
 func (gossiper *Gossiper) handleIdentifierRequest(
@@ -65,7 +66,7 @@ func (gossiper *Gossiper) handleAddPeersRequest(
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	address, err := net.ResolveUDPAddr(
 		"udp4",
 		fmt.Sprintf("%s:%s", request.Address, request.Port),
@@ -93,10 +94,11 @@ func (gossiper *Gossiper) handleChatsRequest(
 
 func (gossiper *Gossiper) handleSendPrivateRequest(
 	request *message.PrivatePutRequest,
+	raspMessage *message.RaspMessage,
 	clientAddr *net.UDPAddr,
 ) {
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	gossiper.routing.RLock()
 	if _, knowsRoute := gossiper.routing.m[request.Destination]; !knowsRoute {
 		success = false
@@ -118,6 +120,7 @@ func (gossiper *Gossiper) handleSendPrivateRequest(
 		Text:        request.Contents,
 		Destination: request.Destination,
 		HopLimit:    hopLimit,
+		Rasp:        raspMessage,
 	}
 	gossiper.privates.RUnlock()
 	gossiper.receivePrivateMessage(private)
@@ -200,7 +203,7 @@ func (gossiper *Gossiper) handleFileDownloadRequest(
 ) {
 	metakey := files.HashToKey(request.Metahash)
 	success := true
-	defer gossiper.sendValidationToClient(&success, clientAddr)
+	defer gossiper.sendValidationToClient(&success, nil, clientAddr)
 	if files.IsChunkPresent(request.Metahash) {
 		if !files.IsUndergoneMetafile(request.Metahash) {
 			success = false
@@ -287,6 +290,73 @@ func (gossiper *Gossiper) handleGetSearchesRequest(clientAddr *net.UDPAddr) {
 	)
 }
 
+func (gossiper *Gossiper) handleCreateMatchRequest(
+	request *chain.CreateMatchRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+
+	raspRequest, err := chain.CreateMatch(
+		request.Destination,
+		request.Bet,
+		request.Move,
+		gossiper.Name,
+		gossiper.raspKey,
+	)
+	if err != nil {
+		explanation = err
+		success = false
+		return
+	}
+
+	if request.Destination == nil {
+		rumour := gossiper.createRaspRumour(raspRequest)
+		go gossiper.rumormonger(rumour, gossiper.gossipAddr)
+	} else {
+		gossiper.handleSendPrivateRequest(
+			&message.PrivatePutRequest{
+				Contents:    "",
+				Destination: *request.Destination,
+			},
+			&message.RaspMessage{RaspRequest: raspRequest},
+			clientAddr,
+		)
+	}
+}
+
+func (gossiper *Gossiper) handleAcceptMatchRequest(
+	request *chain.AcceptMatchRequest,
+	clientAddr *net.UDPAddr,
+) {
+	success := true
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+
+	raspResponse, err := chain.AcceptMatch(
+		request.Identifier,
+		request.Move,
+		gossiper.Name,
+		gossiper.raspKey,
+	)
+
+	if err != nil {
+		explanation = err
+		success = false
+		return
+	}
+
+	gossiper.handleSendPrivateRequest(
+		&message.PrivatePutRequest{
+			Contents:    "",
+			Destination: raspResponse.Destination,
+		},
+		&message.RaspMessage{RaspResponse: raspResponse},
+		clientAddr,
+	)
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,
@@ -302,10 +372,18 @@ func (gossiper *Gossiper) sendToClient(
 
 func (gossiper *Gossiper) sendValidationToClient(
 	success *bool,
+	err *error,
 	clientAddr *net.UDPAddr,
 ) {
+	explanation := ""
+	if err != nil && (*err) != nil {
+		explanation = (*err).Error()
+	}
 	gossiper.sendToClient(
-		&message.ValidationResponse{Success: *success},
+		&message.ValidationResponse{
+			Success: *success,
+			Error:   explanation,
+		},
 		clientAddr,
 	)
 }

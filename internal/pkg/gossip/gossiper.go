@@ -1,8 +1,8 @@
 package gossip
 
 import (
+	"crypto/rsa"
 	"fmt"
-	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/protobuf"
@@ -35,6 +35,7 @@ type Gossiper struct {
 	routing    Routes
 	privates   Privates
 	files      Files
+	raspKey    *rsa.PrivateKey
 }
 
 func NewGossiper(
@@ -83,10 +84,12 @@ func NewGossiper(
 		files:      Files{m: make(map[string]files.File)},
 	}
 
+	// key := chain.StartGame()
+	// gossiper.raspKey = key
+
 	go gossiper.listenForGossip()
 	go gossiper.breakEntropy()
 	go gossiper.routeRumorMessages(rtimer)
-	go chain.Mine()
 	go gossiper.publishMinedBlocks()
 
 	return gossiper
@@ -133,7 +136,7 @@ func (gossiper *Gossiper) handleClientPacket(
 	case packet.Chats != nil:
 		gossiper.handleChatsRequest(packet.Chats, clientAddr)
 	case packet.SendPrivate != nil:
-		gossiper.handleSendPrivateRequest(packet.SendPrivate, clientAddr)
+		gossiper.handleSendPrivateRequest(packet.SendPrivate, nil, clientAddr)
 	case packet.GetPrivate != nil:
 		gossiper.handleGetPrivateRequest(packet.GetPrivate, clientAddr)
 	case packet.FileShare != nil:
@@ -144,6 +147,10 @@ func (gossiper *Gossiper) handleClientPacket(
 		gossiper.handlePerformSearchRequest(packet.Search, clientAddr)
 	case packet.GetSearches != nil:
 		gossiper.handleGetSearchesRequest(clientAddr)
+	case packet.CreateMatch != nil:
+		gossiper.handleCreateMatchRequest(packet.CreateMatch, clientAddr)
+	case packet.AcceptMatch != nil:
+		gossiper.handleAcceptMatchRequest(packet.AcceptMatch, clientAddr)
 	default:
 		gossiper.handleTestPacket(packet, clientAddr)
 	}
