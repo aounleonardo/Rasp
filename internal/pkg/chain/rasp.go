@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"crypto"
 	"crypto/rsa"
 	"errors"
 	"fmt"
@@ -42,7 +41,7 @@ type Nonce = uint64
 type Bet = uint32
 
 type Player struct {
-	Key     crypto.PublicKey
+	Key     rsa.PublicKey
 	Balance int64
 }
 
@@ -70,6 +69,7 @@ type Match struct {
 	Stage       Stage
 }
 
+// TODO update raspState when reading ledger
 var raspState = struct {
 	sync.RWMutex
 	matches  map[Uid]*Match

@@ -75,7 +75,10 @@ func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
 func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	for _, action := range txs[Spawn] {
 		key := decodeKey(action.SignedSpecial)
-		ledger.players[action.Attacker] = &Player{Balance: initialBalance, Key: key}
+		ledger.players[action.Attacker] = &Player{
+			Balance: initialBalance,
+			Key: *key,
+		}
 	}
 	for identifier, action := range txs[Attack] {
 		ledger.players[action.Attacker].Balance -= int64(action.Bet)

@@ -25,6 +25,11 @@ func (gossiper *Gossiper) receiveRumorPacket(
 		go gossiper.rumormonger(rumor, sender)
 	}
 	gossiper.sendStatusPacket(sender)
+
+	if rumor.RaspRequest == nil {
+		return
+	}
+
 }
 
 func (gossiper *Gossiper) rumormonger(
