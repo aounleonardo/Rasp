@@ -207,7 +207,13 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			return true
 		}
 
-		// TODO verify sign
+		player := blockchain.heads[blockchain.longest].players[attacker]
+
+		ok, err := VerifyCancel(&player.Key, action.Identifier, action.SignedSpecial)
+
+		if err != nil || !ok {
+			return false
+		}
 
 		pendingTransactions.RLock()
 		defer pendingTransactions.RUnlock()
@@ -363,7 +369,13 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 			return false
 		}
 
-		// TODO verify sign
+		player := blockchain.heads[blockchain.longest].players[attacker]
+
+		ok, err := VerifyCancel(&player.Key, action.Identifier, action.SignedSpecial)
+
+		if err != nil || !ok {
+			return false
+		}
 
 		cancels[tx.Action.Identifier] = struct{}{}
 	}
