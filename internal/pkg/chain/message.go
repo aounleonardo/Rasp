@@ -1,9 +1,10 @@
 package chain
 
 import (
-	"fmt"
 	"crypto/rsa"
 	"errors"
+	"fmt"
+	"github.com/dedis/protobuf"
 )
 
 type Signature = []byte
@@ -161,7 +162,74 @@ func ReceiveRaspAttack(
 	attack RaspAttack,
 	privateKey *rsa.PrivateKey,
 ) (defence *RaspDefence, err error) {
+	att1 := &AttackSignature1{attack.Identifier, attack.Bet}
+	enc1, err := protobuf.Encode(att1)
+	opponent, opponentExists := getPlayer(attack.Origin)
+	if !opponentExists{
+		err = errors.New(
+		fmt.Sprintf("%s does not exist", attack.Origin),
+		)
+		return
+	}
+	attackerPublic := opponent.Key
+	var ok = false
+	if err == nil {
 
+		ok = verify(&attackerPublic, enc1, attack.SignedBet)
+	}
+	if !ok{
+		err = errors.New(
+			fmt.Sprintf("Unable to verify the signedBet from %s",
+				attack.Origin),
+			)
+		return
+	}
+	raspState.RLock()
+	_ ,ok = raspState.accepted[attack.Identifier]
+	raspState.RUnlock()
+	if !ok {
+		err = errors.New(
+			fmt.Sprintf("Unable to find the corresponding match in Accpter %d",
+				attack.Identifier),
+			)
+		return
+	}
+	raspState.Lock()
+	delete(raspState.accepted, attack.Identifier)
+	raspState.ongoing[attack.Identifier] = struct{}{}
+	defenseMove := raspState.matches[attack.Identifier].DefenceMove
+	raspState.matches[attack.Identifier].HiddenMove = attack.HiddenMove
+	raspState.Unlock()
+	defenceSpecial, err := SignDefence(
+		privateKey,
+		attack.Identifier,
+		*defenseMove)
+	if err != nil{
+		err = errors.New(
+			fmt.Sprintf("Unable to sign the defence move %d",
+				defenseMove),
+		)
+		return
+	}
+
+	action := GameAction{
+		Type: Defence,
+		Identifier: attack.Identifier,
+		Attacker: attack.Origin,
+		Defender: attack.Destination,
+		Bet: attack.Bet,
+		Move: *defenseMove,
+		SignedSpecial: defenceSpecial,
+	}
+	publishAction(action)
+
+	defence = &RaspDefence{
+		Destination: attack.Origin,
+		Origin: attack.Destination,
+		Identifier: attack.Identifier,
+		Move: *defenseMove,
+		SignedMove:defenceSpecial,
+	}
 	return
 }
 
