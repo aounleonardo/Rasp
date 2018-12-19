@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"testing"
 	"bytes"
+	"fmt"
 )
 
 func TestSignRequest(t *testing.T) {
@@ -109,6 +110,6 @@ func TestRequestVsAttack(t *testing.T) {
 	if bytes.Equal(request, attack) {
 		t.Error("same signature")
 	}
-	t.Log("request", string(request))
-	t.Log("attack", string(attack))
+	t.Log(fmt.Sprintf("request: %x", request))
+	t.Log(fmt.Sprintf("attack: %x", attack))
 }
