@@ -3,6 +3,7 @@ package chain
 import (
 	"math/rand"
 	"testing"
+	"bytes"
 )
 
 func TestSignRequest(t *testing.T) {
@@ -95,4 +96,19 @@ func TestKeyEncoding(t *testing.T) {
 	if dec.E != public.E {
 		t.Error("not same E", public.E, dec.E)
 	}
+}
+
+func TestRequestVsAttack(t *testing.T) {
+	privateKey, _, _ := GenerateKeys()
+	uid := createUID()
+	bet := uint32(10)
+
+	request, _ := SignRequest(privateKey, uid, bet)
+	attack, _ := SignAttack(privateKey, uid, bet)
+
+	if bytes.Equal(request, attack) {
+		t.Error("same signature")
+	}
+	t.Log("request", string(request))
+	t.Log("attack", string(attack))
 }
