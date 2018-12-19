@@ -157,6 +157,7 @@ func SignHiddenMove(
 	move int,
 	nonce uint64,
 ) (hiddenMove []byte, err error) {
+
 	signature := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
 	encoding, err := protobuf.Encode(signature)
 
@@ -194,12 +195,16 @@ func VerifyHiddenMove(
 	nonce uint64,
 	signature []byte,
 ) (ok bool, err error) {
+
 	hiddenMove := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
 	encoding, err := protobuf.Encode(hiddenMove)
+
 	if err != nil {
 		return
 	}
+
 	ok = verify(public, encoding, signature)
+
 	return
 }
 
@@ -219,6 +224,7 @@ func VerifyAttack(
 	}
 
 	ok = verify(public, enc, sig)
+
 	return
 }
 
@@ -283,5 +289,18 @@ func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, sig []b
 	}
 
 	return
+
+}
+
+
+// TODO could change name, I simply call signResponse bc it's the same code but I didn't want to break calls
+func SignCancel(private *rsa.PrivateKey, id Uid) ([]byte, error) {
+
+	return SignResponse(private, id)
+}
+
+func VerifyCancel(public *rsa.PublicKey, id Uid, sig []byte) (bool, error) {
+
+	return VerifyResponse(public, id, sig)
 
 }
