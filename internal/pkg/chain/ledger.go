@@ -36,6 +36,10 @@ func getPlayer(name string) (Player, bool) {
 	return *player, exists
 }
 
+func (player Player) hasEnoughMoney(bet Bet) bool {
+	return player.Balance > int64(bet)
+}
+
 func getMatch(identifier uint64) (Match, bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
