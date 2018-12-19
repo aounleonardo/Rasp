@@ -157,10 +157,13 @@ func ReceiveRaspResponse(
 	return
 }
 
-func ReceiveRaspAttack(attack RaspAttack) {
-
+func ReceiveRaspAttack(
+	attack RaspAttack,
+	privateKey *rsa.PrivateKey,
+) (defence *RaspDefence, err error) {
+	return
 }
 
-func ReceiveRaspDefence(defence RaspDefence) {
+func ReceiveRaspDefence(defence RaspDefence, privateKey *rsa.PrivateKey) {
 
 }
