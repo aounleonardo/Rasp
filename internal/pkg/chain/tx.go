@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -76,6 +77,15 @@ func getNewDefences(attacks []TxPublish) []TxPublish {
 	for _, defence := range pendingTransactions.m[Defence] {
 		if isValidDefence(defence, attacks) {
 			validDefences = append(validDefences, defence)
+			if match, exists := getState(defence.Action.Identifier); exists {
+				if action, err := createReveal(match, nil, defence.Action);
+					err != nil {
+					fmt.Println("error creating Reveal for defence",
+						defence.Action.Identifier, err.Error())
+				} else {
+					publishAction(action)
+				}
+			}
 		}
 	}
 	return validDefences
