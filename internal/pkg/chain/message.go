@@ -80,7 +80,6 @@ func ReceiveRaspRequest(request RaspRequest) {
 
 func ReceiveRaspResponse(
 	response RaspResponse,
-	privateKey *rsa.PrivateKey,
 ) (attack *RaspAttack, err error) {
 	opponent, exists := getPlayer(response.Origin)
 	if !exists {
@@ -130,7 +129,7 @@ func ReceiveRaspResponse(
 	}
 
 	signature, err := SignAttack(
-		privateKey,
+		gossiperKey,
 		match.Identifier,
 		match.Bet,
 	)
@@ -144,7 +143,7 @@ func ReceiveRaspResponse(
 		SignedSpecial: signature,
 	}
 	publishAction(action)
-	go waitForDefenceTimeout(response.Identifier, privateKey)
+	go waitForDefenceTimeout(response.Identifier, gossiperKey)
 
 	attack = &RaspAttack{
 		Destination: response.Origin,
@@ -216,10 +215,7 @@ func createCancel(
 	return
 }
 
-func ReceiveRaspAttack(
-	attack RaspAttack,
-	privateKey *rsa.PrivateKey,
-) (defence *RaspDefence, err error) {
+func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
 	opponent, opponentExists := getPlayer(attack.Origin)
 	if !opponentExists {
 		err = errors.New(
@@ -228,7 +224,12 @@ func ReceiveRaspAttack(
 		return
 	}
 	attackerPublic := opponent.Key
-	ok, err := VerifyAttack(&attackerPublic, attack.Identifier, attack.Bet, attack.SignedBet)
+	ok, err := VerifyAttack(
+		&attackerPublic,
+		attack.Identifier,
+		attack.Bet,
+		attack.SignedBet,
+	)
 	if !ok {
 		err = errors.New(
 			fmt.Sprintf("Unable to verify the signedBet from %s",
@@ -253,7 +254,7 @@ func ReceiveRaspAttack(
 	defenseMove := match.DefenceMove
 	match.HiddenMove = attack.HiddenMove
 	defenceSpecial, err := SignDefence(
-		privateKey,
+		gossiperKey,
 		attack.Identifier,
 		*defenseMove)
 	if err != nil {
@@ -287,7 +288,7 @@ func ReceiveRaspAttack(
 	return
 }
 
-func ReceiveRaspDefence(defence RaspDefence, privateKey *rsa.PrivateKey) {
+func ReceiveRaspDefence(defence RaspDefence) {
 	defender, defenderExists := getPlayer(defence.Origin)
 	if !defenderExists {
 		fmt.Printf("RaspDefence error: %s does not exist\n", defence.Origin)
@@ -317,7 +318,12 @@ func ReceiveRaspDefence(defence RaspDefence, privateKey *rsa.PrivateKey) {
 	attackMove := match.AttackMove
 	nonce := match.Nonce
 
-	revealSign, err := SignReveal(privateKey, defence.Identifier, *attackMove, *nonce)
+	revealSign, err := SignReveal(
+		gossiperKey,
+		defence.Identifier,
+		*attackMove,
+		*nonce,
+	)
 	if err != nil {
 		fmt.Println("Unable to sign the reveal")
 		return

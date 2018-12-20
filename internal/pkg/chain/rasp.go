@@ -85,6 +85,8 @@ func copyMatchUnsafe(match *Match) *Match {
 	}
 }
 
+var gossiperKey *rsa.PrivateKey
+
 var raspState = struct {
 	sync.RWMutex
 	matches  map[Uid]*Match
@@ -111,9 +113,10 @@ func getState(identifier Uid) (copy *Match, exists bool) {
 	return
 }
 
-func StartGame(gossiper string) *rsa.PrivateKey {
+func StartGame(gossiper string) {
 	rand.Seed(time.Now().UnixNano())
 	private, public, err := GenerateKeys()
+	gossiperKey = private
 	if err != nil {
 		log.Fatal("error generating keys", err.Error())
 	}
@@ -128,7 +131,6 @@ func StartGame(gossiper string) *rsa.PrivateKey {
 	fmt.Println("Starting Game, gonna beat the shit out of them!")
 
 	go Mine()
-	return private
 }
 
 func publishKey(gossiper string, public *rsa.PublicKey) {
@@ -154,7 +156,6 @@ func CreateMatch(
 	bet Bet,
 	move Move,
 	gossiper string,
-	privateKey *rsa.PrivateKey,
 ) (request *RaspRequest, err error) {
 	player, exists := getPlayer(gossiper)
 	if !exists {
@@ -174,7 +175,7 @@ func CreateMatch(
 
 	uid := createUID()
 	nonce := createNonce()
-	hiddenMove, err := SignHiddenMove(privateKey, uid, move, nonce)
+	hiddenMove, err := SignHiddenMove(gossiperKey, uid, move, nonce)
 	if err != nil {
 		return
 	}
@@ -196,7 +197,7 @@ func CreateMatch(
 	raspState.proposed[uid] = struct{}{}
 	raspState.Unlock()
 
-	signature, err := SignRequest(privateKey, uid, bet)
+	signature, err := SignRequest(gossiperKey, uid, bet)
 	if err != nil {
 		err = errors.New(
 			fmt.Sprintf("error signing request %s", err.Error()),
@@ -217,7 +218,6 @@ func AcceptMatch(
 	id Uid,
 	move Move,
 	gossiper string,
-	privateKey *rsa.PrivateKey,
 ) (response *RaspResponse, err error) {
 	if !isMatchPending(id) {
 		err = errors.New(fmt.Sprintf("match %d is not pending", id))
@@ -251,7 +251,7 @@ func AcceptMatch(
 	delete(raspState.pending, id)
 	raspState.accepted[id] = struct{}{}
 
-	signature, err := SignResponse(privateKey, id)
+	signature, err := SignResponse(gossiperKey, id)
 	response = &RaspResponse{
 		Destination: match.Attacker,
 		Origin:      gossiper,

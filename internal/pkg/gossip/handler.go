@@ -284,7 +284,6 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 		request.Bet,
 		request.Move,
 		gossiper.Name,
-		gossiper.raspKey,
 	)
 	if err != nil {
 		explanation = err
@@ -316,7 +315,6 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 		request.Identifier,
 		request.Move,
 		gossiper.Name,
-		gossiper.raspKey,
 	)
 
 	if err != nil {
