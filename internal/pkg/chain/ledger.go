@@ -281,7 +281,7 @@ func isCancelClaimed(identifier uint64) bool {
 func hasParent(block *Block) bool {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	_, exists := blockchain.m[block.Hash()]
+	_, exists := blockchain.m[block.PrevHash]
 	return exists
 }
 

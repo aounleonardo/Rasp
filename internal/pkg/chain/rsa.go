@@ -43,9 +43,9 @@ type DefenceSignature struct {
 }
 
 type RevealSignature struct {
-	Identifier Uid
-	Move       int
-	Nonce      uint64
+	Identifier       Uid
+	Move             int
+	Nonce            uint64
 	DefenceSignature []byte
 }
 
@@ -280,9 +280,9 @@ func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64, defSign
 
 }
 
-func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64,defsig []byte, sig []byte) (ok bool, err error) {
+func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, defsig []byte, sig []byte) (ok bool, err error) {
 
-	rev := &RevealSignature{id, move, nonce,defsig}
+	rev := &RevealSignature{id, move, nonce, defsig}
 
 	enc, err := protobuf.Encode(rev)
 

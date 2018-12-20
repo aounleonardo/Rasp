@@ -30,7 +30,7 @@ var BlocksChan = make(chan BlockPublish)
 
 func ReceiveBlock(block Block) {
 	if !block.verifyHash() {
-		fmt.Println("received malicious block with hash", block.Hash())
+		fmt.Println("received block with invalid POW hash", block.Hash())
 		return
 	}
 	if hasBlock(&block) {
@@ -38,7 +38,11 @@ func ReceiveBlock(block Block) {
 		return
 	}
 	if !hasParent(&block) {
-		fmt.Println("block has no known parents")
+		fmt.Printf(
+			"parent %x of block %x does not exist\n",
+			block.PrevHash,
+			block.Hash(),
+		)
 		return
 
 	}

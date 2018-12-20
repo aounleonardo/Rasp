@@ -78,8 +78,8 @@ func getNewDefences(attacks []TxPublish) []TxPublish {
 		if isValidDefence(defence, attacks) {
 			validDefences = append(validDefences, defence)
 			if match, exists := getState(defence.Action.Identifier); exists {
-				if action, err := createReveal(match, gossiperKey, defence.Action);
-					err != nil {
+				if action, err :=
+					createReveal(match, gossiperKey, defence.Action); err != nil {
 					fmt.Println("error creating Reveal for defence",
 						defence.Action.Identifier, err.Error())
 				} else {
@@ -129,9 +129,6 @@ func hasNoPendingTransactions() bool {
 
 func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 
-	attacker := blockchain.heads[blockchain.longest].matches[action.Identifier].Attacker
-	defender := *blockchain.heads[blockchain.longest].matches[action.Identifier].Defender
-
 	switch action.Type {
 	case Spawn:
 		if isSpawnClaimed(action.Attacker) {
@@ -148,8 +145,13 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		if isAttackClaimed(action.Identifier) {
 			return true
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		ok, err := VerifyAttack(&player.Key, action.Identifier, action.Bet, action.SignedSpecial)
+		player := blockchain.heads[blockchain.longest].players[action.Attacker]
+		ok, err := VerifyAttack(
+			&player.Key,
+			action.Identifier,
+			action.Bet,
+			action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -164,8 +166,13 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		if isDefenceClaimed(action.Identifier) {
 			return true
 		}
-		player := blockchain.heads[blockchain.longest].players[defender]
-		ok, err := VerifyDefence(&player.Key, action.Identifier, action.Move, action.SignedSpecial)
+		player := blockchain.heads[blockchain.longest].players[action.Defender]
+		ok, err := VerifyDefence(
+			&player.Key,
+			action.Identifier,
+			action.Move,
+			action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -180,13 +187,27 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		if isRevealClaimed(action.Identifier) {
 			return true
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
-		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.HiddenMove, action.SignedSpecial)
+		player := blockchain.heads[blockchain.longest].players[action.Attacker]
+		hiddenMove := blockchain.heads[blockchain.longest].
+			matches[action.Identifier].HiddenMove
+		ok, err := VerifyReveal(
+			&player.Key,
+			action.Identifier,
+			action.Move,
+			action.Nonce,
+			action.HiddenMove,
+			action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
-		ok, err = VerifyHiddenMove(&player.Key, action.Identifier, action.Move, action.Nonce, sig)
+		ok, err = VerifyHiddenMove(
+			&player.Key,
+			action.Identifier,
+			action.Move,
+			action.Nonce,
+			hiddenMove,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -201,8 +222,9 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		if isCancelClaimed(action.Identifier) {
 			return true
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		ok, err := VerifyCancel(&player.Key, action.Identifier, action.SignedSpecial)
+		player := blockchain.heads[blockchain.longest].players[action.Attacker]
+		ok, err :=
+			VerifyCancel(&player.Key, action.Identifier, action.SignedSpecial)
 		if err != nil || !ok {
 			return false
 		}
@@ -249,13 +271,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 	reveals map[uint64]struct{},
 	cancels map[uint64]struct{},
 ) bool {
-
-	action := tx.Action
-
-	attacker := blockchain.heads[blockchain.longest].matches[action.Identifier].Attacker
-	defender := *blockchain.heads[blockchain.longest].matches[action.Identifier].Defender
-
-	switch action.Type {
+	switch tx.Action.Type {
 	case Spawn:
 		_, exists := tmpBalances[tx.Action.Attacker]
 		if exists {
@@ -272,8 +288,14 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if balance, exists := tmpBalances[tx.Action.Defender]; !exists || balance < int64(tx.Action.Bet) {
 			return false
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		ok, err := VerifyAttack(&player.Key, action.Identifier, action.Bet, action.SignedSpecial)
+		player :=
+			blockchain.heads[blockchain.longest].players[tx.Action.Attacker]
+		ok, err := VerifyAttack(
+			&player.Key,
+			tx.Action.Identifier,
+			tx.Action.Bet,
+			tx.Action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -291,8 +313,14 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 				return false
 			}
 		}
-		player := blockchain.heads[blockchain.longest].players[defender]
-		ok, err := VerifyDefence(&player.Key, action.Identifier, action.Move, action.SignedSpecial)
+		player :=
+			blockchain.heads[blockchain.longest].players[tx.Action.Defender]
+		ok, err := VerifyDefence(
+			&player.Key,
+			tx.Action.Identifier,
+			tx.Action.Move,
+			tx.Action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -309,13 +337,27 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 				return false
 			}
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
-		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.HiddenMove, action.SignedSpecial)
+		player := blockchain.heads[blockchain.longest].players[tx.Action.Attacker]
+		hiddenMove := blockchain.heads[blockchain.longest].
+			matches[tx.Action.Identifier].HiddenMove
+		ok, err := VerifyReveal(
+			&player.Key,
+			tx.Action.Identifier,
+			tx.Action.Move,
+			tx.Action.Nonce,
+			tx.Action.HiddenMove,
+			tx.Action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
-		ok, err = VerifyHiddenMove(&player.Key, action.Identifier, action.Move, action.Nonce, sig)
+		ok, err = VerifyHiddenMove(
+			&player.Key,
+			tx.Action.Identifier,
+			tx.Action.Move,
+			tx.Action.Nonce,
+			hiddenMove,
+		)
 		if err != nil || !ok {
 			return false
 		}
@@ -334,8 +376,13 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if match, exists := ledger.matches[tx.Action.Identifier]; !exists || match.Stage != Attack {
 			return false
 		}
-		player := blockchain.heads[blockchain.longest].players[attacker]
-		ok, err := VerifyCancel(&player.Key, action.Identifier, action.SignedSpecial)
+		player :=
+			blockchain.heads[blockchain.longest].players[tx.Action.Attacker]
+		ok, err := VerifyCancel(
+			&player.Key,
+			tx.Action.Identifier,
+			tx.Action.SignedSpecial,
+		)
 		if err != nil || !ok {
 			return false
 		}
