@@ -29,22 +29,31 @@ var blockchain = struct {
 	longest: genesis,
 }
 
-func getPlayer(name string) (*Player, bool) {
+func getPlayer(name string) (copy *Player, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	player, exists := blockchain.heads[blockchain.longest].players[name]
-	return player, exists
+	if player, exists :=
+		blockchain.heads[blockchain.longest].players[name]; exists {
+		copy = &Player{
+			Key:     player.Key,
+			Balance: player.Balance,
+		}
+	}
+	return
 }
 
 func (player Player) hasEnoughMoney(bet Bet) bool {
 	return player.Balance > int64(bet)
 }
 
-func getMatch(identifier uint64) (*Match, bool) {
+func getMatch(identifier uint64) (copy *Match, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	state, exists := blockchain.heads[blockchain.longest].matches[identifier]
-	return state, exists
+	if state, exists :=
+		blockchain.heads[blockchain.longest].matches[identifier]; exists {
+		copy = copyMatchUnsafe(state)
+	}
+	return
 }
 
 func createForkLedgerUnsafe(

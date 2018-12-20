@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Signature = []byte
@@ -143,6 +144,7 @@ func ReceiveRaspResponse(
 		SignedSpecial: signature,
 	}
 	publishAction(action)
+	go waitForDefenceTimeout(response.Identifier, privateKey)
 
 	attack = &RaspAttack{
 		Destination: response.Origin,
@@ -153,6 +155,64 @@ func ReceiveRaspResponse(
 		HiddenMove:  match.HiddenMove,
 	}
 	match.Stage = Attack
+	return
+}
+
+func waitForDefenceTimeout(identifier Uid, privateKey *rsa.PrivateKey) {
+	time.Sleep(attackerPatience)
+	if match, exists := getState(identifier); exists && match.Stage < Defence {
+		cancel, err := createCancel(match, privateKey)
+		if err != nil {
+			fmt.Println("cannot send cancel for,", identifier, err.Error())
+			return
+		}
+		publishAction(cancel)
+	}
+}
+
+func createReveal(
+	match *Match,
+	key *rsa.PrivateKey,
+	defence GameAction,
+) (action GameAction, err error) {
+	signature, err := SignReveal(
+		key,
+		match.Identifier,
+		*match.AttackMove,
+		*match.Nonce,
+	)
+	if err != nil {
+		return
+	}
+	action = GameAction{
+		Type:          Reveal,
+		Identifier:    match.Identifier,
+		Attacker:      match.Attacker,
+		Defender:      *match.Defender,
+		Move:          *match.AttackMove,
+		Nonce:         *match.Nonce,
+		HiddenMove:    defence.SignedSpecial,
+		SignedSpecial: signature,
+	}
+	return
+}
+
+func createCancel(
+	match *Match,
+	key *rsa.PrivateKey,
+) (action GameAction, err error) {
+	signature, err := SignCancel(key, match.Identifier)
+	if err != nil {
+		return
+	}
+	action = GameAction{
+		Type:          Cancel,
+		Identifier:    match.Identifier,
+		Attacker:      match.Attacker,
+		Defender:      *match.Defender,
+		Bet:           match.Bet,
+		SignedSpecial: signature,
+	}
 	return
 }
 

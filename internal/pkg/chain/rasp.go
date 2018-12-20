@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const attackerPatience = 3 * time.Second
+
 type Stage = int
 
 const (
@@ -69,6 +71,20 @@ type Match struct {
 	Stage       Stage
 }
 
+func copyMatchUnsafe(match *Match) *Match {
+	return &Match{
+		Identifier:  match.Identifier,
+		Attacker:    match.Attacker,
+		Defender:    match.Defender,
+		Bet:         match.Bet,
+		AttackMove:  match.AttackMove,
+		DefenceMove: match.DefenceMove,
+		Nonce:       match.Nonce,
+		HiddenMove:  match.HiddenMove,
+		Stage:       match.Stage,
+	}
+}
+
 // TODO update raspState when reading ledger
 var raspState = struct {
 	sync.RWMutex
@@ -85,6 +101,15 @@ var raspState = struct {
 	accepted: make(map[Uid]struct{}),
 	ongoing:  make(map[Uid]struct{}),
 	finished: make(map[Uid]struct{}),
+}
+
+func getState(identifier Uid) (copy *Match, exists bool) {
+	raspState.RLock()
+	defer raspState.RUnlock()
+	if state, exists := raspState.matches[identifier]; exists {
+		copy = copyMatchUnsafe(state)
+	}
+	return
 }
 
 func StartGame(gossiper string) *rsa.PrivateKey {
@@ -227,8 +252,6 @@ func AcceptMatch(
 	delete(raspState.pending, id)
 	raspState.accepted[id] = struct{}{}
 
-	// TODO put a timeout to check if it is not ongoing -> set pending again ?
-
 	signature, err := SignResponse(privateKey, id)
 	response = &RaspResponse{
 		Destination: match.Attacker,
@@ -237,13 +260,6 @@ func AcceptMatch(
 		Signature:   signature,
 	}
 	return
-}
-
-func HasSeenMatch(id Uid) bool {
-	raspState.RLock()
-	defer raspState.RUnlock()
-	_, exists := raspState.matches[id]
-	return exists
 }
 
 func isMatchPending(id Uid) bool {
