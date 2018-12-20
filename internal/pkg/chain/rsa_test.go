@@ -1,10 +1,10 @@
 package chain
 
 import (
-	"math/rand"
-	"testing"
 	"bytes"
 	"fmt"
+	"math/rand"
+	"testing"
 )
 
 func TestSignRequest(t *testing.T) {

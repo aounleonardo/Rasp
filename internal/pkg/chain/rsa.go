@@ -13,6 +13,7 @@ const keySize = 1024
 const hashFunctionType = crypto.SHA256
 
 var hashFunction = sha256.Sum256
+
 const pad = 968113537
 
 type RequestSignature struct {
@@ -27,7 +28,7 @@ type ResponseSignature struct {
 type AttackSignature struct {
 	Identifier Uid
 	Bet        uint32
-	Pad uint32
+	Pad        uint32
 }
 
 type HiddenMoveSignature struct {
@@ -294,8 +295,6 @@ func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, sig []b
 
 }
 
-
-// TODO could change name, I simply call signResponse bc it's the same code but I didn't want to break calls
 func SignCancel(private *rsa.PrivateKey, id Uid) ([]byte, error) {
 
 	return SignResponse(private, id)
