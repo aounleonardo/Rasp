@@ -311,7 +311,7 @@ func addBlockUnsafe(block Block) {
 	if oldLedger.length < currentLength {
 		return
 	}
-
+	PrintLedger(blockchain.heads[hash])
 	RaspStateUpdateUnsafe(blockchain.heads[hash])
 
 	if block.PrevHash == currentHead {
@@ -387,4 +387,29 @@ func applyBlockUnsafe(hash [32]byte) {
 	ledger := blockchain.heads[hash]
 	txs := createTxsMap(block.Transactions)
 	applyTxsToLedgerUnsafe(txs, &ledger)
+}
+
+func PrintLedger(ledger ledger){
+	fmt.Println("\n*************************")
+	fmt.Println("| Ledger length", ledger.length)
+	fmt.Println("| Players:")
+	for name, info:= range ledger.players{
+		fmt.Printf("| \tName: %s, Balance: %d, \n \tKey: %x\n",
+			name,
+			info.Balance,
+			info.Key,
+		)
+	}
+	fmt.Println("| \nMatches:")
+	for x, match := range ledger.matches{
+		fmt.Printf(
+			"| \tId: %d, Attacker: %s, Defender: %s, Stage: %d\n",
+			x,
+			match.Attacker,
+			*match.Defender,
+			match.Stage,
+		)
+	}
+	fmt.Println("*************************")
+	fmt.Println()
 }
