@@ -182,7 +182,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		}
 		player := blockchain.heads[blockchain.longest].players[attacker]
 		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
-		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.SignedSpecial)
+		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.HiddenMove, action.SignedSpecial)
 		if err != nil || !ok {
 			return false
 		}
@@ -311,7 +311,7 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		}
 		player := blockchain.heads[blockchain.longest].players[attacker]
 		sig := blockchain.heads[blockchain.longest].matches[action.Identifier].HiddenMove
-		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.SignedSpecial)
+		ok, err := VerifyReveal(&player.Key, action.Identifier, action.Move, action.Nonce, action.HiddenMove, action.SignedSpecial)
 		if err != nil || !ok {
 			return false
 		}

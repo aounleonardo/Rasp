@@ -179,6 +179,7 @@ func createReveal(
 		match.Identifier,
 		*match.AttackMove,
 		*match.Nonce,
+		defence.SignedSpecial,
 	)
 	if err != nil {
 		return
@@ -323,6 +324,7 @@ func ReceiveRaspDefence(defence RaspDefence) {
 		defence.Identifier,
 		*attackMove,
 		*nonce,
+		defence.SignedMove,
 	)
 	if err != nil {
 		fmt.Println("Unable to sign the reveal")
@@ -336,6 +338,7 @@ func ReceiveRaspDefence(defence RaspDefence) {
 		Defender:      defence.Origin,
 		Move:          *attackMove,
 		Nonce:         *nonce,
+		HiddenMove:    defence.SignedMove,
 		SignedSpecial: revealSign,
 	}
 	publishAction(action)

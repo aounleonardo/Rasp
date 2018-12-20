@@ -46,6 +46,7 @@ type RevealSignature struct {
 	Identifier Uid
 	Move       int
 	Nonce      uint64
+	DefenceSignature []byte
 }
 
 func GenerateKeys() (private *rsa.PrivateKey, public *rsa.PublicKey, err error) {
@@ -263,9 +264,9 @@ func VerifyDefence(public *rsa.PublicKey, id Uid, move int, sig []byte) (ok bool
 
 }
 
-func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64) (sig []byte, err error) {
+func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64, defSign []byte) (sig []byte, err error) {
 
-	rev := &RevealSignature{id, move, nonce}
+	rev := &RevealSignature{id, move, nonce, defSign}
 
 	enc, err := protobuf.Encode(rev)
 
@@ -279,9 +280,9 @@ func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64) (sig []
 
 }
 
-func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, sig []byte) (ok bool, err error) {
+func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64,defsig []byte, sig []byte) (ok bool, err error) {
 
-	rev := &RevealSignature{id, move, nonce}
+	rev := &RevealSignature{id, move, nonce,defsig}
 
 	enc, err := protobuf.Encode(rev)
 
