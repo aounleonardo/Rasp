@@ -62,7 +62,7 @@ func createForkLedgerUnsafe(
 	length int,
 ) ledger {
 	if head == genesis {
-		return buildLedger(ForkTxs, length)
+		return buildLedgerUnsafe(ForkTxs, length)
 	}
 	for _, tx := range blockchain.m[head].Transactions {
 		ForkTxs[tx.Action.Type][tx.Action.Identifier] = tx.Action
@@ -85,7 +85,7 @@ func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
 	return txsMap
 }
 
-func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
+func applyTxsToLedgerUnsafe(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	for _, action := range txs[Spawn] {
 		key := decodeKey(action.SignedSpecial)
 		ledger.players[action.Attacker] = &Player{
@@ -131,13 +131,13 @@ func applyTxsToLedger(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	}
 }
 
-func buildLedger(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
+func buildLedgerUnsafe(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
 	var newLedger = ledger{
 		players: map[string]*Player{},
 		matches: map[uint64]*Match{},
 		length:  length,
 	}
-	applyTxsToLedger(ForkTxs, &newLedger)
+	applyTxsToLedgerUnsafe(ForkTxs, &newLedger)
 	return newLedger
 }
 
@@ -312,11 +312,14 @@ func addBlockUnsafe(block Block) {
 		return
 	}
 
+	RaspStateUpdateUnsafe(blockchain.heads[hash])
+
 	if block.PrevHash == currentHead {
 		return
 	}
 
 	switchHeadFromUnsafe(currentHead)
+
 }
 
 func switchHeadFromUnsafe(previousHead [32]byte) {
@@ -383,5 +386,5 @@ func applyBlockUnsafe(hash [32]byte) {
 	block := blockchain.m[hash]
 	ledger := blockchain.heads[hash]
 	txs := createTxsMap(block.Transactions)
-	applyTxsToLedger(txs, &ledger)
+	applyTxsToLedgerUnsafe(txs, &ledger)
 }
