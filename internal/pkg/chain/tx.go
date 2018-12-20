@@ -78,7 +78,7 @@ func getNewDefences(attacks []TxPublish) []TxPublish {
 		if isValidDefence(defence, attacks) {
 			validDefences = append(validDefences, defence)
 			if match, exists := getState(defence.Action.Identifier); exists {
-				if action, err := createReveal(match, nil, defence.Action);
+				if action, err := createReveal(match, gossiperKey, defence.Action);
 					err != nil {
 					fmt.Println("error creating Reveal for defence",
 						defence.Action.Identifier, err.Error())
