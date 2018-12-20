@@ -392,15 +392,14 @@ func applyBlockUnsafe(hash [32]byte) {
 func PrintLedger(ledger ledger){
 	fmt.Println("\n*************************")
 	fmt.Println("| Ledger length", ledger.length)
-	fmt.Println("| Players:")
+	fmt.Println("|\n| Players:")
 	for name, info:= range ledger.players{
-		fmt.Printf("| \tName: %s, Balance: %d, \n \tKey: %x\n",
+		fmt.Printf("| \tName: %s, Balance: %d\n",
 			name,
 			info.Balance,
-			info.Key,
 		)
 	}
-	fmt.Println("| \nMatches:")
+	fmt.Println("|\n| Matches:")
 	for x, match := range ledger.matches{
 		fmt.Printf(
 			"| \tId: %d, Attacker: %s, Defender: %s, Stage: %d\n",

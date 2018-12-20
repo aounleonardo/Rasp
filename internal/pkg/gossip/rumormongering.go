@@ -1,7 +1,6 @@
 package gossip
 
 import (
-	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"math/rand"
 	"net"
@@ -12,13 +11,6 @@ func (gossiper *Gossiper) receiveRumorPacket(
 	rumor *message.RumorMessage,
 	sender *net.UDPAddr,
 ) {
-	fmt.Printf(
-		"RUMOR origin %s from %s ID %d contents %s\n",
-		rumor.Origin,
-		sender.String(),
-		rumor.ID,
-		rumor.Text,
-	)
 	gossiper.updateNextHop(rumor, sender)
 	if rumor.ID == gossiper.nextIdForPeer(rumor.Origin) {
 		gossiper.memorizeRumor(rumor)
@@ -82,7 +74,6 @@ func (gossiper *Gossiper) rumormongerWith(
 	if bytes == nil {
 		return
 	}
-	fmt.Printf("MONGERING with %s\n", peer.String())
 	gossiper.gossipConn.WriteToUDP(bytes, peer)
 	acks.Lock()
 	acks.expected[peer.String()]++
@@ -116,10 +107,6 @@ func (gossiper *Gossiper) rumormongerWith(
 					map[string]struct{}{peer.String(): {}},
 				)
 				if newPartner != nil {
-					fmt.Printf(
-						"FLIPPED COIN sending rumor to %s\n",
-						newPartner.String(),
-					)
 					gossiper.rumormongerWith(rumor, newPartner, sender)
 				}
 			}

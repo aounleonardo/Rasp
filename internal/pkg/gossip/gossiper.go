@@ -202,7 +202,6 @@ func (gossiper *Gossiper) ReceivePacket(
 ) {
 	gossiper.upsertPeer(sender)
 	gossiper.upsertIdentifiers(packet)
-	fmt.Printf("PEERS %s\n", gossiper.listPeers())
 	switch {
 	case packet.Rumor != nil:
 		gossiper.receiveRumorPacket(packet.Rumor, sender)

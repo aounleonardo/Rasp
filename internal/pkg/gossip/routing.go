@@ -1,7 +1,6 @@
 package gossip
 
 import (
-	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
 	"time"
@@ -24,7 +23,6 @@ func (gossiper *Gossiper) updateNextHop(
 		gossiper.routing.m[rumor.Origin] = RouteInfo{
 			nextHop: sender, sequenceNumber: rumor.ID,
 		}
-		fmt.Printf("DSDV %s %s\n", rumor.Origin, sender.String())
 	}
 	gossiper.routing.Unlock()
 }

@@ -1,34 +1,14 @@
 package gossip
 
 import (
-	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"net"
-	"strings"
 )
-
-func describeStatusPacket(packet *message.StatusPacket) string {
-	ret := make([]string, len(packet.Want))
-	for i, peer := range packet.Want {
-		ret[i] = fmt.Sprintf(
-			"peer %s nextID %d",
-			peer.Identifier,
-			peer.NextID,
-		)
-	}
-	return strings.Join(ret, " ")
-}
 
 func (gossiper *Gossiper) receiveStatusPacket(
 	status *message.StatusPacket,
 	sender *net.UDPAddr,
 ) {
-	fmt.Printf(
-		"STATUS from %s %s\n",
-		sender.String(),
-		describeStatusPacket(status),
-	)
-
 	acks.Lock()
 	if acks.expected[sender.String()] > 0 {
 		acks.queue[sender.String()] <- status
@@ -41,9 +21,6 @@ func (gossiper *Gossiper) receiveStatusPacket(
 	operation, missing := gossiper.compareStatuses(status)
 	if operation == SEND {
 		gossiper.sendMissingRumor(&missing, sender)
-	}
-	if operation == NOP {
-		fmt.Printf("IN SYNC WITH %s\n", sender.String())
 	}
 }
 
@@ -116,7 +93,6 @@ func (gossiper *Gossiper) sendMissingRumor(
 	if bytes == nil {
 		return
 	}
-	fmt.Printf("MONGERING with %s\n", recipient.String())
 	gossiper.gossipConn.WriteToUDP(bytes, recipient)
 	acks.Lock()
 	acks.expected[recipient.String()]++
