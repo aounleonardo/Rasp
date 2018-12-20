@@ -170,7 +170,7 @@ func (gossiper *Gossiper) receiveRaspMessage(
 		chain.ReceiveRaspRequest(*rasp.Request)
 	case rasp.Response != nil:
 		attack, err :=
-			chain.ReceiveRaspResponse(*rasp.Response, gossiper.raspKey)
+			chain.ReceiveRaspResponse(*rasp.Response)
 		if err != nil {
 			fmt.Println(
 				"error receiving response",
@@ -183,7 +183,7 @@ func (gossiper *Gossiper) receiveRaspMessage(
 			Attack: attack,
 		}
 	case rasp.Attack != nil:
-		defence, err := chain.ReceiveRaspAttack(*rasp.Attack, gossiper.raspKey)
+		defence, err := chain.ReceiveRaspAttack(*rasp.Attack)
 		if err != nil {
 			fmt.Println("error receiving attack", *rasp.Attack, err.Error())
 			return
@@ -192,7 +192,7 @@ func (gossiper *Gossiper) receiveRaspMessage(
 			Defence: defence,
 		}
 	case rasp.Defence != nil:
-		chain.ReceiveRaspDefence(*rasp.Defence, gossiper.raspKey)
+		chain.ReceiveRaspDefence(*rasp.Defence)
 	}
 	if raspToSend != nil {
 		err := gossiper.sendPrivateMessage("", origin, raspToSend)

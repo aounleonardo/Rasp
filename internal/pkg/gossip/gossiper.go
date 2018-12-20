@@ -1,7 +1,6 @@
 package gossip
 
 import (
-	"crypto/rsa"
 	"fmt"
 	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
@@ -36,7 +35,6 @@ type Gossiper struct {
 	routing    Routes
 	privates   Privates
 	files      Files
-	raspKey    *rsa.PrivateKey
 }
 
 func NewGossiper(
@@ -90,9 +88,7 @@ func NewGossiper(
 	go gossiper.routeRumorMessages(rtimer)
 	go gossiper.publishChainContents()
 
-	key := chain.StartGame(gossiper.Name)
-	gossiper.raspKey = key
-
+	chain.StartGame(gossiper.Name)
 	return gossiper
 }
 
