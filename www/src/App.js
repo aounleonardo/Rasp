@@ -1,13 +1,17 @@
 import React, {Component} from 'react';
 import './App.css';
-import Peerster from "./Components/Peerster";
-
-require('dotenv').config();
+import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
+import Rasp from "./components/Rasp";
 
 class App extends Component {
     render() {
         return (
-            <Peerster/>
+            <Router>
+                <div style={{height: '100%'}}>
+                    <Route path={"/"} component={Rasp}/>
+                    <Route path={"/:serverPort"} component={Rasp}/>
+                </div>
+            </Router>
         );
     }
 }
