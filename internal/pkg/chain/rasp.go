@@ -279,3 +279,21 @@ func whoWon(attackerMove int, defenderMove int) Winner {
 	}
 	return Draw
 }
+
+func RaspStateUpdateUnsafe(newLedger ledger) {
+	raspState.Lock()
+	defer raspState.Unlock()
+	for x, myMatch := range raspState.matches {
+		match, exists := newLedger.matches[x]
+		if exists && match.Stage > Defence {
+			delete(raspState.pending, x)
+			delete(raspState.proposed, x)
+			delete(raspState.accepted, x)
+			delete(raspState.ongoing, x)
+			raspState.finished[x] = struct{}{}
+		} else if myMatch.Stage > Spawn {
+			delete(raspState.finished, x)
+			raspState.ongoing[x] = struct{}{}
+		}
+	}
+}
