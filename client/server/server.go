@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/aounleonardo/Peerster/internal/pkg/chain"
 	"github.com/aounleonardo/Peerster/internal/pkg/files"
 	"github.com/aounleonardo/Peerster/internal/pkg/message"
 	"github.com/dedis/protobuf"
@@ -79,6 +80,17 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		regexp.MatchString("/searches/", r.RequestURI); isSearchRequest {
 		return json.Marshal(waitForSearches(conn))
 	}
+
+	if isPlayersRequest, _ :=
+		regexp.MatchString("/players/", r.RequestURI); isPlayersRequest {
+
+	}
+
+	if isStateRequest, _ :=
+		regexp.MatchString("/state/", r.RequestURI); isStateRequest {
+
+	}
+
 	return nil, errors.New("unsupported URI")
 }
 
@@ -107,6 +119,17 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		regexp.MatchString("/search-for/*/", r.RequestURI); isSearchRequest {
 		return json.Marshal(
 			searchForKeywords(conn, getSearchKeywords(r.RequestURI)))
+	}
+
+	if isCreateMatchRequest, _ :=
+		regexp.MatchString("/create-match/", r.RequestURI); isCreateMatchRequest {
+		return json.Marshal(sendMatchRequest(conn, r))
+	}
+
+	if isRespondMatchRequest, _ :=
+		regexp.MatchString("/accept-match/", r.RequestURI); isRespondMatchRequest {
+		return json.Marshal(sendMatchResponse(conn, r))
+
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -375,6 +398,63 @@ func waitForSearches(conn *net.UDPConn) message.SearchesResponse {
 	return *response
 }
 
+func sendMatchRequest(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var req struct {
+		Destination *string
+		Bet         chain.Bet
+		Move        chain.Move
+	}
+	err := decoder.Decode(&req)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			CreateMatch: &chain.CreateMatchRequest{
+				Destination: req.Destination,
+				Bet:         req.Bet,
+				Move:        req.Move,
+			},
+		},
+		response,
+	)
+	return *response
+}
+
+func sendMatchResponse(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var res struct {
+		Identifier chain.Uid
+		Move       chain.Move
+	}
+	err := decoder.Decode(&res)
+	if err != nil {
+		return message.ValidationResponse{Success: false}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			AcceptMatch: &chain.AcceptMatchRequest{
+				Identifier: res.Identifier,
+				Move:       res.Move,
+			},
+		},
+		response,
+	)
+	return *response
+
+}
+
 func contactGossiper(
 	conn *net.UDPConn,
 	request *message.ClientPacket,
@@ -394,7 +474,7 @@ func main() {
 	port := flag.String(
 		"port",
 		"8000",
-		"port for the web handler (\"default 8000\")",
+		"port for the web server (\"default 8000\")",
 	)
 	gossiper := flag.String(
 		"gossiper",
