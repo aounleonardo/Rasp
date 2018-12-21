@@ -22,12 +22,12 @@ export default class Rasp extends Component {
     render() {
         return (
             <div style={styles.rasp}>
-                <Arena
-                    style={styles.arena}
-                />
-                <State
-                    style={styles.state}
-                />
+                <div style={styles.arena}>
+                    <Arena opponents={db.peers}/>
+                </div>
+                <div style={styles.state}>
+                    <State/>
+                </div>
             </div>
         );
     }
@@ -49,13 +49,9 @@ const styles = {
     arena: {
         display: 'flex',
         flex: 5,
-        height: '100%',
-        backgroundColor: colors.lightBlue,
     },
     state: {
         display: 'flex',
         flex: 2,
-        height: '100%',
-        backgroundColor: colors.beige,
     },
 };

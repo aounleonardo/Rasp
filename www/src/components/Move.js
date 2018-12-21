@@ -16,6 +16,7 @@ class Move extends Component {
                     style={styles.imageBox}
                     onMouseEnter={this.mouseEnter}
                     onMouseLeave={this.mouseLeave}
+                    onClick={this.toggleSelected}
                 >
                     <img src={this.getImageSource()}/>
                 </div>
@@ -24,17 +25,14 @@ class Move extends Component {
     }
 
     getImageSource = () => {
-        const suffix = (this.state.highlighted) ? "_alt" : "";
+        const suffix = (this.props.selected || this.state.highlighted) ?
+            "_alt" : "";
         return `/${this.props.move}${suffix}.png`;
     };
 
-    mouseEnter = () => {
-        this.setState({highlighted: true});
-    };
-
-    mouseLeave = () => {
-        this.setState({highlighted: false});
-    };
+    mouseEnter = () => this.setState({highlighted: true});
+    mouseLeave = () => this.setState({highlighted: false});
+    toggleSelected = () => this.props.onClick();
 }
 
 export default Move;

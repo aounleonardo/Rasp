@@ -1,14 +1,15 @@
 import React, {Component} from 'react';
+import colors from "./colors";
 
 export default class State extends Component {
     constructor(props) {
         super(props);
-        this.style = {...this.props.style, ...styles.state};
     }
 
     render() {
         return (
-            <div style={this.style}>
+            <div style={styles.state}>
+                YOYOYO
             </div>
         )
     }
@@ -16,5 +17,7 @@ export default class State extends Component {
 
 const styles = {
     state: {
+        width: '100%',
+        backgroundColor: colors.lightBlue,
     },
 };
