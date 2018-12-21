@@ -261,6 +261,31 @@ func AcceptMatch(
 	return
 }
 
+func GetPlayers(players *PlayersResponse) {
+
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+
+	for s, p := range blockchain.heads[blockchain.longest].players {
+		players.Players[s] = p.Balance
+	}
+
+}
+
+func GetStates(states *StateResponse) {
+
+	raspState.RLock()
+	defer raspState.RUnlock()
+
+	states.matches = raspState.matches
+	states.proposed = raspState.proposed
+	states.pending = raspState.pending
+	states.accepted = raspState.accepted
+	states.ongoing = raspState.ongoing
+	states.finished = raspState.finished
+
+}
+
 func isMatchPending(id Uid) bool {
 	raspState.RLock()
 	defer raspState.RUnlock()

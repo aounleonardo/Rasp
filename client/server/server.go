@@ -83,12 +83,13 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 
 	if isPlayersRequest, _ :=
 		regexp.MatchString("/players/", r.RequestURI); isPlayersRequest {
+			return json.Marshal(waitForPlayers(conn))
 
 	}
 
 	if isStateRequest, _ :=
 		regexp.MatchString("/state/", r.RequestURI); isStateRequest {
-
+			return json.Marshal(waitForStates(conn))
 	}
 
 	return nil, errors.New("unsupported URI")
@@ -132,6 +133,26 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 
 	}
 	return nil, errors.New("unsupported URI")
+}
+
+func waitForPlayers(conn *net.UDPConn) *chain.PlayersResponse {
+	response := &chain.PlayersResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{Players: &chain.PlayersRequest{}},
+		response)
+
+	return response
+}
+
+func waitForStates(conn *net.UDPConn) *chain.StateResponse {
+	response := &chain.StateResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{States: &chain.StateRequest{}},
+		response)
+
+	return response
 }
 
 func waitForIdentifier(conn *net.UDPConn) string {

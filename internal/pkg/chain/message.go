@@ -52,6 +52,23 @@ type AcceptMatchRequest struct {
 	Move       Move
 }
 
+type PlayersRequest struct {}
+
+type PlayersResponse struct {
+	Players map[string]int64
+}
+
+type StateRequest struct {}
+
+type StateResponse struct {
+	matches  map[Uid]*Match
+	proposed map[Uid]struct{}
+	pending  map[Uid]struct{}
+	accepted map[Uid]struct{}
+	ongoing  map[Uid]struct{}
+	finished map[Uid]struct{}
+}
+
 func ReceiveRaspRequest(request RaspRequest) {
 	opponent, exists := getPlayer(request.Origin)
 	if !exists {

@@ -330,6 +330,42 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 	)
 }
 
+func (gossiper *Gossiper) handleGetPlayersRequest(
+	request *chain.PlayersRequest,
+	clientAddr *net.UDPAddr,
+) {
+
+	players := &chain.PlayersResponse{}
+
+	chain.GetPlayers(players)
+
+	defer func() {
+		gossiper.sendToClient(
+			players,
+			clientAddr,
+		)
+	}()
+
+}
+
+func (gossiper *Gossiper) handleGetStatesRequest(
+	request *chain.StateRequest,
+	clientAddr *net.UDPAddr,
+) {
+
+	states := &chain.StateResponse{}
+
+	chain.GetStates(states)
+
+	defer func() {
+		gossiper.sendToClient(
+			states,
+			clientAddr,
+		)
+	}()
+
+}
+
 func (gossiper *Gossiper) sendToClient(
 	response interface{},
 	clientAddr *net.UDPAddr,
