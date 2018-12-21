@@ -118,7 +118,6 @@ func getNewCancels(defences []TxPublish) []TxPublish {
 func hasNoPendingTransactions() bool {
 	pendingTransactions.RLock()
 	defer pendingTransactions.RUnlock()
-
 	return len(pendingTransactions.m[Spawn]) < 1 &&
 		len(pendingTransactions.m[Attack]) < 1 &&
 		len(pendingTransactions.m[Defence]) < 1 &&
@@ -131,7 +130,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 
 	switch action.Type {
 	case Spawn:
-		if isSpawnClaimed(action.Attacker) {
+		if isSpawnClaimedUnsafe(action.Attacker) {
 			return true
 		}
 		pendingTransactions.RLock()
@@ -142,7 +141,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			}
 		}
 	case Attack:
-		if isAttackClaimed(action.Identifier) {
+		if isAttackClaimedUnsafe(action.Identifier) {
 			return true
 		}
 		player := blockchain.heads[blockchain.longest].players[action.Attacker]
@@ -163,7 +162,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			}
 		}
 	case Defence:
-		if isDefenceClaimed(action.Identifier) {
+		if isDefenceClaimedUnsafe(action.Identifier) {
 			return true
 		}
 		player := blockchain.heads[blockchain.longest].players[action.Defender]
@@ -184,7 +183,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			}
 		}
 	case Reveal:
-		if isRevealClaimed(action.Identifier) {
+		if isRevealClaimedUnsafe(action.Identifier) {
 			return true
 		}
 		player := blockchain.heads[blockchain.longest].players[action.Attacker]
@@ -219,7 +218,7 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 			}
 		}
 	case Cancel:
-		if isCancelClaimed(action.Identifier) {
+		if isCancelClaimedUnsafe(action.Identifier) {
 			return true
 		}
 		player := blockchain.heads[blockchain.longest].players[action.Attacker]
@@ -395,32 +394,32 @@ func removeClaimedPendingTransactionsUnsafe() {
 	pendingTransactions.Lock()
 	newSpawns := make([]TxPublish, 0)
 	for _, spawnTx := range pendingTransactions.m[Spawn] {
-		if !isSpawnClaimed(spawnTx.Action.Attacker) {
+		if !isSpawnClaimedUnsafe(spawnTx.Action.Attacker) {
 			newSpawns = append(newSpawns, spawnTx)
 		}
 
 	}
 	newAttacks := make([]TxPublish, 0)
 	for _, attackTx := range pendingTransactions.m[Attack] {
-		if !isAttackClaimed(attackTx.Action.Identifier) {
+		if !isAttackClaimedUnsafe(attackTx.Action.Identifier) {
 			newAttacks = append(newAttacks, attackTx)
 		}
 	}
 	newDefences := make([]TxPublish, 0)
 	for _, defenceTx := range pendingTransactions.m[Defence] {
-		if !isDefenceClaimed(defenceTx.Action.Identifier) {
+		if !isDefenceClaimedUnsafe(defenceTx.Action.Identifier) {
 			newDefences = append(newDefences, defenceTx)
 		}
 	}
 	newReveals := make([]TxPublish, 0)
 	for _, revealTx := range pendingTransactions.m[Reveal] {
-		if !isRevealClaimed(revealTx.Action.Identifier) {
+		if !isRevealClaimedUnsafe(revealTx.Action.Identifier) {
 			newReveals = append(newReveals, revealTx)
 		}
 	}
 	newCancels := make([]TxPublish, 0)
 	for _, cancelTx := range pendingTransactions.m[Cancel] {
-		if !isCancelClaimed(cancelTx.Action.Identifier) {
+		if !isCancelClaimedUnsafe(cancelTx.Action.Identifier) {
 			newCancels = append(newCancels, cancelTx)
 		}
 	}
