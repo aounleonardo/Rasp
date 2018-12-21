@@ -43,6 +43,9 @@ type ClientPacket struct {
 	Search      *PerformSearchRequest
 	GetSearches *SearchesRequest
 
+	Players *chain.PlayersRequest
+	States *chain.StateRequest
+
 	CreateMatch *chain.CreateMatchRequest
 	AcceptMatch *chain.AcceptMatchRequest
 

@@ -32,8 +32,22 @@ var blockchain = struct {
 func getPlayer(name string) (copy *Player, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	if player, exists :=
-		blockchain.heads[blockchain.longest].players[name]; exists {
+	player, exists :=
+		blockchain.heads[blockchain.longest].players[name]
+
+	if  exists {
+		copy = &Player{
+			Key:     player.Key,
+			Balance: player.Balance,
+		}
+	}
+	return
+}
+
+func getPlayerUnsafe(name string) (copy *Player, exists bool) {
+	player, exists :=
+		blockchain.heads[blockchain.longest].players[name]
+	if  exists {
 		copy = &Player{
 			Key:     player.Key,
 			Balance: player.Balance,
@@ -46,11 +60,21 @@ func (player Player) hasEnoughMoney(bet Bet) bool {
 	return player.Balance > int64(bet)
 }
 
+func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {
+	state, exists :=
+		blockchain.heads[blockchain.longest].matches[identifier]
+	if exists {
+		copy = copyMatchUnsafe(state)
+	}
+	return
+}
+
 func getMatch(identifier uint64) (copy *Match, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	if state, exists :=
-		blockchain.heads[blockchain.longest].matches[identifier]; exists {
+	state, exists :=
+		blockchain.heads[blockchain.longest].matches[identifier]
+	if exists {
 		copy = copyMatchUnsafe(state)
 	}
 	return
@@ -242,26 +266,26 @@ func haveEnoughMoney(action GameAction, balances map[string]int64) bool {
 		balances[action.Defender]-int64(action.Bet) >= 0
 }
 
-func isSpawnClaimed(name string) bool {
-	_, exists := getPlayer(name)
+func isSpawnClaimedUnsafe(name string) bool {
+	_, exists := getPlayerUnsafe(name)
 	return exists
 }
 
-func isAttackClaimed(identifier uint64) bool {
-	_, exist := getMatch(identifier)
+func isAttackClaimedUnsafe(identifier uint64) bool {
+	_, exist := getMatchUnsafe(identifier)
 	return exist
 }
 
-func isDefenceClaimed(identifier uint64) bool {
-	challenge, exists := getMatch(identifier)
+func isDefenceClaimedUnsafe(identifier uint64) bool {
+	challenge, exists := getMatchUnsafe(identifier)
 	if exists {
 		return challenge.Stage > Attack
 	}
 	return false
 }
 
-func isRevealClaimed(identifier uint64) bool {
-	challenge, exists := getMatch(identifier)
+func isRevealClaimedUnsafe(identifier uint64) bool {
+	challenge, exists := getMatchUnsafe(identifier)
 	if exists {
 		if challenge.Stage == Reveal || challenge.Stage == Cancel {
 			return true
@@ -270,8 +294,8 @@ func isRevealClaimed(identifier uint64) bool {
 	return false
 }
 
-func isCancelClaimed(identifier uint64) bool {
-	challenge, exist := getMatch(identifier)
+func isCancelClaimedUnsafe(identifier uint64) bool {
+	challenge, exist := getMatchUnsafe(identifier)
 	if exist {
 		return challenge.Stage == Attack
 	}
@@ -311,9 +335,10 @@ func addBlockUnsafe(block Block) {
 	if oldLedger.length < currentLength {
 		return
 	}
+
 	PrintLedger(blockchain.heads[hash])
 	RaspStateUpdateUnsafe(blockchain.heads[hash])
-
+	blockchain.longest = hash
 	if block.PrevHash == currentHead {
 		return
 	}

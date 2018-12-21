@@ -107,7 +107,8 @@ var raspState = struct {
 func getState(identifier Uid) (copy *Match, exists bool) {
 	raspState.RLock()
 	defer raspState.RUnlock()
-	if state, exists := raspState.matches[identifier]; exists {
+	state, exists := raspState.matches[identifier]
+	if exists {
 		copy = copyMatchUnsafe(state)
 	}
 	return
@@ -259,6 +260,37 @@ func AcceptMatch(
 		Signature:   signature,
 	}
 	return
+}
+
+func GetPlayers(players *PlayersResponse) {
+	blockchain.RLock()
+	defer blockchain.RUnlock()
+	players.Players = make(map[string] int64)
+	for s, p := range blockchain.heads[blockchain.longest].players {
+		players.Players[s] = p.Balance
+	}
+
+}
+
+func GetStates(states *StateResponse) {
+
+	raspState.RLock()
+	defer raspState.RUnlock()
+
+	states.Matches  = make(map[Uid]*Match)
+	states.Proposed = make(map[Uid]struct{})
+	states.Pending  = make(map[Uid]struct{})
+	states.Accepted = make(map[Uid]struct{})
+	states.Ongoing  = make(map[Uid]struct{})
+	states.Finished = make(map[Uid]struct{})
+
+	states.Matches = raspState.matches
+	states.Proposed = raspState.proposed
+	states.Pending = raspState.pending
+	states.Accepted = raspState.accepted
+	states.Ongoing = raspState.ongoing
+	states.Finished = raspState.finished
+
 }
 
 func isMatchPending(id Uid) bool {
