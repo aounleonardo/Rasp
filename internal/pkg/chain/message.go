@@ -61,12 +61,12 @@ type PlayersResponse struct {
 type StateRequest struct {}
 
 type StateResponse struct {
-	matches  map[Uid]*Match
-	proposed map[Uid]struct{}
-	pending  map[Uid]struct{}
-	accepted map[Uid]struct{}
-	ongoing  map[Uid]struct{}
-	finished map[Uid]struct{}
+	Matches  map[Uid]*Match
+	Proposed map[Uid]struct{}
+	Pending  map[Uid]struct{}
+	Accepted map[Uid]struct{}
+	Ongoing  map[Uid]struct{}
+	Finished map[Uid]struct{}
 }
 
 func ReceiveRaspRequest(request RaspRequest) {

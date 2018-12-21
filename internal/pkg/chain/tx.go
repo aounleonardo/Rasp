@@ -118,9 +118,6 @@ func getNewCancels(defences []TxPublish) []TxPublish {
 func hasNoPendingTransactions() bool {
 	pendingTransactions.RLock()
 	defer pendingTransactions.RUnlock()
-	fmt.Println("Pending Spawn:")
-	fmt.Println(pendingTransactions.m[Spawn])
-
 	return len(pendingTransactions.m[Spawn]) < 1 &&
 		len(pendingTransactions.m[Attack]) < 1 &&
 		len(pendingTransactions.m[Defence]) < 1 &&

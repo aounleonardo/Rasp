@@ -107,7 +107,8 @@ var raspState = struct {
 func getState(identifier Uid) (copy *Match, exists bool) {
 	raspState.RLock()
 	defer raspState.RUnlock()
-	if state, exists := raspState.matches[identifier]; exists {
+	state, exists := raspState.matches[identifier]
+	if exists {
 		copy = copyMatchUnsafe(state)
 	}
 	return
@@ -276,19 +277,19 @@ func GetStates(states *StateResponse) {
 	raspState.RLock()
 	defer raspState.RUnlock()
 
-	states.matches  = make(map[Uid]*Match)
-	states.proposed = make(map[Uid]struct{})
-	states.pending  = make(map[Uid]struct{})
-	states.accepted = make(map[Uid]struct{})
-	states.ongoing  = make(map[Uid]struct{})
-	states.finished = make(map[Uid]struct{})
+	states.Matches  = make(map[Uid]*Match)
+	states.Proposed = make(map[Uid]struct{})
+	states.Pending  = make(map[Uid]struct{})
+	states.Accepted = make(map[Uid]struct{})
+	states.Ongoing  = make(map[Uid]struct{})
+	states.Finished = make(map[Uid]struct{})
 
-	states.matches = raspState.matches
-	states.proposed = raspState.proposed
-	states.pending = raspState.pending
-	states.accepted = raspState.accepted
-	states.ongoing = raspState.ongoing
-	states.finished = raspState.finished
+	states.Matches = raspState.matches
+	states.Proposed = raspState.proposed
+	states.Pending = raspState.pending
+	states.Accepted = raspState.accepted
+	states.Ongoing = raspState.ongoing
+	states.Finished = raspState.finished
 
 }
 

@@ -32,8 +32,10 @@ var blockchain = struct {
 func getPlayer(name string) (copy *Player, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	if player, exists :=
-		blockchain.heads[blockchain.longest].players[name]; exists {
+	player, exists :=
+		blockchain.heads[blockchain.longest].players[name]
+
+	if  exists {
 		copy = &Player{
 			Key:     player.Key,
 			Balance: player.Balance,
@@ -43,8 +45,9 @@ func getPlayer(name string) (copy *Player, exists bool) {
 }
 
 func getPlayerUnsafe(name string) (copy *Player, exists bool) {
-	if player, exists :=
-		blockchain.heads[blockchain.longest].players[name]; exists {
+	player, exists :=
+		blockchain.heads[blockchain.longest].players[name]
+	if  exists {
 		copy = &Player{
 			Key:     player.Key,
 			Balance: player.Balance,
@@ -58,8 +61,9 @@ func (player Player) hasEnoughMoney(bet Bet) bool {
 }
 
 func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {
-	if state, exists :=
-		blockchain.heads[blockchain.longest].matches[identifier]; exists {
+	state, exists :=
+		blockchain.heads[blockchain.longest].matches[identifier]
+	if exists {
 		copy = copyMatchUnsafe(state)
 	}
 	return
@@ -68,8 +72,9 @@ func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {
 func getMatch(identifier uint64) (copy *Match, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	if state, exists :=
-		blockchain.heads[blockchain.longest].matches[identifier]; exists {
+	state, exists :=
+		blockchain.heads[blockchain.longest].matches[identifier]
+	if exists {
 		copy = copyMatchUnsafe(state)
 	}
 	return
