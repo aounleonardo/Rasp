@@ -336,7 +336,6 @@ func (gossiper *Gossiper) handleGetPlayersRequest(
 ) {
 
 	players := &chain.PlayersResponse{}
-
 	chain.GetPlayers(players)
 
 	defer func() {
