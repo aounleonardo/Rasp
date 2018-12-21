@@ -18,7 +18,7 @@ class Move extends Component {
                     onMouseLeave={this.mouseLeave}
                     onClick={this.toggleSelected}
                 >
-                    <img src={this.getImageSource()}/>
+                    <img src={this.getImageSource()} alt={this.props.move}/>
                 </div>
             </div>
         );

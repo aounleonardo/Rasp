@@ -63,5 +63,7 @@ const styles = {
         borderRadius: 12,
         borderWidth: 4,
         borderColor: colors.blue,
+        userSelect: 'none',
+        webkitUserSelect: 'none',
     }),
 };

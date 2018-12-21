@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import colors from "./colors";
 import Arena from "./Arena";
 import State from "./State";
 

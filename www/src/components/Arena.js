@@ -49,7 +49,10 @@ export default class Arena extends Component {
     listOpponents = () => {
         if (this.props.opponents.length < 1) {
             return (
-                <h4>Sorry you have no friends to play with 😢</h4>
+                <div style={styles.noFriends}>
+                    Sorry you have no friends to play with
+                    <span role="img" aria-label="sad">😢</span>
+                </div>
             )
         }
         const opponents = (this.props.opponents.length === 1) ?
@@ -110,5 +113,11 @@ const styles = {
     betContainer: {
         display: 'flex',
         flex: 1,
+    },
+    noFriends: {
+        fontFamily: 'Helvetica',
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: colors.beige,
     },
 };
