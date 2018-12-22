@@ -26,7 +26,7 @@ class Opponent extends Component {
 
     getButtonContent = () => {
         if (this.props.name === "open") {
-            return <span role="img" aria-label="Open">Open 📢</span>
+            return <span role="img" aria-label="Open">OPEN 📢</span>
 
         }
         return this.props.name;
@@ -63,7 +63,8 @@ const styles = {
         borderRadius: 12,
         borderWidth: 4,
         borderColor: colors.blue,
+        cursor: 'pointer',
         userSelect: 'none',
-        webkitUserSelect: 'none',
+        WebkitUserSelect: 'none',
     }),
 };

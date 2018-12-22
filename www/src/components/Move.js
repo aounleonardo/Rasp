@@ -26,7 +26,7 @@ class Move extends Component {
 
     getImageSource = () => {
         const suffix = (this.props.selected || this.state.highlighted) ?
-            "_alt" : "";
+            "" : "_off";
         return `/${this.props.move}${suffix}.png`;
     };
 
@@ -47,5 +47,6 @@ const styles = {
     imageBox: {
         width: 256,
         height: 256,
+        cursor: 'pointer',
     },
 };
