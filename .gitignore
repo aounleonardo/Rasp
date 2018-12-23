@@ -21,7 +21,7 @@
 test_*.sh
 Peerster
 client/client
-client/handler/handler
+client/server/server
 #### joe made this: http://goel.io/joe
 
 #### jetbrains ####

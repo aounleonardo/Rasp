@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import Move from "./Move";
 import Opponent from "./Opponent";
 import colors from "./colors";
+import "./style.css"
 
 const moves = ["rock", "paper", "scissors"];
 
@@ -11,15 +12,31 @@ export default class Arena extends Component {
         this.state = {
             selectedMove: "none",
             selectedOpponent: "none",
+            bet: 0,
+            betHighlighted: false,
         }
     }
 
     render() {
+        const state = this.getButtonState();
         return (
             <div style={styles.arena}>
                 <div style={styles.buttonContainer}>
-                    <button style={styles.button}>
-                        CHALLENGE
+                    <button
+                        style={styles.button(state === "send")}
+                        onClick={() => console.log({
+                            isBetOff: this.isBetOff(),
+                            getBet: this.getBet(),
+                        })}
+                    >
+                        {
+                            {
+                                "move": "CHOOSE MOVE",
+                                "opponent": "PICK OPPONENT",
+                                "bet": "PLACE BET",
+                                "send": "SEND CHALLENGE",
+                            }[state]
+                        }
                     </button>
                 </div>
                 <div style={styles.movesContainer}>
@@ -36,7 +53,26 @@ export default class Arena extends Component {
                     {this.listOpponents()}
                 </div>
                 <div style={styles.betContainer}>
-                    bet
+                    <div style={styles.betLabel}>
+                        Bet:
+                    </div>
+                    <div
+                        style={styles.sliderContainer}
+                    >
+                        <input
+                            type={"range"}
+                            min={"1"}
+                            max={"100"}
+                            value={this.state.bet}
+                            style={styles.betSlider}
+                            onChange={this.changeBet}
+                            className=
+                                {`slider${(this.isBetOff()) ? '-off' : ''}`}
+                        />
+                    </div>
+                    <div style={styles.betValue}>
+                        {this.getBet()}
+                    </div>
                 </div>
             </div>
         )
@@ -49,7 +85,10 @@ export default class Arena extends Component {
     listOpponents = () => {
         if (this.props.opponents.length < 1) {
             return (
-                <h4>Sorry you have no friends to play with 😢</h4>
+                <div style={styles.noFriends}>
+                    Sorry you have no friends to play with
+                    <span role="img" aria-label="sad">😢</span>
+                </div>
             )
         }
         const opponents = (this.props.opponents.length === 1) ?
@@ -66,6 +105,35 @@ export default class Arena extends Component {
                 />
             )
         );
+    };
+
+    changeBet = (event) => {
+        this.setState({bet: event.target.value});
+    };
+
+    getBet = () => Math.floor(this.state.bet / 10);
+
+    isBetOff = () => !this.state.betHighlighted && this.getBet() === 0;
+
+    betMouseEnter = () => {
+        this.setState({betHighlighted: true});
+    };
+
+    betMouseLeave = () => {
+        this.setState({betHighlighted: false});
+    };
+
+    getButtonState = () => {
+        if (this.state.selectedMove === "none") {
+            return "move";
+        }
+        if (this.state.selectedOpponent === "none") {
+            return "opponent";
+        }
+        if (this.getBet() === 0) {
+            return "bet";
+        }
+        return "send";
     }
 }
 
@@ -85,17 +153,18 @@ const styles = {
         justifyContent: 'flex-end',
         alignItems: 'center',
     },
-    button: {
+    button: (valid) => ({
         width: 200,
         height: 50,
-        backgroundColor: colors.lightBlue,
-        color: colors.blue,
+        backgroundColor: (valid) ? colors.lightBlue : colors.lightBlue,
+        color: (valid) ? colors.blue : colors.blue,
         fontWeight: 'bold',
         fontSize: 18,
         borderRadius: 12,
         borderWidth: 4,
-        borderColor: colors.blue,
-    },
+        borderColor: (valid) ? colors.blue : colors.grey,
+        borderStyle: (valid) ? '' : 'double',
+    }),
     movesContainer: {
         display: 'flex',
         flex: 3,
@@ -110,5 +179,49 @@ const styles = {
     betContainer: {
         display: 'flex',
         flex: 1,
+        width: "100%",
+    },
+    noFriends: {
+        fontFamily: 'Helvetica',
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: colors.beige,
+    },
+    sliderContainer: {
+        display: 'flex',
+        flex: 2,
+        width: "50%",
+        paddingLeft: 20,
+        paddingRight: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    betLabel: {
+        display: 'flex',
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        fontFamily: 'Helvetica',
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: colors.blue,
+    },
+    betValue: {
+        display: 'flex',
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        fontFamily: 'Helvetica',
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: colors.blue,
+    },
+    betSlider: {
+        WebkitAppearance: 'none',
+        height: 25,
+        WebkitTransition: '.2s',
+        backgroundColor: colors.blue,
+        borderRadius: 12,
+        cursor: 'pointer',
     },
 };

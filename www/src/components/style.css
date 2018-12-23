@@ -1,0 +1,49 @@
+input[type=range]:focus {
+    outline: none;
+}
+
+button:focus {
+    outline: none;
+}
+
+
+.slider::-webkit-slider-thumb {
+    height: 35px;
+    width: 35px;
+    background-image: url(/bitcoin.png);
+    background-size: 100%;
+    -webkit-appearance: none;
+}
+
+.slider::-moz-range-thumb {
+    -moz-appearance: none;
+    height: 35px;
+    width: 35px;
+    background-image: url(/bitcoin.png);
+    background-size: 100%;
+    background-color: transparent;
+    border-style: none;
+}
+
+.slider-off::-webkit-slider-thumb {
+    height: 35px;
+    width: 35px;
+    background-image: url(/bitcoin_off.png);
+    background-size: 100%;
+    -webkit-appearance: none;
+}
+
+.slider-off::-moz-range-thumb {
+    -moz-appearance: none;
+    height: 35px;
+    width: 35px;
+    background-image: url(/bitcoin_off.png);
+    background-size: 100%;
+    background-color: transparent;
+    border-style: none;
+}
+
+input[type=range]::-moz-range-track {
+    -moz-appearance: none;
+    background-color: transparent;
+}
