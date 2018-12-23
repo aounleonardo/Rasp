@@ -197,6 +197,14 @@ func CreateMatch(
 	raspState.matches[uid] = newMatch
 	raspState.proposed[uid] = struct{}{}
 	raspState.Unlock()
+	fmt.Printf(
+		"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %d, Attack Move %d\n",
+		newMatch.Attacker,
+		*newMatch.Defender,
+		newMatch.Bet,
+		newMatch.Identifier,
+		newMatch.AttackMove,
+		)
 
 	signature, err := SignRequest(gossiperKey, uid, bet)
 	if err != nil {
@@ -251,6 +259,17 @@ func AcceptMatch(
 	match.DefenceMove = &move
 	delete(raspState.pending, id)
 	raspState.accepted[id] = struct{}{}
+	fmt.Printf(
+		"ACCEPTING MATCH: Attacker %s," +
+			" Defender %s," +
+			" Bet %d," +
+			" UID %d," +
+			" Defense Move %d\n",
+		match.Attacker,
+		*match.Defender,
+		match.Bet,
+		match.Identifier,
+		match.DefenceMove)
 
 	signature, err := SignResponse(gossiperKey, id)
 	response = &RaspResponse{

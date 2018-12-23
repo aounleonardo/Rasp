@@ -431,7 +431,7 @@ func sendMatchRequest(
 	}
 	err := decoder.Decode(&req)
 	if err != nil {
-		return message.ValidationResponse{Success: false}
+		return message.ValidationResponse{Success: false, Error: err.Error()}
 	}
 	response := &message.ValidationResponse{}
 	contactGossiper(
@@ -459,7 +459,7 @@ func sendMatchResponse(
 	}
 	err := decoder.Decode(&res)
 	if err != nil {
-		return message.ValidationResponse{Success: false}
+		return message.ValidationResponse{Success: false, Error: err.Error()}
 	}
 	response := &message.ValidationResponse{}
 	contactGossiper(
