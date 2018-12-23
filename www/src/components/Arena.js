@@ -136,7 +136,7 @@ export default class Arena extends Component {
         const payload = {
             Destination: (this.state.selectedOpponent === "open") ?
                 null : this.state.selectedOpponent,
-            Bet: this.state.bet,
+            Bet: this.getBet(),
             Move: this.state.selectedMove,
         };
         console.log({createMatch: payload});
