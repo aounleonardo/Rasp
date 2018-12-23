@@ -3,7 +3,7 @@ import Move from "./Move";
 import Opponent from "./Opponent";
 import colors from "./colors";
 import "./style.css"
-import raspRequest from "../utils/requests";
+import {raspRequest} from "../utils/requests";
 
 const moves = ["rock", "paper", "scissors"];
 const initialState = {
@@ -77,12 +77,18 @@ export default class Arena extends Component {
         )
     }
 
+    getOpponents = () => {
+        return Object.keys(this.props.players)
+            .filter((name) => name !== this.props.playerName)
+    };
+
     moveSelected = (move) => this.setState({selectedMove: move});
     opponentSelected =
         (opponent) => this.setState({selectedOpponent: opponent});
 
     listOpponents = () => {
-        if (this.props.opponents.length < 1) {
+        let opponents = this.getOpponents();
+        if (opponents.length < 1) {
             return (
                 <div style={styles.noFriends}>
                     Sorry you have no friends to play with
@@ -90,9 +96,9 @@ export default class Arena extends Component {
                 </div>
             )
         }
-        const opponents = (this.props.opponents.length === 1) ?
-            this.props.opponents :
-            ["open", ...this.props.opponents];
+        opponents = (opponents.length === 1) ?
+            opponents :
+            ["open", ...opponents];
         return opponents.map(
             (opponent) => (
                 <Opponent
@@ -249,5 +255,6 @@ const styles = {
         backgroundColor: colors.blue,
         borderRadius: 12,
         cursor: 'pointer',
+        width: '100%',
     },
 };

@@ -9,7 +9,7 @@ export default class State extends Component {
     render() {
         return (
             <div style={styles.state}>
-                YOYOYO
+                {this.props.name}
             </div>
         )
     }
