@@ -13,7 +13,7 @@ export default class Rasp extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            port: this.getServerPort(),
+            gossiper: this.getGossiperPort(),
             peers: db.peers,
         };
     }
@@ -22,7 +22,10 @@ export default class Rasp extends Component {
         return (
             <div style={styles.rasp}>
                 <div style={styles.arena}>
-                    <Arena opponents={db.peers}/>
+                    <Arena
+                        opponents={db.peers}
+                        gossiper={`http://127.0.0.1:${this.state.gossiper}/`}
+                    />
                 </div>
                 <div style={styles.state}>
                     <State/>
@@ -31,10 +34,10 @@ export default class Rasp extends Component {
         );
     }
 
-    getServerPort = () => {
-        let port = this.props.match.params.serverPort;
+    getGossiperPort = () => {
+        let port = this.props.match.params.gossiperPort;
         if (!port) {
-            port = 8080;
+            port = 8000;
         }
         return port;
     }

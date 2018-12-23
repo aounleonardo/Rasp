@@ -9,7 +9,7 @@ class App extends Component {
             <Router>
                 <div style={{height: '100%'}}>
                     <Route path={"/"} component={Rasp}/>
-                    <Route path={"/:serverPort"} component={Rasp}/>
+                    <Route path={"/:gossiperPort"} component={Rasp}/>
                 </div>
             </Router>
         );
