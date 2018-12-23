@@ -3,18 +3,20 @@ import Move from "./Move";
 import Opponent from "./Opponent";
 import colors from "./colors";
 import "./style.css"
+import raspRequest from "../utils/requests";
 
 const moves = ["rock", "paper", "scissors"];
+const initialState = {
+    selectedMove: "none",
+    selectedOpponent: "none",
+    bet: 0,
+    betHighlighted: false,
+};
 
 export default class Arena extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-            selectedMove: "none",
-            selectedOpponent: "none",
-            bet: 0,
-            betHighlighted: false,
-        }
+        this.state = {...{}, ...initialState};
     }
 
     render() {
@@ -24,10 +26,7 @@ export default class Arena extends Component {
                 <div style={styles.buttonContainer}>
                     <button
                         style={styles.button(state === "send")}
-                        onClick={() => console.log({
-                            isBetOff: this.isBetOff(),
-                            getBet: this.getBet(),
-                        })}
+                        onClick={this.buttonPressed}
                     >
                         {
                             {
@@ -123,6 +122,29 @@ export default class Arena extends Component {
         this.setState({betHighlighted: false});
     };
 
+    buttonPressed = async () => {
+        if (this.getButtonState() !== "send") {
+            await raspRequest(this.props.gossiper, 'identifier/', null, (res) => console.log(res));
+            return;
+        }
+        const payload = {
+            Destination: (this.state.selectedOpponent === "open") ?
+                null : this.state.selectedOpponent,
+            Bet: this.state.bet,
+            Move: this.state.selectedMove,
+        };
+        console.log({createMatch: payload});
+        await raspRequest(
+            this.props.gossiper,
+            'create-match/',
+            payload,
+            (res) => {
+                console.log(res);
+            }
+        );
+        this.resetState();
+    };
+
     getButtonState = () => {
         if (this.state.selectedMove === "none") {
             return "move";
@@ -134,7 +156,11 @@ export default class Arena extends Component {
             return "bet";
         }
         return "send";
-    }
+    };
+
+    resetState = () => {
+        this.setState({...{}, ...initialState});
+    };
 }
 
 const styles = {
