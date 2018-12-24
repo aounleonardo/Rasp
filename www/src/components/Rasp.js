@@ -3,6 +3,60 @@ import Arena from "./Arena";
 import State from "./State";
 import {raspRequest} from "../utils/requests";
 
+const challenges = {
+    "Matches": {
+        "0000": {
+            "Identifier": "0000",
+            "Attacker": "A",
+            "Defender": "B",
+            "Bet": 20,
+            "AttackMove": 0,
+            "DefenseMove": null,
+            "Nonce": 0,
+            "HiddenMove": "a",
+            "Stage": 0,
+        },
+        "0001": {
+            "Identifier": "0001",
+            "Attacker": "A",
+            "Defender": "C",
+            "Bet": 10,
+            "AttackMove": 2,
+            "DefenseMove": null,
+            "Nonce": 0,
+            "HiddenMove": "a",
+            "Stage": 0,
+        },
+        "1000": {
+            "Identifier": "1000",
+            "Attacker": "C",
+            "Defender": "A",
+            "Bet": 10,
+            "AttackMove": null,
+            "DefenseMove": null,
+            "Nonce": 0,
+            "HiddenMove": "a",
+            "Stage": 0,
+        },
+        "1111": {
+            "Identifier": "1111",
+            "Attacker": "A",
+            "Defender": "B",
+            "Bet": 20,
+            "AttackMove": 1,
+            "DefenseMove": 0,
+            "Nonce": 0,
+            "HiddenMove": "a",
+            "Stage": 2,
+        },
+    },
+    "Proposed": ["0000", "0001"],
+    "Pending" : ["1000"],
+    "Accepted" : [],
+    "Ongoing" : ["1111"],
+    "Finished" : [],
+};
+
 export default class Rasp extends Component {
     constructor(props) {
         super(props);
@@ -43,6 +97,7 @@ export default class Rasp extends Component {
                     <State
                         name={this.state.name}
                         balance={this.state.players[this.state.name]}
+                        challenges={challenges}
                     />
                 </div>
             </div>

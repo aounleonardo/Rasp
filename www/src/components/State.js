@@ -11,10 +11,6 @@ const challengeStates = [
 ];
 
 export default class State extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
             <div style={styles.state}>
@@ -27,34 +23,49 @@ export default class State extends Component {
                     </div>
                 </div>
                 <div style={styles.scrollContainer}>
-                    {challengeStates.map((state) => (
+                    {challengeStates.map((challengeState) => (
                         <Set
-                            key={state}
-                            name={state}
-                            challenges={[]}
-                            clickCallback={() => {}}
+                            key={challengeState}
+                            name={challengeState}
+                            challenges={this.getChallengesForState(
+                                this.props.challenges[challengeState],
+                                this.props.challenges.Matches,
+                            )}
+                            clickCallback={() => {
+                            }}
                         />
                     ))}
                 </div>
             </div>
         )
     }
+
+    getChallengesForState = (stateChallenges, matches) => {
+        let challenges = {};
+        for (const challenge of stateChallenges) {
+            challenges[challenge] = matches[challenge];
+        }
+        console.log(challenges);
+        return challenges;
+    }
 }
 
-const Set = ({name, challenges, clickCallback}) => {
+const Set = ({name, challenges}) => {
     return (
         <div>
             <div>
                 {`${name}`}
             </div>
-            {challenges.forEach((challenge, index) => (
-                <Challenge
-                    key={`${name}:${index}`}
-                    challenge={challenge}
-                    primaryColor={index % 2 === 0}
-                    onClick={clickCallback}
-                />
-            ))}
+            {Object.keys(challenges).map((id, index) =>
+                (
+                    <Challenge
+                        key={`${name}:${index}`}
+                        type={name}
+                        challenge={challenges[id]}
+                        primaryColor={index % 2 === 0}
+                    />
+                )
+            )}
         </div>
     );
 };
