@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import colors from "./colors";
-import {moves, stages} from "../utils/rasp";
+import {moves, stages, Stages} from "../utils/rasp";
 
 class Challenge extends Component {
     constructor(props) {
@@ -15,16 +15,27 @@ class Challenge extends Component {
             switch (this.props.type) {
                 case "Proposed":
                     return (
-                        <div>
+                        <div style={styles.action(styles.cancel)}>
                             CANCEL
                         </div>
                     );
                 case "Pending":
                     return (
-                        <div>
+                        <div style={styles.action(styles.accept)}>
                             ACCEPT
                         </div>
                     );
+                case "Ongoing":
+                    if (this.props.challenge.Stage === Stages.ATTACK) {
+                        return (
+                            <div style={styles.action(styles.cancel)}>
+                                CANCEL
+                            </div>
+                        );
+                    }
+                    break;
+                default:
+                    break;
             }
         }
         const {
@@ -159,4 +170,22 @@ const styles = {
         alignItems: 'center',
 
     },
+    action: (type) => ({
+        display: 'flex',
+        flex: 1,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: "Helvetica",
+        color: colors.white,
+        ...type,
+    }),
+    accept: {
+        backgroundColor: 'green',
+    },
+    cancel: {
+        backgroundColor: 'black',
+    }
 };

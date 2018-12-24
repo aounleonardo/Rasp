@@ -45,7 +45,6 @@ export default class State extends Component {
         for (const challenge of stateChallenges) {
             challenges[challenge] = matches[challenge];
         }
-        console.log(challenges);
         return challenges;
     }
 }

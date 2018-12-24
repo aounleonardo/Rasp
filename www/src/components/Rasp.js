@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import Arena from "./Arena";
 import State from "./State";
 import {raspRequest} from "../utils/requests";
+import {Stages} from "../utils/rasp";
 
 const challenges = {
     "Matches": {
@@ -14,7 +15,7 @@ const challenges = {
             "DefenseMove": null,
             "Nonce": 0,
             "HiddenMove": "a",
-            "Stage": 0,
+            "Stage": Stages.SPAWN,
         },
         "0001": {
             "Identifier": "0001",
@@ -25,7 +26,7 @@ const challenges = {
             "DefenseMove": null,
             "Nonce": 0,
             "HiddenMove": "a",
-            "Stage": 0,
+            "Stage": Stages.SPAWN,
         },
         "1000": {
             "Identifier": "1000",
@@ -36,7 +37,7 @@ const challenges = {
             "DefenseMove": null,
             "Nonce": 0,
             "HiddenMove": "a",
-            "Stage": 0,
+            "Stage": Stages.SPAWN,
         },
         "1111": {
             "Identifier": "1111",
@@ -47,7 +48,7 @@ const challenges = {
             "DefenseMove": 0,
             "Nonce": 0,
             "HiddenMove": "a",
-            "Stage": 2,
+            "Stage": Stages.ATTACK,
         },
     },
     "Proposed": ["0000", "0001"],
