@@ -39,8 +39,19 @@ const challenges = {
             "HiddenMove": "a",
             "Stage": Stages.SPAWN,
         },
-        "1111": {
-            "Identifier": "1111",
+        "2000": {
+            "Identifier": "2000",
+            "Attacker": "B",
+            "Defender": "A",
+            "Bet": 10,
+            "AttackMove": null,
+            "DefenseMove": null,
+            "Nonce": 0,
+            "HiddenMove": "a",
+            "Stage": Stages.SPAWN,
+        },
+        "3333": {
+            "Identifier": "3333",
             "Attacker": "A",
             "Defender": "B",
             "Bet": 20,
@@ -53,8 +64,8 @@ const challenges = {
     },
     "Proposed": ["0000", "0001"],
     "Pending" : ["1000"],
-    "Accepted" : [],
-    "Ongoing" : ["1111"],
+    "Accepted" : ["2000"],
+    "Ongoing" : ["3333"],
     "Finished" : [],
 };
 

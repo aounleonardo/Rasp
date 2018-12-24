@@ -180,6 +180,7 @@ const styles = {
         fontWeight: 'bold',
         fontFamily: "Helvetica",
         color: colors.white,
+        cursor: 'pointer',
         ...type,
     }),
     accept: {

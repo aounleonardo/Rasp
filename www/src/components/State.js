@@ -52,7 +52,7 @@ export default class State extends Component {
 const Set = ({name, challenges}) => {
     return (
         <div>
-            <div>
+            <div style={styles.setName}>
                 {`${name}`}
             </div>
             {Object.keys(challenges).map((id, index) =>
@@ -90,4 +90,18 @@ const styles = {
         alignItems: 'center',
     },
     scrollContainer: {},
+    setName: {
+        display: 'flex',
+        flex: 1,
+        backgroundColor: colors.blue,
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: "Helvetica",
+        textTransform: 'uppercase',
+        color: colors.beige,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        padding: 4,
+
+    }
 };

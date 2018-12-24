@@ -53,7 +53,7 @@ export default class Arena extends Component {
                 </div>
                 <div style={styles.betContainer}>
                     <div style={styles.betLabel}>
-                        Bet:
+                        BET
                     </div>
                     <div
                         style={styles.sliderContainer}
