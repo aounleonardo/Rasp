@@ -70,37 +70,39 @@ class Challenge extends Component {
         } = this.props.challenge;
         return (
             <React.Fragment>
-                <div style={styles.attackerContainer}>
-                    <div style={styles.attackerName}>
+                <div style={styles.infoContainer}>
+                    <div style={styles.info}>
                         {Attacker}
                     </div>
-                    <div style={styles.attackerMove}>
-                        {
-                            (AttackMove === null) ?
-                                "?" :
-                                moves[AttackMove]
-                        }
-                    </div>
+                    <Move
+                        key={"attackerMove"}
+                        move={moves[AttackMove]}
+                        size={25}
+                        selected={true}
+                        onClick={() => {
+                        }}
+                    />
                 </div>
-                <div style={styles.neutralContainer}>
-                    <div style={styles.bet}>
+                <div style={styles.infoContainer}>
+                    <div style={styles.info}>
                         {Bet}
                     </div>
-                    <div style={styles.stage}>
+                    <div style={styles.info}>
                         {stages[Stage]}
                     </div>
                 </div>
-                <div style={styles.defenderContainer}>
-                    <div style={styles.defenderName}>
+                <div style={styles.infoContainer}>
+                    <div style={styles.info}>
                         {Defender}
                     </div>
-                    <div style={styles.defenderMove}>
-                        {
-                            (DefenseMove === null) ?
-                                "?" :
-                                moves[DefenseMove]
-                        }
-                    </div>
+                    <Move
+                        key={"defenderMove"}
+                        move={moves[DefenseMove]}
+                        size={25}
+                        selected={true}
+                        onClick={() => {
+                        }}
+                    />
                 </div>
             </React.Fragment>
         );
@@ -209,61 +211,22 @@ const styles = {
         height: 80,
         backgroundColor: (primary) ? colors.beige : colors.white,
     }),
-    attackerContainer: {
+    infoContainer: {
         display: 'flex',
         flex: 1,
         flexDirection: 'column',
         height: '100%',
         alignItems: 'center',
     },
-    defenderContainer: {
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        height: '100%',
-        alignItems: 'center',
-    },
-    neutralContainer: {
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        height: '100%',
-        alignItems: 'center',
-    },
-    attackerName: {
+    info: {
         display: 'flex',
         flex: 1,
         alignItems: 'center',
-    },
-    defenderName: {
-        display: 'flex',
-        flex: 1,
-        alignItems: 'center',
-
-    },
-    attackerMove: {
-        display: 'flex',
-        flex: 1,
-        alignItems: 'center',
-
-    },
-    defenderMove: {
-        display: 'flex',
-        flex: 1,
-        alignItems: 'center',
-
-    },
-    bet: {
-        display: 'flex',
-        flex: 1,
-        alignItems: 'center',
-
-    },
-    stage: {
-        display: 'flex',
-        flex: 1,
-        alignItems: 'center',
-
+        fontSize: 14,
+        fontWeight: 'bold',
+        fontFamily: "Helvetica",
+        color: colors.blue,
+        textTransform: 'uppercase',
     },
     action: (type) => ({
         display: 'flex',

@@ -5,6 +5,7 @@ class Move extends Component {
     constructor(props) {
         super(props);
         this.size = (this.props.size) ? this.props.size : 256;
+        this.move = (this.props.move) ? this.props.move : "hidden";
         this.state = {
             highlighted: false,
         };
@@ -19,7 +20,7 @@ class Move extends Component {
                     onMouseLeave={this.mouseLeave}
                     onClick={this.toggleSelected}
                 >
-                    <img style={{width: '100%'}} src={this.getImageSource()} alt={this.props.move}/>
+                    <img style={{width: '100%'}} src={this.getImageSource()} alt={this.move}/>
                 </div>
             </div>
         );
@@ -28,7 +29,7 @@ class Move extends Component {
     getImageSource = () => {
         const suffix = (this.props.selected || this.state.highlighted) ?
             "" : "_off";
-        return `/${this.props.move}${suffix}.png`;
+        return `/${this.move}${suffix}.png`;
     };
 
     mouseEnter = () => this.setState({highlighted: true});

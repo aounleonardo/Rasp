@@ -59,7 +59,7 @@ const challenges = {
             "DefenseMove": 0,
             "Nonce": 0,
             "HiddenMove": "a",
-            "Stage": Stages.ATTACK,
+            "Stage": Stages.REVEAL,
         },
     },
     "Proposed": ["0000", "0001"],
