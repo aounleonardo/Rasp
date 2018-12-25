@@ -64,6 +64,7 @@ export default class Rasp extends Component {
                             />
                         )}
                         challenges={this.state.challenges}
+                        gossiper={this.endPoint}
                     />
                 </div>
             </div>

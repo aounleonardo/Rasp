@@ -454,19 +454,21 @@ func sendMatchResponse(
 ) message.ValidationResponse {
 	decoder := json.NewDecoder(r.Body)
 	var res struct {
-		Identifier chain.Uid
+		Identifier string
 		Move       chain.Move
 	}
 	err := decoder.Decode(&res)
 	if err != nil {
 		return message.ValidationResponse{Success: false, Error: err.Error()}
 	}
+
+	uid, err := strconv.ParseInt(res.Identifier, 10, 64)
 	response := &message.ValidationResponse{}
 	contactGossiper(
 		conn,
 		&message.ClientPacket{
 			AcceptMatch: &chain.AcceptMatchRequest{
-				Identifier: res.Identifier,
+				Identifier: chain.Uid(uid),
 				Move:       res.Move,
 			},
 		},

@@ -1,6 +1,8 @@
 import React, {Component} from 'react';
 import colors from "./colors";
 import Challenge from "./Challenge";
+import {moveIndices} from "../utils/rasp";
+import {raspRequest} from "../utils/requests";
 
 const challengeStates = [
     "Proposed",
@@ -31,7 +33,8 @@ export default class State extends Component {
                                 this.props.challenges[challengeState],
                                 this.props.challenges.Matches,
                             )}
-                            clickCallback={() => {
+                            acceptCallback={(id, move) => {
+                                this.acceptMatch(id, move).finally()
                             }}
                         />
                     ))}
@@ -46,10 +49,25 @@ export default class State extends Component {
             challenges[challenge] = matches[challenge];
         }
         return challenges;
+    };
+
+    acceptMatch = async (id, move) => {
+        const payload = {
+            Identifier: id,
+            Move: moveIndices[move],
+        };
+        await raspRequest(
+            this.props.gossiper,
+            'accept-match/',
+            payload,
+            (res) => {
+                console.log({acceptMatch: res})
+            },
+        );
     }
 }
 
-const Set = ({name, challenges}) => {
+const Set = ({name, challenges, acceptCallback}) => {
     return (
         <div>
             <div style={styles.setName}>
@@ -60,8 +78,10 @@ const Set = ({name, challenges}) => {
                     <Challenge
                         key={`${name}:${id}`}
                         type={name}
+                        identifier={id}
                         challenge={challenges[id]}
                         primaryColor={index % 2 === 0}
+                        onAccept={acceptCallback}
                     />
                 )
             )}

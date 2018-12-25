@@ -196,7 +196,10 @@ class Challenge extends Component {
                     move={move}
                     size={50}
                     selected={false}
-                    onClick={() => this.setState({done: done.ACCEPTED})}
+                    onClick={() => this.props.onAccept(
+                        this.props.identifier,
+                        move,
+                    )}
                 />
             ))}
         </div>
