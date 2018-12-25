@@ -8,8 +8,8 @@ class App extends Component {
         return (
             <Router>
                 <div style={{height: '100%'}}>
-                    <Route path={"/"} component={Rasp}/>
-                    <Route path={"/:gossiperPort"} component={Rasp}/>
+                    {/*<Route path={"/"} component={Rasp}/>*/}
+                    <Route path={"/:gossiperPort?"} component={Rasp}/>
                 </div>
             </Router>
         );
