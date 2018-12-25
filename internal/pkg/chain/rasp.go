@@ -197,10 +197,15 @@ func CreateMatch(
 	raspState.matches[uid] = newMatch
 	raspState.proposed[uid] = struct{}{}
 	raspState.Unlock()
+
+	defenderLabel := "OPEN"
+	if newMatch.Defender != nil {
+		defenderLabel = *newMatch.Defender
+	}
 	fmt.Printf(
 		"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %d, Attack Move %d\n",
 		newMatch.Attacker,
-		*newMatch.Defender,
+		defenderLabel,
 		newMatch.Bet,
 		newMatch.Identifier,
 		newMatch.AttackMove,

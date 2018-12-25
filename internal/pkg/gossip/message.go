@@ -107,7 +107,7 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 	)
 	messageOrdering.Unlock()
 
-	if rumor.RaspRequest != nil {
+	if rumor.RaspRequest != nil && rumor.Origin != gossiper.Name {
 		chain.ReceiveRaspRequest(*rumor.RaspRequest)
 	}
 }
