@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import Arena from "./Arena";
 import State from "./State";
 import {raspRequest} from "../utils/requests";
-import {Stages} from "../utils/rasp";
+import Move from "./Move";
 
 export default class Rasp extends Component {
     constructor(props) {
@@ -52,7 +52,17 @@ export default class Rasp extends Component {
                 <div style={styles.state}>
                     <State
                         name={this.state.name}
-                        balance={this.state.players[this.state.name]}
+                        balance={this.state.players[this.state.name] ||
+                        (
+                            <Move
+                                key={"balance"}
+                                move={null}
+                                size={25}
+                                selected={true}
+                                onClick={() => {
+                                }}
+                            />
+                        )}
                         challenges={this.state.challenges}
                     />
                 </div>
@@ -84,7 +94,7 @@ export default class Rasp extends Component {
             'players/',
             null,
             (players) => {
-                if (players != null && "Players" in players) {
+                if (players && players.Players) {
                     this.setState({players: players.Players});
                 }
             },
