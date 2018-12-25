@@ -4,7 +4,7 @@ import Opponent from "./Opponent";
 import colors from "./colors";
 import "./style.css"
 import {raspRequest} from "../utils/requests";
-import {moves} from "../utils/rasp";
+import {moves, moveIndices} from "../utils/rasp";
 
 const initialState = {
     selectedMove: "none",
@@ -137,16 +137,14 @@ export default class Arena extends Component {
             Destination: (this.state.selectedOpponent === "open") ?
                 null : this.state.selectedOpponent,
             Bet: this.getBet(),
-            Move: this.state.selectedMove,
+            Move: moveIndices[this.state.selectedMove],
         };
-        console.log({createMatch: payload});
         await raspRequest(
             this.props.gossiper,
             'create-match/',
             payload,
             (res) => {
-                console.log(res);
-            }
+            },
         );
         this.resetState();
     };

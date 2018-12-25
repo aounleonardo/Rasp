@@ -10,6 +10,12 @@ export const Moves = {
     SCISSORS: 2,
 };
 
+export const moveIndices = {
+    "rock": 0,
+    "paper": 1,
+    "scissors": 2,
+};
+
 export const stages = {
     0: "spawn",
     1: "attack",

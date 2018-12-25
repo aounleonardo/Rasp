@@ -1,6 +1,12 @@
 export async function raspRequest(endpoint, request, payload, callback) {
-        fetch(endpoint+ request, payload)
-            .then(res => res.json())
-            .then(parsed => callback(parsed))
-            .catch(err => console.log({err: err}))
+    const shipment = (payload) ?
+        {
+            method: 'post',
+            body: JSON.stringify(payload),
+        } :
+        null;
+    fetch(endpoint + request, shipment)
+        .then(res => res.json())
+        .then(parsed => callback(parsed))
+        .catch(err => console.log({err: err}))
 }

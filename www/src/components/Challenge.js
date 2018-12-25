@@ -93,7 +93,16 @@ class Challenge extends Component {
                 </div>
                 <div style={styles.infoContainer}>
                     <div style={styles.info}>
-                        {Defender}
+                        {Defender || (
+                            <Move
+                                key={"defender"}
+                                move={null}
+                                size={25}
+                                selected={true}
+                                onClick={() => {
+                                }}
+                            />
+                        )}
                     </div>
                     <Move
                         key={"defenderMove"}
@@ -222,7 +231,7 @@ const styles = {
         display: 'flex',
         flex: 1,
         alignItems: 'center',
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: 'bold',
         fontFamily: "Helvetica",
         color: colors.blue,

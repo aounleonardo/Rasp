@@ -63,10 +63,10 @@ const challenges = {
         },
     },
     "Proposed": ["0000", "0001"],
-    "Pending" : ["1000"],
-    "Accepted" : ["2000"],
-    "Ongoing" : ["3333"],
-    "Finished" : [],
+    "Pending": ["1000"],
+    "Accepted": ["2000"],
+    "Ongoing": ["3333"],
+    "Finished": [],
 };
 
 export default class Rasp extends Component {
@@ -77,9 +77,18 @@ export default class Rasp extends Component {
             name: "",
             loading: true,
             players: {},
+            challenges: {
+                Matches: {},
+                Proposed: [],
+                Pending: [],
+                Accepted: [],
+                Ongoing: [],
+                Finished: [],
+            },
         };
         this.getGossiperName().finally();
-        setInterval(this.getPlayers(), 1000);
+        setInterval(this.getPlayers, 1000);
+        setInterval(this.getChallenges, 1000);
     }
 
     static renderLoading() {
@@ -109,7 +118,7 @@ export default class Rasp extends Component {
                     <State
                         name={this.state.name}
                         balance={this.state.players[this.state.name]}
-                        challenges={challenges}
+                        challenges={this.state.challenges}
                     />
                 </div>
             </div>
@@ -147,6 +156,28 @@ export default class Rasp extends Component {
         )
             .finally();
     };
+
+    getChallenges = () => {
+        raspRequest(
+            this.endPoint,
+            'state/',
+            null,
+            (challenges) => {
+                if (challenges) {
+                    this.setState({
+                        challenges: {
+                            Matches: challenges.Matches || {},
+                            Proposed: Object.keys(challenges.Proposed || {}),
+                            Pending: Object.keys(challenges.Pending || {}),
+                            Accepted: Object.keys(challenges.Accepted || {}),
+                            Ongoing: Object.keys(challenges.Ongoing || {}),
+                            Finished: Object.keys(challenges.Finished || {}),
+                        }
+                    })
+                }
+            }
+        )
+    }
 }
 
 const styles = {

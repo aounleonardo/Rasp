@@ -58,7 +58,7 @@ const Set = ({name, challenges}) => {
             {Object.keys(challenges).map((id, index) =>
                 (
                     <Challenge
-                        key={`${name}:${index}`}
+                        key={`${name}:${id}`}
                         type={name}
                         challenge={challenges[id]}
                         primaryColor={index % 2 === 0}
