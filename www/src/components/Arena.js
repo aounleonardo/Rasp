@@ -4,8 +4,8 @@ import Opponent from "./Opponent";
 import colors from "./colors";
 import "./style.css"
 import {raspRequest} from "../utils/requests";
+import {moves} from "../utils/rasp";
 
-const moves = ["rock", "paper", "scissors"];
 const initialState = {
     selectedMove: "none",
     selectedOpponent: "none",
@@ -39,7 +39,7 @@ export default class Arena extends Component {
                     </button>
                 </div>
                 <div style={styles.movesContainer}>
-                    {moves.map((move) => (
+                    {Object.values(moves).map((move) => (
                         <Move
                             key={move}
                             move={move}

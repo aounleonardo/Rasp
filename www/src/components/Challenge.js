@@ -1,37 +1,59 @@
 import React, {Component} from 'react';
 import colors from "./colors";
 import {moves, stages, Stages} from "../utils/rasp";
+import Move from "./Move";
+
+const done = {
+    ACCEPTED: "ACCEPTED",
+    CANCELLED: "CANCELLED",
+};
 
 class Challenge extends Component {
     constructor(props) {
         super(props);
         this.state = {
             highlighted: false,
+            clicked: false,
+            done: false,
         }
     }
 
+    renderDone = () =>
+        <div style={styles.action(styles.clicked)}>{this.state.done}</div>;
+
+
+    renderClicked = () => {
+        switch (this.props.type) {
+            case "Proposed":
+                return <this.Cancelled/>;
+            case "Pending":
+                return <this.Accepted/>;
+            case "Ongoing":
+                if (this.props.challenge.Stage === Stages.ATTACK) {
+                    return <this.Cancelled/>;
+                }
+                break;
+            default:
+                break;
+        }
+    };
+
     renderContent = () => {
+        if (this.state.done) {
+            return this.renderDone();
+        }
+        if (this.state.clicked) {
+            return this.renderClicked()
+        }
         if (this.state.highlighted) {
             switch (this.props.type) {
                 case "Proposed":
-                    return (
-                        <div style={styles.action(styles.cancel)}>
-                            CANCEL
-                        </div>
-                    );
+                    return <this.Cancel/>;
                 case "Pending":
-                    return (
-                        <div style={styles.action(styles.accept)}>
-                            ACCEPT
-                        </div>
-                    );
+                    return <this.Accept/>;
                 case "Ongoing":
                     if (this.props.challenge.Stage === Stages.ATTACK) {
-                        return (
-                            <div style={styles.action(styles.cancel)}>
-                                CANCEL
-                            </div>
-                        );
+                        return <this.Cancel/>;
                     }
                     break;
                 default:
@@ -81,7 +103,6 @@ class Challenge extends Component {
                     </div>
                 </div>
             </React.Fragment>
-
         );
     };
 
@@ -101,6 +122,80 @@ class Challenge extends Component {
     onMouseEnter = () => this.setState({highlighted: true});
     onMouseLeave = () => this.setState({highlighted: false});
 
+    actionClicked = () => this.setState({clicked: true});
+
+    Cancel = () => (
+        <div
+            style={styles.action(styles.cancel)}
+            onClick={this.actionClicked}
+        >
+            CANCEL
+        </div>
+    );
+
+    Accept = () => (
+        <div
+            style={styles.action(styles.accept)}
+            onClick={this.actionClicked}
+        >
+            ACCEPT
+        </div>
+    );
+
+    Clicked = (Buttons) => () => (
+        <div style={styles.action(styles.clicked)}>
+            <div style={{display: 'flex', flex: 1}}/>
+            <Buttons/>
+            <div style={{display: 'flex', flex: 1}}/>
+        </div>
+    );
+
+    Cancelled = this.Clicked(() => (
+        <div style={styles.buttons}>
+            <Move
+                key={"cancel-no"}
+                move={"no"}
+                size={50}
+                selected={false}
+                onClick={this.resetState}
+            />
+            <Move
+                key={"cancel-yes"}
+                move={"yes"}
+                size={50}
+                selected={false}
+                onClick={() => this.setState({done: done.CANCELLED})}
+            />
+        </div>
+    ));
+
+    Accepted = this.Clicked(() => (
+        <div style={styles.buttons}>
+            <Move
+                key={"accept-no"}
+                move={"no"}
+                size={50}
+                selected={false}
+                onClick={this.resetState}
+            />
+            <div style={{display: 'flex', flex: .5}}/>
+            {Object.values(moves).map((move) => (
+                <Move
+                    key={`challenge-${move}`}
+                    move={move}
+                    size={50}
+                    selected={false}
+                    onClick={() => this.setState({done: done.ACCEPTED})}
+                />
+            ))}
+        </div>
+    ));
+
+    resetState = () => this.setState({
+        highlighted: false,
+        clicked: false,
+        done: false,
+    });
 }
 
 export default Challenge;
@@ -188,5 +283,20 @@ const styles = {
     },
     cancel: {
         backgroundColor: 'black',
+    },
+    clicked: {
+        backgroundColor: colors.grey,
+    },
+    buttons: {
+        display: 'flex',
+        flex: 4,
+        height: '100%',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+    },
+    buttonContainer: {
+        width: 25,
+        height: 25,
+        backgroundColor: 'red',
     }
 };

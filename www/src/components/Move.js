@@ -4,6 +4,7 @@ import React, {Component} from 'react';
 class Move extends Component {
     constructor(props) {
         super(props);
+        this.size = (this.props.size) ? this.props.size : 256;
         this.state = {
             highlighted: false,
         };
@@ -13,12 +14,12 @@ class Move extends Component {
         return (
             <div style={styles.moveBox}>
                 <div
-                    style={styles.imageBox}
+                    style={styles.imageBox(this.size)}
                     onMouseEnter={this.mouseEnter}
                     onMouseLeave={this.mouseLeave}
                     onClick={this.toggleSelected}
                 >
-                    <img src={this.getImageSource()} alt={this.props.move}/>
+                    <img style={{width: '100%'}} src={this.getImageSource()} alt={this.props.move}/>
                 </div>
             </div>
         );
@@ -44,9 +45,8 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'center',
     },
-    imageBox: {
-        width: 256,
-        height: 256,
+    imageBox: (size) => ({
+        width: `${size}px`,
         cursor: 'pointer',
-    },
+    }),
 };
