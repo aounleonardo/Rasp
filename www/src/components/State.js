@@ -93,6 +93,7 @@ const styles = {
     state: {
         width: '100%',
         backgroundColor: colors.beige,
+        position: 'relative',
     },
     playerContainer: {
         display: 'flex',
@@ -109,7 +110,11 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'center',
     },
-    scrollContainer: {},
+    scrollContainer: {
+        overflowY: 'auto',
+        maxHeight: '90%',
+        width: '100%'
+    },
     setName: {
         display: 'flex',
         flex: 1,
