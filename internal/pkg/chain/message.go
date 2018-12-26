@@ -85,6 +85,11 @@ func ReceiveRaspRequest(request RaspRequest) {
 		return
 	}
 	raspState.Lock()
+	defer raspState.Unlock()
+	if _, proposedIt := raspState.proposed[request.Identifier]; proposedIt {
+		fmt.Println("error received proposed request", request)
+		return
+	}
 	raspState.matches[request.Identifier] = &Match{
 		Identifier: request.Identifier,
 		Attacker:   request.Origin,
@@ -92,7 +97,6 @@ func ReceiveRaspRequest(request RaspRequest) {
 		Bet:        request.Bet,
 	}
 	raspState.pending[request.Identifier] = struct{}{}
-	raspState.Unlock()
 }
 
 func ReceiveRaspResponse(

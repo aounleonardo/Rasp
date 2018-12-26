@@ -215,7 +215,8 @@ func CreateMatch(
 			newMatch.Bet,
 			newMatch.Identifier,
 			*newMatch.AttackMove,
-		)
+			)
+
 	}
 
 	signature, err := SignRequest(gossiperKey, uid, bet)

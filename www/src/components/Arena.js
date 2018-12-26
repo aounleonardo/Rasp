@@ -3,18 +3,20 @@ import Move from "./Move";
 import Opponent from "./Opponent";
 import colors from "./colors";
 import "./style.css"
+import {raspRequest} from "../utils/requests";
+import {moves, moveIndices} from "../utils/rasp";
 
-const moves = ["rock", "paper", "scissors"];
+const initialState = {
+    selectedMove: "none",
+    selectedOpponent: "none",
+    bet: 0,
+    betHighlighted: false,
+};
 
 export default class Arena extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-            selectedMove: "none",
-            selectedOpponent: "none",
-            bet: 0,
-            betHighlighted: false,
-        }
+        this.state = {...{}, ...initialState};
     }
 
     render() {
@@ -24,10 +26,7 @@ export default class Arena extends Component {
                 <div style={styles.buttonContainer}>
                     <button
                         style={styles.button(state === "send")}
-                        onClick={() => console.log({
-                            isBetOff: this.isBetOff(),
-                            getBet: this.getBet(),
-                        })}
+                        onClick={this.buttonPressed}
                     >
                         {
                             {
@@ -40,7 +39,7 @@ export default class Arena extends Component {
                     </button>
                 </div>
                 <div style={styles.movesContainer}>
-                    {moves.map((move) => (
+                    {Object.values(moves).map((move) => (
                         <Move
                             key={move}
                             move={move}
@@ -54,7 +53,7 @@ export default class Arena extends Component {
                 </div>
                 <div style={styles.betContainer}>
                     <div style={styles.betLabel}>
-                        Bet:
+                        BET
                     </div>
                     <div
                         style={styles.sliderContainer}
@@ -78,12 +77,18 @@ export default class Arena extends Component {
         )
     }
 
+    getOpponents = () => {
+        return Object.keys(this.props.players)
+            .filter((name) => name !== this.props.playerName)
+    };
+
     moveSelected = (move) => this.setState({selectedMove: move});
     opponentSelected =
         (opponent) => this.setState({selectedOpponent: opponent});
 
     listOpponents = () => {
-        if (this.props.opponents.length < 1) {
+        let opponents = this.getOpponents();
+        if (opponents.length < 1) {
             return (
                 <div style={styles.noFriends}>
                     Sorry you have no friends to play with
@@ -91,9 +96,9 @@ export default class Arena extends Component {
                 </div>
             )
         }
-        const opponents = (this.props.opponents.length === 1) ?
-            this.props.opponents :
-            ["open", ...this.props.opponents];
+        opponents = (opponents.length === 1) ?
+            opponents :
+            ["open", ...opponents];
         return opponents.map(
             (opponent) => (
                 <Opponent
@@ -123,6 +128,27 @@ export default class Arena extends Component {
         this.setState({betHighlighted: false});
     };
 
+    buttonPressed = async () => {
+        if (this.getButtonState() !== "send") {
+            await raspRequest(this.props.gossiper, 'identifier/', null, (res) => console.log(res));
+            return;
+        }
+        const payload = {
+            Destination: (this.state.selectedOpponent === "open") ?
+                null : this.state.selectedOpponent,
+            Bet: this.getBet(),
+            Move: moveIndices[this.state.selectedMove],
+        };
+        await raspRequest(
+            this.props.gossiper,
+            'create-match/',
+            payload,
+            (res) => {
+            },
+        );
+        this.resetState();
+    };
+
     getButtonState = () => {
         if (this.state.selectedMove === "none") {
             return "move";
@@ -134,7 +160,11 @@ export default class Arena extends Component {
             return "bet";
         }
         return "send";
-    }
+    };
+
+    resetState = () => {
+        this.setState({...{}, ...initialState});
+    };
 }
 
 const styles = {
@@ -223,5 +253,6 @@ const styles = {
         backgroundColor: colors.blue,
         borderRadius: 12,
         cursor: 'pointer',
+        width: '100%',
     },
 };
