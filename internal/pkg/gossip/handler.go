@@ -278,7 +278,6 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 	success := true
 	var explanation error
 	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
-
 	raspRequest, err := chain.CreateMatch(
 		request.Destination,
 		request.Bet,

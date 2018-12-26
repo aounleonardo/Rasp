@@ -178,6 +178,7 @@ func CreateMatch(
 	nonce := createNonce()
 	hiddenMove, err := SignHiddenMove(gossiperKey, uid, move, nonce)
 	if err != nil {
+		fmt.Println("Error while signing hidden move", err.Error())
 		return
 	}
 
@@ -197,14 +198,25 @@ func CreateMatch(
 	raspState.matches[uid] = newMatch
 	raspState.proposed[uid] = struct{}{}
 	raspState.Unlock()
-	fmt.Printf(
-		"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %d, Attack Move %d\n",
-		newMatch.Attacker,
-		*newMatch.Defender,
-		newMatch.Bet,
-		newMatch.Identifier,
-		newMatch.AttackMove,
+	if newMatch.Defender == nil {
+		fmt.Printf(
+			"CREATE OPEN MATCH: Attacker %s, Bet %d, UID %d, AttackMove %d\n",
+			newMatch.Attacker,
+			newMatch.Bet,
+			newMatch.Identifier,
+			*newMatch.AttackMove,
+			)
+
+	} else {
+		fmt.Printf(
+			"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %d, Attack Move %d\n",
+			newMatch.Attacker,
+			*newMatch.Defender,
+			newMatch.Bet,
+			newMatch.Identifier,
+			*newMatch.AttackMove,
 		)
+	}
 
 	signature, err := SignRequest(gossiperKey, uid, bet)
 	if err != nil {
@@ -256,14 +268,15 @@ func AcceptMatch(
 		return
 	}
 
+	match.Defender = &gossiper
 	match.DefenceMove = &move
 	delete(raspState.pending, id)
 	raspState.accepted[id] = struct{}{}
 	fmt.Printf(
-		"ACCEPTING MATCH: Attacker %s," +
-			" Defender %s," +
-			" Bet %d," +
-			" UID %d," +
+		"ACCEPTING MATCH: Attacker %s,"+
+			" Defender %s,"+
+			" Bet %d,"+
+			" UID %d,"+
 			" Defense Move %d\n",
 		match.Attacker,
 		*match.Defender,
@@ -284,7 +297,7 @@ func AcceptMatch(
 func GetPlayers(players *PlayersResponse) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
-	players.Players = make(map[string] int64)
+	players.Players = make(map[string]int64)
 	for s, p := range blockchain.heads[blockchain.longest].players {
 		players.Players[s] = p.Balance
 	}
@@ -296,11 +309,11 @@ func GetStates(states *StateResponse) {
 	raspState.RLock()
 	defer raspState.RUnlock()
 
-	states.Matches  = make(map[Uid]*Match)
+	states.Matches = make(map[Uid]*Match)
 	states.Proposed = make(map[Uid]struct{})
-	states.Pending  = make(map[Uid]struct{})
+	states.Pending = make(map[Uid]struct{})
 	states.Accepted = make(map[Uid]struct{})
-	states.Ongoing  = make(map[Uid]struct{})
+	states.Ongoing = make(map[Uid]struct{})
 	states.Finished = make(map[Uid]struct{})
 
 	states.Matches = raspState.matches

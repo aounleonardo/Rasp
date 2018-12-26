@@ -57,7 +57,7 @@ func getPlayerUnsafe(name string) (copy *Player, exists bool) {
 }
 
 func (player Player) hasEnoughMoney(bet Bet) bool {
-	return player.Balance > int64(bet)
+	return player.Balance >= int64(bet)
 }
 
 func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {

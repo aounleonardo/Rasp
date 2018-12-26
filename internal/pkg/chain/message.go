@@ -137,7 +137,7 @@ func ReceiveRaspResponse(
 		))
 		return
 	}
-	*match.Defender = response.Origin
+	match.Defender = &response.Origin
 	delete(raspState.proposed, response.Identifier)
 	raspState.ongoing[response.Identifier] = struct{}{}
 
@@ -191,6 +191,7 @@ func createReveal(
 	key *rsa.PrivateKey,
 	defence GameAction,
 ) (action GameAction, err error) {
+
 	signature, err := SignReveal(
 		key,
 		match.Identifier,
@@ -323,7 +324,7 @@ func ReceiveRaspDefence(defence RaspDefence) {
 		return
 	}
 	raspState.RLock()
-	_, ok = raspState.accepted[defence.Identifier]
+	_, ok = raspState.ongoing[defence.Identifier]
 	raspState.RUnlock()
 	if !ok {
 		fmt.Printf("Unable to find the corresponding match in Ongoing %d\n",
@@ -335,6 +336,8 @@ func ReceiveRaspDefence(defence RaspDefence) {
 	match := raspState.matches[defence.Identifier]
 	attackMove := match.AttackMove
 	nonce := match.Nonce
+
+	match.DefenceMove = &defence.Move
 
 	revealSign, err := SignReveal(
 		gossiperKey,
