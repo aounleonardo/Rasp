@@ -70,6 +70,17 @@ type StateResponse struct {
 }
 
 func ReceiveRaspRequest(request RaspRequest) {
+	destination := "open"
+	if request.Destination != nil {
+		destination = *request.Destination
+	}
+	fmt.Printf(
+		"RECEIVED RASP REQUEST: Attacker %s, Defender %s, Bet %d, UID %d\n",
+		request.Origin,
+		destination,
+		request.Bet,
+		request.Identifier,
+	)
 	opponent, exists := getPlayer(request.Origin)
 	if !exists {
 		return
@@ -102,6 +113,12 @@ func ReceiveRaspRequest(request RaspRequest) {
 func ReceiveRaspResponse(
 	response RaspResponse,
 ) (attack *RaspAttack, err error) {
+	fmt.Printf(
+		"RECEIVED RASP RESPONSE: Potential Defender %s, Attacker %s, UID %d\n",
+		response.Origin,
+		response.Destination,
+		response.Identifier,
+	)
 	opponent, exists := getPlayer(response.Origin)
 	if !exists {
 		err = errors.New(
@@ -239,6 +256,13 @@ func createCancel(
 }
 
 func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
+	fmt.Printf(
+		"RECEIVED RASP ATTACK: Attacker %s, Defender %s, Bet %d, UID %d\n",
+		attack.Origin,
+		attack.Destination,
+		attack.Bet,
+		attack.Identifier,
+	)
 	opponent, opponentExists := getPlayer(attack.Origin)
 	if !opponentExists {
 		err = errors.New(
@@ -312,6 +336,12 @@ func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
 }
 
 func ReceiveRaspDefence(defence RaspDefence) {
+	fmt.Printf("RECEIVED RASP DEFENCE: Attacker %s, Defender %s, Move %d, UID %d\n",
+		defence.Destination,
+		defence.Origin,
+		defence.Move,
+		defence.Identifier,
+	)
 	defender, defenderExists := getPlayer(defence.Origin)
 	if !defenderExists {
 		fmt.Printf("RaspDefence error: %s does not exist\n", defence.Origin)

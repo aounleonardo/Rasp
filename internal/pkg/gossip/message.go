@@ -146,13 +146,6 @@ func (gossiper *Gossiper) receivePrivateMessage(
 		gossiper.relayPrivateMessage(&relayed)
 		return
 	}
-
-	fmt.Printf(
-		"PRIVATE origin %s hop-limit %d contents %s\n",
-		private.Origin,
-		private.HopLimit,
-		private.Text,
-	)
 	gossiper.savePrivateMessage(private)
 
 	if private.Rasp != nil {
@@ -183,12 +176,6 @@ func (gossiper *Gossiper) receiveRaspMessage(
 			Attack: attack,
 		}
 	case rasp.Attack != nil:
-		fmt.Printf(
-			"RECEIVED RASP ATTACK: Attacker %s, Defender %s, Bet %d, UID, %d\n",
-			rasp.Attack.Origin,
-			rasp.Attack.Destination,
-			rasp.Attack.Bet,
-			rasp.Attack.Identifier)
 		defence, err := chain.ReceiveRaspAttack(*rasp.Attack)
 		if err != nil {
 			fmt.Println("error receiving attack", *rasp.Attack, err.Error())
@@ -198,11 +185,6 @@ func (gossiper *Gossiper) receiveRaspMessage(
 			Defence: defence,
 		}
 	case rasp.Defence != nil:
-		fmt.Printf("RECEIVED RASP DEFENCE: Attacker %s, Defender %s, Move %d, UID %d\n",
-			rasp.Defence.Destination,
-			rasp.Defence.Origin,
-			rasp.Defence.Move,
-			rasp.Defence.Identifier)
 		chain.ReceiveRaspDefence(*rasp.Defence)
 	}
 	if raspToSend != nil {

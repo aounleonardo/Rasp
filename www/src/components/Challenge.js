@@ -64,7 +64,7 @@ class Challenge extends Component {
             Attacker,
             Defender,
             AttackMove,
-            DefenseMove,
+            DefenceMove,
             Bet,
             Stage,
         } = this.props.challenge;
@@ -75,7 +75,7 @@ class Challenge extends Component {
                         {Attacker}
                     </div>
                     <Move
-                        key={"attackerMove"}
+                        key={`attackerMove-${Stage}`}
                         move={moves[AttackMove]}
                         size={25}
                         selected={true}
@@ -105,8 +105,8 @@ class Challenge extends Component {
                         )}
                     </div>
                     <Move
-                        key={"defenderMove"}
-                        move={moves[DefenseMove]}
+                        key={`defenderMove-${Stage}`}
+                        move={moves[DefenceMove]}
                         size={25}
                         selected={true}
                         onClick={() => {
@@ -130,7 +130,11 @@ class Challenge extends Component {
         );
     }
 
-    onMouseEnter = () => this.setState({highlighted: true});
+    onMouseEnter = () => {
+        // TODO remove
+        console.log(this.props.challenge.Identifier)
+        this.setState({highlighted: true})
+    };
     onMouseLeave = () => this.setState({highlighted: false});
 
     actionClicked = () => this.setState({clicked: true});
