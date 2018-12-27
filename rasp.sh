@@ -21,7 +21,7 @@ trap cleanup SIGINT SIGTERM
 
 (cd www/; yarn start > ../R.out &)
 sleep 3
-open http://localhost:3000/8001
+#open http://localhost:3000/8001
 
 echo "Initialization done"
 

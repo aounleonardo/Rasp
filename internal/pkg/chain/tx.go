@@ -344,8 +344,8 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if err != nil || !ok {
 			return false
 		}
-		return true
 		defences[tx.Action.Identifier] = struct{}{}
+		return true
 	case Reveal:
 		if _, exists := reveals[tx.Action.Identifier]; exists {
 			return false
@@ -381,8 +381,8 @@ func (tx *TxPublish) canAddToLedgerUnsafe(
 		if err != nil || !ok {
 			return false
 		}
-		return true
 		reveals[tx.Action.Identifier] = struct{}{}
+		return true
 	case Cancel:
 		if _, exists := cancels[tx.Action.Identifier]; exists {
 			return false
