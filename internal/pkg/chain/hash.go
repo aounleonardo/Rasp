@@ -21,13 +21,13 @@ func (b *Block) Hash() (out [32]byte) {
 
 func (t *TxPublish) Hash() (out [32]byte) {
 	h := sha256.New()
-	binary.Write(h, binary.LittleEndian, uint64(t.Action.Identifier))
 	binary.Write(h, binary.LittleEndian, uint32(t.Action.Type))
+	h.Write([]byte(t.Action.Identifier))
 	h.Write([]byte(t.Action.Attacker))
 	h.Write([]byte(t.Action.Defender))
 	binary.Write(h, binary.LittleEndian, uint32(t.Action.Bet))
 	binary.Write(h, binary.LittleEndian, uint32(t.Action.Move))
-	binary.Write(h, binary.LittleEndian, uint64(t.Action.Nonce))
+	h.Write([]byte(t.Action.Nonce))
 	h.Write(t.Action.HiddenMove)
 	h.Write(t.Action.SignedSpecial)
 	copy(out[:], h.Sum(nil))

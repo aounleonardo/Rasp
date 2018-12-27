@@ -9,7 +9,7 @@ import (
 
 func TestSignRequest(t *testing.T) {
 
-	id := rand.Uint64()
+	id := createUID()
 	b := rand.Uint32()
 
 	private, public, err := GenerateKeys()
@@ -38,10 +38,10 @@ func TestSignRequest(t *testing.T) {
 
 func TestSignAttack(t *testing.T) {
 
-	id := rand.Uint64()
+	id := createUID()
 	b := rand.Uint32()
 	move := 0
-	nonce := rand.Uint64()
+	nonce := createNonce()
 
 	private, public, err := GenerateKeys()
 

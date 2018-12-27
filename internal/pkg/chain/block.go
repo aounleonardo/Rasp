@@ -64,10 +64,10 @@ func ReceiveBlock(block Block) {
 func (block *Block) canAddBlockToLedgerUnsafe(ledger ledger) bool {
 	var currentStage = Spawn
 	var tmpBalances = getBalancesUnsafe(ledger)
-	var attacks = make(map[uint64]struct{})
-	var defences = make(map[uint64]struct{})
-	var reveals = make(map[uint64]struct{})
-	var cancels = make(map[uint64]struct{})
+	var attacks = make(map[Uid]struct{})
+	var defences = make(map[Uid]struct{})
+	var reveals = make(map[Uid]struct{})
+	var cancels = make(map[Uid]struct{})
 	for _, tx := range block.Transactions {
 		if tx.Action.Type < currentStage {
 			return false
@@ -93,12 +93,12 @@ func (block *Block) canAddBlockToUpsertedHead(head [32]byte) bool {
 	if ledger, exists := blockchain.heads[head]; exists {
 		return block.canAddBlockToLedgerUnsafe(ledger)
 	}
-	var forkTxs = map[int]map[uint64]GameAction{
-		Spawn:   make(map[uint64]GameAction),
-		Attack:  make(map[uint64]GameAction),
-		Defence: make(map[uint64]GameAction),
-		Reveal:  make(map[uint64]GameAction),
-		Cancel:  make(map[uint64]GameAction),
+	var forkTxs = map[Stage]map[Uid]GameAction{
+		Spawn:   make(map[Uid]GameAction),
+		Attack:  make(map[Uid]GameAction),
+		Defence: make(map[Uid]GameAction),
+		Reveal:  make(map[Uid]GameAction),
+		Cancel:  make(map[Uid]GameAction),
 	}
 	newLedger := createForkLedgerUnsafe(forkTxs, head, 0)
 	blockchain.heads[head] = newLedger

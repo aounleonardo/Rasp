@@ -123,6 +123,7 @@ export default class Rasp extends Component {
                 }
             }
         )
+            .finally()
     }
 }
 

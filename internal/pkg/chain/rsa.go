@@ -22,19 +22,19 @@ type RequestSignature struct {
 }
 
 type ResponseSignature struct {
-	Identifier uint64
+	Identifier Uid
 }
 
 type AttackSignature struct {
 	Identifier Uid
-	Bet        uint32
+	Bet        Bet
 	Pad        uint32
 }
 
 type HiddenMoveSignature struct {
 	Identifier Uid
-	Move       int
-	Nonce      uint64
+	Move       Move
+	Nonce      Nonce
 }
 
 type DefenceSignature struct {
@@ -44,8 +44,8 @@ type DefenceSignature struct {
 
 type RevealSignature struct {
 	Identifier       Uid
-	Move             int
-	Nonce            uint64
+	Move             Move
+	Nonce            Nonce
 	DefenceSignature []byte
 }
 
@@ -158,8 +158,8 @@ func VerifyResponse(public *rsa.PublicKey, id Uid, sig []byte) (ok bool, err err
 func SignHiddenMove(
 	private *rsa.PrivateKey,
 	id Uid,
-	move int,
-	nonce uint64,
+	move Move,
+	nonce Nonce,
 ) (hiddenMove []byte, err error) {
 
 	signature := &HiddenMoveSignature{Identifier: id, Move: move, Nonce: nonce}
@@ -195,8 +195,8 @@ func SignAttack(
 func VerifyHiddenMove(
 	public *rsa.PublicKey,
 	id Uid,
-	move int,
-	nonce uint64,
+	move Move,
+	nonce Nonce,
 	signature []byte,
 ) (ok bool, err error) {
 
@@ -232,7 +232,7 @@ func VerifyAttack(
 	return
 }
 
-func SignDefence(private *rsa.PrivateKey, id Uid, move int) (sig []byte, err error) {
+func SignDefence(private *rsa.PrivateKey, id Uid, move Move) (sig []byte, err error) {
 
 	def := &DefenceSignature{id, move}
 
@@ -248,7 +248,7 @@ func SignDefence(private *rsa.PrivateKey, id Uid, move int) (sig []byte, err err
 
 }
 
-func VerifyDefence(public *rsa.PublicKey, id Uid, move int, sig []byte) (ok bool, err error) {
+func VerifyDefence(public *rsa.PublicKey, id Uid, move Move, sig []byte) (ok bool, err error) {
 
 	def := &DefenceSignature{id, move}
 
@@ -264,7 +264,7 @@ func VerifyDefence(public *rsa.PublicKey, id Uid, move int, sig []byte) (ok bool
 
 }
 
-func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64, defSign []byte) (sig []byte, err error) {
+func SignReveal(private *rsa.PrivateKey, id Uid, move Move, nonce Nonce, defSign []byte) (sig []byte, err error) {
 
 	rev := &RevealSignature{id, move, nonce, defSign}
 
@@ -280,7 +280,7 @@ func SignReveal(private *rsa.PrivateKey, id Uid, move int, nonce uint64, defSign
 
 }
 
-func VerifyReveal(public *rsa.PublicKey, id Uid, move int, nonce uint64, defsig []byte, sig []byte) (ok bool, err error) {
+func VerifyReveal(public *rsa.PublicKey, id Uid, move Move, nonce Nonce, defsig []byte, sig []byte) (ok bool, err error) {
 
 	rev := &RevealSignature{id, move, nonce, defsig}
 

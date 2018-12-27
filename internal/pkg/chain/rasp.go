@@ -39,8 +39,8 @@ const (
 	Defender = iota
 )
 
-type Uid = uint64
-type Nonce = uint64
+type Uid = string
+type Nonce = string
 type Bet = uint32
 
 type Player struct {
@@ -146,11 +146,11 @@ func publishKey(gossiper string, public *rsa.PublicKey) {
 }
 
 func createUID() Uid {
-	return rand.Uint64()
+	return strconv.FormatUint(rand.Uint64(), 10)
 }
 
 func createNonce() Nonce {
-	return rand.Uint64()
+	return strconv.FormatUint(rand.Uint64(), 10)
 }
 
 func CreateMatch(
@@ -201,7 +201,7 @@ func CreateMatch(
 	raspState.Unlock()
 	if newMatch.Defender == nil {
 		fmt.Printf(
-			"CREATE OPEN MATCH: Attacker %s, Bet %d, UID %d, AttackMove %d\n",
+			"CREATE OPEN MATCH: Attacker %s, Bet %d, UID %s, AttackMove %d\n",
 			newMatch.Attacker,
 			newMatch.Bet,
 			newMatch.Identifier,
@@ -210,7 +210,7 @@ func CreateMatch(
 
 	} else {
 		fmt.Printf(
-			"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %d, Attack Move %d\n",
+			"CREATE MATCH: Attacker %s, Defender %s, Bet %d, UID %s, Attack Move %d\n",
 			newMatch.Attacker,
 			*newMatch.Defender,
 			newMatch.Bet,
@@ -243,7 +243,7 @@ func AcceptMatch(
 	gossiper string,
 ) (response *RaspResponse, err error) {
 	if !isMatchPending(id) {
-		err = errors.New(fmt.Sprintf("match %d is not pending", id))
+		err = errors.New(fmt.Sprintf("match %s is not pending", id))
 		return
 	}
 	raspState.Lock()
@@ -278,7 +278,7 @@ func AcceptMatch(
 		"ACCEPTING MATCH: Attacker %s,"+
 			" Defender %s,"+
 			" Bet %d,"+
-			" UID %d,"+
+			" UID %s,"+
 			" Defense Move %d\n",
 		match.Attacker,
 		*match.Defender,
@@ -318,34 +318,18 @@ func GetStates(states *StateResponse) {
 	states.Finished = copyStatesUnsafe(raspState.finished)
 }
 
-func UidToString(uid Uid) string {
-	return strconv.FormatInt(int64(uid), 10)
-}
-
-func StringToUid(s string) (Uid, error) {
-	uid, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return 0, errors.New(fmt.Sprintf(
-			"error reading string %s into uid: %s",
-			s,
-			err.Error(),
-		))
-	}
-	return Uid(uid), nil
-}
-
-func copyMatchesUnsafe() map[string]*Match {
-	copy := make(map[string]*Match)
+func copyMatchesUnsafe() map[Uid]*Match {
+	copy := make(map[Uid]*Match)
 	for uid, match := range raspState.matches {
-		copy[UidToString(uid)] = match
+		copy[uid] = match
 	}
 	return copy
 }
 
-func copyStatesUnsafe(state map[Uid]struct{}) map[string]struct{} {
+func copyStatesUnsafe(state map[Uid]struct{}) map[Uid]struct{} {
 	copy := make(map[string]struct{})
 	for uid := range state {
-		copy[UidToString(uid)] = struct{}{}
+		copy[uid] = struct{}{}
 	}
 	return copy
 }
