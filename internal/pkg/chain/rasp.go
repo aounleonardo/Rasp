@@ -262,7 +262,7 @@ func AcceptMatch(
 	if !player.hasEnoughMoney(match.Bet) ||
 		!opponent.hasEnoughMoney(match.Bet) {
 		err = errors.New(fmt.Sprintf(
-			"%s and %s do not have enough money in the current ledger",
+			"%s or %s do not have enough money in the current ledger",
 			gossiper,
 			match.Attacker,
 		))
