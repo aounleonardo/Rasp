@@ -78,7 +78,6 @@ func getNewDefences(attacks []TxPublish) []TxPublish {
 		if isValidDefence(defence, attacks) {
 			validDefences = append(validDefences, defence)
 			if match, exists := getState(defence.Action.Identifier); exists {
-				fmt.Println(match)
 				if match.AttackMove != nil{
 					if action, err :=
 						createReveal(match, gossiperKey, defence.Action); err != nil {

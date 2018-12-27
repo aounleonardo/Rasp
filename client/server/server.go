@@ -462,13 +462,17 @@ func sendMatchResponse(
 		return message.ValidationResponse{Success: false, Error: err.Error()}
 	}
 
-	uid, err := strconv.ParseInt(res.Identifier, 10, 64)
+	uid, err := chain.StringToUid(res.Identifier)
+	if err != nil {
+		fmt.Println("error sending match response", err.Error())
+		return message.ValidationResponse{Success: false, Error: err.Error()}
+	}
 	response := &message.ValidationResponse{}
 	contactGossiper(
 		conn,
 		&message.ClientPacket{
 			AcceptMatch: &chain.AcceptMatchRequest{
-				Identifier: chain.Uid(uid),
+				Identifier: uid,
 				Move:       res.Move,
 			},
 		},

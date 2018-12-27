@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+	"strconv"
 )
 
 const attackerPatience = 3 * time.Second
@@ -306,24 +307,47 @@ func GetPlayers(players *PlayersResponse) {
 }
 
 func GetStates(states *StateResponse) {
-
 	raspState.RLock()
 	defer raspState.RUnlock()
 
-	states.Matches = make(map[Uid]*Match)
-	states.Proposed = make(map[Uid]struct{})
-	states.Pending = make(map[Uid]struct{})
-	states.Accepted = make(map[Uid]struct{})
-	states.Ongoing = make(map[Uid]struct{})
-	states.Finished = make(map[Uid]struct{})
+	states.Matches = copyMatchesUnsafe()
+	states.Proposed = copyStatesUnsafe(raspState.proposed)
+	states.Pending = copyStatesUnsafe(raspState.pending)
+	states.Accepted = copyStatesUnsafe(raspState.accepted)
+	states.Ongoing = copyStatesUnsafe(raspState.ongoing)
+	states.Finished = copyStatesUnsafe(raspState.finished)
+}
 
-	states.Matches = raspState.matches
-	states.Proposed = raspState.proposed
-	states.Pending = raspState.pending
-	states.Accepted = raspState.accepted
-	states.Ongoing = raspState.ongoing
-	states.Finished = raspState.finished
+func UidToString(uid Uid) string {
+	return strconv.FormatInt(int64(uid), 10)
+}
 
+func StringToUid(s string) (Uid, error) {
+	uid, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, errors.New(fmt.Sprintf(
+			"error reading string %s into uid: %s",
+			s,
+			err.Error(),
+		))
+	}
+	return Uid(uid), nil
+}
+
+func copyMatchesUnsafe() map[string]*Match {
+	copy := make(map[string]*Match)
+	for uid, match := range raspState.matches {
+		copy[UidToString(uid)] = match
+	}
+	return copy
+}
+
+func copyStatesUnsafe(state map[Uid]struct{}) map[string]struct{} {
+	copy := make(map[string]struct{})
+	for uid := range state {
+		copy[UidToString(uid)] = struct{}{}
+	}
+	return copy
 }
 
 func isMatchPending(id Uid) bool {
