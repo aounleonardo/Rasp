@@ -395,6 +395,11 @@ func RaspStateUpdateUnsafe(newLedger ledger) {
 			delete(raspState.accepted, x)
 			delete(raspState.ongoing, x)
 			raspState.finished[x] = struct{}{}
+			if match.Stage == Reveal{
+				raspState.matches[x].AttackMove = match.AttackMove
+				raspState.matches[x].Nonce = match.Nonce
+				raspState.matches[x].DefenceMove = match.DefenceMove
+				}
 		} else if myMatch.Stage > Spawn {
 			delete(raspState.finished, x)
 			raspState.ongoing[x] = struct{}{}
