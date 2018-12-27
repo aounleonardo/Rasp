@@ -27,10 +27,9 @@ echo "Initialization done"
 
 function cleanup {
     pkill -f Peerster
-    pkill server
-    #kill $(lsof -t -i:$PORT)
-    #kill $(lsof -t -i:8001)
-    #pkill $(lsof -t -i:3000)
+    kill $(lsof -t -i:$PORT)
+    kill $(lsof -t -i:8001)
+    pkill $(lsof -t -i:3000)
     exit 0
 }
 
