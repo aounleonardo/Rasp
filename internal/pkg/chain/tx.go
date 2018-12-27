@@ -284,11 +284,11 @@ func ReceiveTransaction(tx TxPublish) {
 
 func (tx *TxPublish) canAddToLedgerUnsafe(
 	ledger ledger,
-	tmpBalances map[string]int64,
-	attacks map[uint64]struct{},
-	defences map[uint64]struct{},
-	reveals map[uint64]struct{},
-	cancels map[uint64]struct{},
+	tmpBalances map[Uid]int64,
+	attacks map[Uid]struct{},
+	defences map[Uid]struct{},
+	reveals map[Uid]struct{},
+	cancels map[Uid]struct{},
 ) bool {
 	switch tx.Action.Type {
 	case Spawn:

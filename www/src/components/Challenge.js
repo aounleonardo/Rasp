@@ -130,11 +130,8 @@ class Challenge extends Component {
         );
     }
 
-    onMouseEnter = () => {
-        // TODO remove
-        console.log(this.props.challenge.Identifier)
-        this.setState({highlighted: true})
-    };
+    onMouseEnter = () => this.setState({highlighted: true});
+
     onMouseLeave = () => this.setState({highlighted: false});
 
     actionClicked = () => this.setState({clicked: true});

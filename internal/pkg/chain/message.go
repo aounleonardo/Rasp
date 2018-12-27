@@ -75,7 +75,7 @@ func ReceiveRaspRequest(request RaspRequest) {
 		destination = *request.Destination
 	}
 	fmt.Printf(
-		"RECEIVED RASP REQUEST: Attacker %s, Defender %s, Bet %d, UID %d\n",
+		"RECEIVED RASP REQUEST: Attacker %s, Defender %s, Bet %d, UID %s\n",
 		request.Origin,
 		destination,
 		request.Bet,
@@ -114,7 +114,7 @@ func ReceiveRaspResponse(
 	response RaspResponse,
 ) (attack *RaspAttack, err error) {
 	fmt.Printf(
-		"RECEIVED RASP RESPONSE: Potential Defender %s, Attacker %s, UID %d\n",
+		"RECEIVED RASP RESPONSE: Potential Defender %s, Attacker %s, UID %s\n",
 		response.Origin,
 		response.Destination,
 		response.Identifier,
@@ -133,7 +133,7 @@ func ReceiveRaspResponse(
 	)
 	if err != nil || !verified {
 		err = errors.New(fmt.Sprintf(
-			"error verifying response %d",
+			"error verifying response %s",
 			response.Identifier,
 		))
 		return
@@ -145,7 +145,7 @@ func ReceiveRaspResponse(
 	if !exists ||
 		(match.Defender != nil && *match.Defender != response.Origin) {
 		err = errors.New(fmt.Sprintf(
-			"match %d with opponent %s does not exist",
+			"match %s with opponent %s does not exist",
 			response.Identifier,
 			response.Origin,
 		))
@@ -153,7 +153,7 @@ func ReceiveRaspResponse(
 	}
 	if _, isProposed := raspState.proposed[response.Identifier]; !isProposed {
 		err = errors.New(fmt.Sprintf(
-			"match %d is not proposed",
+			"match %s is not proposed",
 			response.Identifier,
 		))
 		return
@@ -257,7 +257,7 @@ func createCancel(
 
 func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
 	fmt.Printf(
-		"RECEIVED RASP ATTACK: Attacker %s, Defender %s, Bet %d, UID %d\n",
+		"RECEIVED RASP ATTACK: Attacker %s, Defender %s, Bet %d, UID %s\n",
 		attack.Origin,
 		attack.Destination,
 		attack.Bet,
@@ -289,7 +289,7 @@ func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
 	raspState.RUnlock()
 	if !ok {
 		err = errors.New(
-			fmt.Sprintf("Unable to find the corresponding match in Accepted %d",
+			fmt.Sprintf("Unable to find the corresponding match in Accepted %s",
 				attack.Identifier),
 		)
 		return
@@ -336,7 +336,7 @@ func ReceiveRaspAttack(attack RaspAttack) (defence *RaspDefence, err error) {
 }
 
 func ReceiveRaspDefence(defence RaspDefence) {
-	fmt.Printf("RECEIVED RASP DEFENCE: Attacker %s, Defender %s, Move %d, UID %d\n",
+	fmt.Printf("RECEIVED RASP DEFENCE: Attacker %s, Defender %s, Move %d, UID %s\n",
 		defence.Destination,
 		defence.Origin,
 		defence.Move,
@@ -361,7 +361,7 @@ func ReceiveRaspDefence(defence RaspDefence) {
 	_, ok = raspState.ongoing[defence.Identifier]
 	raspState.RUnlock()
 	if !ok {
-		fmt.Printf("Unable to find the corresponding match in Ongoing %d\n",
+		fmt.Printf("Unable to find the corresponding match in Ongoing %s\n",
 			defence.Identifier)
 		return
 	}

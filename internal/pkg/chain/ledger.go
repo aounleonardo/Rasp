@@ -8,7 +8,7 @@ import (
 
 type ledger struct {
 	players map[string]*Player
-	matches map[uint64]*Match
+	matches map[Uid]*Match
 	length  int
 }
 
@@ -23,7 +23,7 @@ var blockchain = struct {
 	m: map[[32]byte]Block{genesis: {}},
 	heads: map[[32]byte]ledger{genesis: {
 		length:  0,
-		matches: make(map[uint64]*Match),
+		matches: make(map[Uid]*Match),
 		players: make(map[string]*Player)},
 	},
 	longest: genesis,
@@ -60,7 +60,7 @@ func (player Player) hasEnoughMoney(bet Bet) bool {
 	return player.Balance >= int64(bet)
 }
 
-func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {
+func getMatchUnsafe(identifier Uid) (copy *Match, exists bool) {
 	state, exists :=
 		blockchain.heads[blockchain.longest].matches[identifier]
 	if exists {
@@ -69,7 +69,7 @@ func getMatchUnsafe(identifier uint64) (copy *Match, exists bool) {
 	return
 }
 
-func getMatch(identifier uint64) (copy *Match, exists bool) {
+func getMatch(identifier Uid) (copy *Match, exists bool) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
 	state, exists :=
@@ -81,7 +81,7 @@ func getMatch(identifier uint64) (copy *Match, exists bool) {
 }
 
 func createForkLedgerUnsafe(
-	ForkTxs map[int]map[uint64]GameAction,
+	ForkTxs map[Stage]map[Uid]GameAction,
 	head [32]byte,
 	length int,
 ) ledger {
@@ -95,13 +95,13 @@ func createForkLedgerUnsafe(
 	return createForkLedgerUnsafe(ForkTxs, blockchain.m[head].PrevHash, length+1)
 }
 
-func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
-	var txsMap = map[int]map[uint64]GameAction{
-		Spawn:   make(map[uint64]GameAction),
-		Attack:  make(map[uint64]GameAction),
-		Defence: make(map[uint64]GameAction),
-		Reveal:  make(map[uint64]GameAction),
-		Cancel:  make(map[uint64]GameAction),
+func createTxsMap(txs []TxPublish) map[Stage]map[Uid]GameAction {
+	var txsMap = map[Stage]map[Uid]GameAction{
+		Spawn:   make(map[Uid]GameAction),
+		Attack:  make(map[Uid]GameAction),
+		Defence: make(map[Uid]GameAction),
+		Reveal:  make(map[Uid]GameAction),
+		Cancel:  make(map[Uid]GameAction),
 	}
 	for _, tx := range txs {
 		txsMap[tx.Action.Type][tx.Action.Identifier] = tx.Action
@@ -109,7 +109,7 @@ func createTxsMap(txs []TxPublish) map[int]map[uint64]GameAction {
 	return txsMap
 }
 
-func applyTxsToLedgerUnsafe(txs map[int]map[uint64]GameAction, ledger *ledger) {
+func applyTxsToLedgerUnsafe(txs map[Stage]map[Uid]GameAction, ledger *ledger) {
 	for _, action := range txs[Spawn] {
 		key := decodeKey(action.SignedSpecial)
 		ledger.players[action.Attacker] = &Player{
@@ -155,10 +155,10 @@ func applyTxsToLedgerUnsafe(txs map[int]map[uint64]GameAction, ledger *ledger) {
 	}
 }
 
-func buildLedgerUnsafe(ForkTxs map[int]map[uint64]GameAction, length int) ledger {
+func buildLedgerUnsafe(ForkTxs map[Stage]map[Uid]GameAction, length int) ledger {
 	var newLedger = ledger{
 		players: map[string]*Player{},
-		matches: map[uint64]*Match{},
+		matches: map[Uid]*Match{},
 		length:  length,
 	}
 	applyTxsToLedgerUnsafe(ForkTxs, &newLedger)
@@ -271,12 +271,12 @@ func isSpawnClaimedUnsafe(name string) bool {
 	return exists
 }
 
-func isAttackClaimedUnsafe(identifier uint64) bool {
+func isAttackClaimedUnsafe(identifier Uid) bool {
 	_, exist := getMatchUnsafe(identifier)
 	return exist
 }
 
-func isDefenceClaimedUnsafe(identifier uint64) bool {
+func isDefenceClaimedUnsafe(identifier Uid) bool {
 	challenge, exists := getMatchUnsafe(identifier)
 	if exists {
 		return challenge.Stage > Attack
@@ -284,7 +284,7 @@ func isDefenceClaimedUnsafe(identifier uint64) bool {
 	return false
 }
 
-func isRevealClaimedUnsafe(identifier uint64) bool {
+func isRevealClaimedUnsafe(identifier Uid) bool {
 	challenge, exists := getMatchUnsafe(identifier)
 	if exists {
 		if challenge.Stage == Reveal || challenge.Stage == Cancel {
@@ -294,7 +294,7 @@ func isRevealClaimedUnsafe(identifier uint64) bool {
 	return false
 }
 
-func isCancelClaimedUnsafe(identifier uint64) bool {
+func isCancelClaimedUnsafe(identifier Uid) bool {
 	challenge, exist := getMatchUnsafe(identifier)
 	if exist {
 		return challenge.Stage == Attack
@@ -427,7 +427,7 @@ func PrintLedger(ledger ledger){
 	fmt.Println("|\n| Matches:")
 	for x, match := range ledger.matches{
 		fmt.Printf(
-			"| \tId: %d, Attacker: %s, Defender: %s, Stage: %d\n",
+			"| \tId: %s, Attacker: %s, Defender: %s, Stage: %d\n",
 			x,
 			match.Attacker,
 			*match.Defender,
