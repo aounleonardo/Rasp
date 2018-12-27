@@ -283,7 +283,7 @@ func AcceptMatch(
 		*match.Defender,
 		match.Bet,
 		match.Identifier,
-		match.DefenceMove)
+		*match.DefenceMove)
 
 	signature, err := SignResponse(gossiperKey, id)
 	response = &RaspResponse{

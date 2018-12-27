@@ -22,6 +22,7 @@ test_*.sh
 Peerster
 client/client
 client/server/server
+rasp_local.sh
 #### joe made this: http://goel.io/joe
 
 #### jetbrains ####
