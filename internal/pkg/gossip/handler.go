@@ -338,6 +338,10 @@ func (gossiper *Gossiper) handlerCancelRequest(
 		defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
 
 		explanation = chain.CancelMatch(request.Identifier)
+		if explanation != nil{
+			success = false
+			return
+		}
 }
 
 func (gossiper *Gossiper) handleGetPlayersRequest(
