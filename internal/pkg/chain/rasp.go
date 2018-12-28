@@ -296,6 +296,17 @@ func AcceptMatch(
 	return
 }
 
+func CancelMatch(id Uid) (err error){
+	match, exists := getState(id)
+	if !exists{
+		err = errors.New(fmt.Sprintf("match %s is being canceled but does not exist", id))
+	}
+	cancel ,err := createCancel(match, gossiperKey)
+	publishAction(cancel)
+	return
+
+}
+
 func GetPlayers(players *PlayersResponse) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()

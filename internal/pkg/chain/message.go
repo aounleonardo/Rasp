@@ -52,6 +52,10 @@ type AcceptMatchRequest struct {
 	Move       Move
 }
 
+type CancelRequest struct{
+	Identifier Uid
+}
+
 type PlayersRequest struct {}
 
 type PlayersResponse struct {
