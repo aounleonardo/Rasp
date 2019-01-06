@@ -296,6 +296,17 @@ func AcceptMatch(
 	return
 }
 
+func CancelMatch(id Uid) (err error){
+	match, exists := getState(id)
+	if !exists{
+		err = errors.New(fmt.Sprintf("match %s is being canceled but does not exist", id))
+	}
+	cancel ,err := createCancel(match, gossiperKey)
+	publishAction(cancel)
+	return
+
+}
+
 func GetPlayers(players *PlayersResponse) {
 	blockchain.RLock()
 	defer blockchain.RUnlock()
@@ -379,6 +390,11 @@ func RaspStateUpdateUnsafe(newLedger ledger) {
 			delete(raspState.accepted, x)
 			delete(raspState.ongoing, x)
 			raspState.finished[x] = struct{}{}
+			if match.Stage == Reveal{
+				raspState.matches[x].AttackMove = match.AttackMove
+				raspState.matches[x].Nonce = match.Nonce
+				raspState.matches[x].DefenceMove = match.DefenceMove
+				}
 		} else if myMatch.Stage > Spawn {
 			delete(raspState.finished, x)
 			raspState.ongoing[x] = struct{}{}

@@ -83,13 +83,13 @@ func getHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 
 	if isPlayersRequest, _ :=
 		regexp.MatchString("/players/", r.RequestURI); isPlayersRequest {
-			return json.Marshal(waitForPlayers(conn))
+		return json.Marshal(waitForPlayers(conn))
 
 	}
 
 	if isStateRequest, _ :=
 		regexp.MatchString("/state/", r.RequestURI); isStateRequest {
-			return json.Marshal(waitForStates(conn))
+		return json.Marshal(waitForStates(conn))
 	}
 
 	return nil, errors.New("unsupported URI")
@@ -131,6 +131,10 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 		regexp.MatchString("/accept-match/", r.RequestURI); isRespondMatchRequest {
 		return json.Marshal(sendMatchResponse(conn, r))
 
+	}
+	if isCancelRequest, _ :=
+		regexp.MatchString("/cancel/", r.RequestURI); isCancelRequest {
+		return json.Marshal(sendCancelRequest(conn, r))
 	}
 	return nil, errors.New("unsupported URI")
 }
@@ -475,6 +479,31 @@ func sendMatchResponse(
 	)
 	return *response
 
+}
+
+func sendCancelRequest(
+	conn *net.UDPConn,
+	r *http.Request,
+) message.ValidationResponse {
+	decoder := json.NewDecoder(r.Body)
+	var res struct {
+		Identifier string
+	}
+	err := decoder.Decode(&res)
+	if err != nil {
+		return message.ValidationResponse{Success: false, Error: err.Error()}
+	}
+	response := &message.ValidationResponse{}
+	contactGossiper(
+		conn,
+		&message.ClientPacket{
+			CancelMatch: &chain.CancelRequest{
+				Identifier: res.Identifier,
+			},
+		},
+		response,
+	)
+	return *response
 }
 
 func contactGossiper(

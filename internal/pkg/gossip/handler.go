@@ -329,6 +329,21 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 	)
 }
 
+func (gossiper *Gossiper) handlerCancelRequest(
+	request *chain.CancelRequest,
+	clientAddr *net.UDPAddr,
+	){
+		success := true
+		var explanation error
+		defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+
+		explanation = chain.CancelMatch(request.Identifier)
+		if explanation != nil{
+			success = false
+			return
+		}
+}
+
 func (gossiper *Gossiper) handleGetPlayersRequest(
 	request *chain.PlayersRequest,
 	clientAddr *net.UDPAddr,

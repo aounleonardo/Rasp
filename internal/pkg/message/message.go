@@ -48,6 +48,7 @@ type ClientPacket struct {
 
 	CreateMatch *chain.CreateMatchRequest
 	AcceptMatch *chain.AcceptMatchRequest
+	CancelMatch	*chain.CancelRequest
 
 	TestReconstruct *TestFileReconstructRequest
 }
