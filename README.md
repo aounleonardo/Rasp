@@ -31,7 +31,7 @@ js packages by running:
 # Areas with possible improvements:
 - I'm still learning React so am very open to feedback.
 - It would be cool to have a dockerfile that facilitates running the game
-- For game improvements please refer to this [report]('./RASP.pdf')
+- For game improvements please refer to this [report]('RASP.pdf')
 - Ability to block malicious players
 - Ability to create Best Of ${$N+1} games
 - Cache ledgers at common fork points.
