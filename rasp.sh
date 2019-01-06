@@ -18,10 +18,14 @@ trap cleanup SIGINT SIGTERM
 
 bash -c "exec -a peersterServerA ./client/server/server -port=$PORT -gossiper=8080  > HA.out &"
 bash -c "exec -a peersterServerB ./client/server/server -port=8001 -gossiper=8081  > HB.out &"
+bash -c "exec -a peersterServerC ./client/server/server -port=8002 -gossiper=8082  > HB.out &"
+bash -c "exec -a peersterServerD ./client/server/server -port=8003 -gossiper=8083  > HB.out &"
 
-(cd www/; bash -c "exec -a peersterGuiA yarn start > ../R.out &")
+(cd www/; bash -c "exec -a peersterGui yarn start > ../R.out &")
 sleep 5
 open http://localhost:3000/8001
+open http://localhost:3000/8002
+open http://localhost:3000/8003
 
 echo "Initialization done"
 
@@ -29,7 +33,9 @@ function cleanup {
     pkill -f Peerster
     pkill -f peersterServerA
     pkill -f peersterServerB
-    pkill -f peersterGuiA
+    pkill -f peersterServerC
+    pkill -f peersterServerD
+    pkill -f peersterGui
     exit 0
 }
 
