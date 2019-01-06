@@ -52,7 +52,7 @@ type AcceptMatchRequest struct {
 	Move       Move
 }
 
-type CancelRequest struct{
+type CancelMatchRequest struct{
 	Identifier Uid
 }
 

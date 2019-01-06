@@ -153,7 +153,7 @@ func (gossiper *Gossiper) handleClientPacket(
 	case packet.States != nil:
 		gossiper.handleGetStatesRequest(packet.States, clientAddr)
 	case packet.CancelMatch != nil:
-		gossiper.handlerCancelRequest(packet.CancelMatch, clientAddr)
+		gossiper.handleCancelMatchRequest(packet.CancelMatch, clientAddr)
 	default:
 		gossiper.handleTestPacket(packet, clientAddr)
 	}

@@ -133,7 +133,7 @@ func postHandler(r *http.Request, conn *net.UDPConn) ([]byte, error) {
 
 	}
 	if isCancelRequest, _ :=
-		regexp.MatchString("/cancel/", r.RequestURI); isCancelRequest {
+		regexp.MatchString("/cancel-match/", r.RequestURI); isCancelRequest {
 		return json.Marshal(sendCancelRequest(conn, r))
 	}
 	return nil, errors.New("unsupported URI")
@@ -497,7 +497,7 @@ func sendCancelRequest(
 	contactGossiper(
 		conn,
 		&message.ClientPacket{
-			CancelMatch: &chain.CancelRequest{
+			CancelMatch: &chain.CancelMatchRequest{
 				Identifier: res.Identifier,
 			},
 		},

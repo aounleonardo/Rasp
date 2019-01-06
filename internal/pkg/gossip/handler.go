@@ -329,8 +329,8 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 	)
 }
 
-func (gossiper *Gossiper) handlerCancelRequest(
-	request *chain.CancelRequest,
+func (gossiper *Gossiper) handleCancelMatchRequest(
+	request *chain.CancelMatchRequest,
 	clientAddr *net.UDPAddr,
 	){
 		success := true

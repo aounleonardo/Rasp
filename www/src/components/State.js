@@ -34,7 +34,10 @@ export default class State extends Component {
                                 this.props.challenges.Matches,
                             )}
                             acceptCallback={(id, move) => {
-                                this.acceptMatch(id, move).finally()
+                                this.acceptMatch(id, move).finally();
+                            }}
+                            cancelCallback={(id) => {
+                                this.cancelMatch(id).finally();
                             }}
                         />
                     ))}
@@ -61,13 +64,27 @@ export default class State extends Component {
             'accept-match/',
             payload,
             (res) => {
-                console.log({acceptMatch: res})
+                console.log({acceptMatch: res});
             },
         );
-    }
+    };
+
+    cancelMatch = async (id) => {
+        const payload = {
+            Identifier: id,
+        };
+        await raspRequest(
+            this.props.gossiper,
+            'cancel-match/',
+            payload,
+            (res) => {
+                console.log({cancelMatch: res});
+            },
+        );
+    };
 }
 
-const Set = ({name, challenges, acceptCallback}) => {
+const Set = ({name, challenges, acceptCallback, cancelCallback}) => {
     return (
         <div>
             <div style={styles.setName}>
@@ -82,6 +99,7 @@ const Set = ({name, challenges, acceptCallback}) => {
                         challenge={challenges[id]}
                         primaryColor={index % 2 === 0}
                         onAccept={acceptCallback}
+                        onCancel={cancelCallback}
                     />
                 )
             )}

@@ -176,7 +176,9 @@ class Challenge extends Component {
                 move={"yes"}
                 size={50}
                 selected={false}
-                onClick={() => this.setState({done: done.CANCELLED})}
+                onClick={() => this.props.onCancel(
+                    this.props.identifier,
+                )}
             />
         </div>
     ));
