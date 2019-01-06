@@ -29,7 +29,7 @@ class Opponent extends Component {
             return <span role="img" aria-label="Open">OPEN 📢</span>
 
         }
-        return this.props.name;
+        return `${this.props.name}: ${this.props.balance}`;
     };
 
     isSelected = () => this.props.selected || this.state.highlighted;

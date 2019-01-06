@@ -104,6 +104,7 @@ export default class Arena extends Component {
                 <Opponent
                     key={opponent}
                     name={opponent}
+                    balance={this.props.players[opponent]}
                     selected=
                         {opponent === this.state.selectedOpponent}
                     onClick={() => this.opponentSelected(opponent)}
