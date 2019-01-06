@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/dedis/onet/log"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 )
 
 const attackerPatience = 3 * time.Second

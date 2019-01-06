@@ -35,7 +35,7 @@ func getPlayer(name string) (copy *Player, exists bool) {
 	player, exists :=
 		blockchain.heads[blockchain.longest].players[name]
 
-	if  exists {
+	if exists {
 		copy = &Player{
 			Key:     player.Key,
 			Balance: player.Balance,
@@ -47,7 +47,7 @@ func getPlayer(name string) (copy *Player, exists bool) {
 func getPlayerUnsafe(name string) (copy *Player, exists bool) {
 	player, exists :=
 		blockchain.heads[blockchain.longest].players[name]
-	if  exists {
+	if exists {
 		copy = &Player{
 			Key:     player.Key,
 			Balance: player.Balance,
@@ -414,18 +414,18 @@ func applyBlockUnsafe(hash [32]byte) {
 	applyTxsToLedgerUnsafe(txs, &ledger)
 }
 
-func PrintLedger(ledger ledger){
+func PrintLedger(ledger ledger) {
 	fmt.Println("\n*************************")
 	fmt.Println("| Ledger length", ledger.length)
 	fmt.Println("|\n| Players:")
-	for name, info:= range ledger.players{
+	for name, info := range ledger.players {
 		fmt.Printf("| \tName: %s, Balance: %d\n",
 			name,
 			info.Balance,
 		)
 	}
 	fmt.Println("|\n| Matches:")
-	for x, match := range ledger.matches{
+	for x, match := range ledger.matches {
 		fmt.Printf(
 			"| \tId: %s, Attacker: %s, Defender: %s, Stage: %d\n",
 			x,

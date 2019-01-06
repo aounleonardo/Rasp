@@ -78,7 +78,7 @@ func getNewDefences(attacks []TxPublish) []TxPublish {
 		if isValidDefence(defence, attacks) {
 			validDefences = append(validDefences, defence)
 			if match, exists := getState(defence.Action.Identifier); exists {
-				if match.AttackMove != nil{
+				if match.AttackMove != nil {
 					if action, err :=
 						createReveal(match, gossiperKey, defence.Action); err != nil {
 						fmt.Println("error creating Reveal for defence",
@@ -101,7 +101,7 @@ func getNewReveals(defences []TxPublish) []TxPublish {
 	for _, reveal := range pendingTransactions.m[Reveal] {
 		if isValidReveal(reveal, defences) {
 			validReveals = append(validReveals, reveal)
-			if match, exists := getState(reveal.Action.Identifier); exists{
+			if match, exists := getState(reveal.Action.Identifier); exists {
 				raspState.Lock()
 				match.AttackMove = &reveal.Action.Move
 				match.Nonce = &reveal.Action.Nonce
@@ -198,12 +198,12 @@ func (action *GameAction) shouldDiscardTransactionUnsafe() bool {
 		player := blockchain.heads[blockchain.longest].players[action.Attacker]
 		var hiddenMove Signature
 		match, exists := blockchain.heads[blockchain.longest].matches[action.Identifier]
-		if exists{
+		if exists {
 			hiddenMove = match.HiddenMove
-		}else{
+		} else {
 			pendingTransactions.RLock()
-			for _, tx := range pendingTransactions.m[2]{
-				if tx.Action.Identifier == action.Identifier{
+			for _, tx := range pendingTransactions.m[2] {
+				if tx.Action.Identifier == action.Identifier {
 					hiddenMove = tx.Action.HiddenMove
 				}
 			}

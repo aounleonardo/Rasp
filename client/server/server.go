@@ -499,7 +499,6 @@ func sendCancelRequest(
 		&message.ClientPacket{
 			CancelMatch: &chain.CancelMatchRequest{
 				Identifier: res.Identifier,
-
 			},
 		},
 		response,

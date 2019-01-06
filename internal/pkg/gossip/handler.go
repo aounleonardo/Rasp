@@ -333,13 +333,13 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 func (gossiper *Gossiper) handleCancelMatchRequest(
 	request *chain.CancelMatchRequest,
 	clientAddr *net.UDPAddr,
-){
+) {
 	success := true
 	var explanation error
 	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
 
 	cancel, explanation := chain.CancelMatch(request.Identifier)
-	if explanation != nil{
+	if explanation != nil {
 		success = false
 		return
 	}

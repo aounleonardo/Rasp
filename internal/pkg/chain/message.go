@@ -59,17 +59,17 @@ type AcceptMatchRequest struct {
 	Move       Move
 }
 
-type CancelMatchRequest struct{
+type CancelMatchRequest struct {
 	Identifier Uid
 }
 
-type PlayersRequest struct {}
+type PlayersRequest struct{}
 
 type PlayersResponse struct {
 	Players map[string]int64
 }
 
-type StateRequest struct {}
+type StateRequest struct{}
 
 type StateResponse struct {
 	Matches  map[string]*Match
@@ -246,10 +246,10 @@ func createCancel(
 		return
 	}
 	rasp = RaspCancel{
-		Identifier: match.Identifier,
+		Identifier:  match.Identifier,
 		Destination: match.Defender,
-		Origin: match.Attacker,
-		Signature: signature,
+		Origin:      match.Attacker,
+		Signature:   signature,
 	}
 	action = GameAction{
 		Type:          Cancel,
