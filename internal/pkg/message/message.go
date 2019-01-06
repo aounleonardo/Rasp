@@ -13,7 +13,7 @@ type RumorMessage struct {
 	ID     uint32
 	Text   string
 
-	RaspRequest *chain.RaspRequest
+	Rasp *RaspMessage
 }
 
 type GossipPacket struct {
@@ -44,11 +44,11 @@ type ClientPacket struct {
 	GetSearches *SearchesRequest
 
 	Players *chain.PlayersRequest
-	States *chain.StateRequest
+	States  *chain.StateRequest
 
 	CreateMatch *chain.CreateMatchRequest
 	AcceptMatch *chain.AcceptMatchRequest
-	CancelMatch	*chain.CancelMatchRequest
+	CancelMatch *chain.CancelMatchRequest
 
 	TestReconstruct *TestFileReconstructRequest
 }
@@ -77,6 +77,7 @@ type RaspMessage struct {
 	Response *chain.RaspResponse
 	Attack   *chain.RaspAttack
 	Defence  *chain.RaspDefence
+	Cancel   *chain.RaspCancel
 }
 
 type DataRequest struct {

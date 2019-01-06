@@ -290,14 +290,15 @@ func (gossiper *Gossiper) handleCreateMatchRequest(
 		return
 	}
 
+	rasp := &message.RaspMessage{Request: raspRequest}
 	if request.Destination == nil {
-		rumour := gossiper.createRaspRumour(raspRequest)
+		rumour := gossiper.createRaspRumour(rasp)
 		go gossiper.rumormonger(rumour, gossiper.gossipAddr)
 	} else {
 		explanation = gossiper.sendPrivateMessage(
 			"",
 			*request.Destination,
-			&message.RaspMessage{Request: raspRequest},
+			rasp,
 		)
 	}
 }
@@ -332,16 +333,27 @@ func (gossiper *Gossiper) handleAcceptMatchRequest(
 func (gossiper *Gossiper) handleCancelMatchRequest(
 	request *chain.CancelMatchRequest,
 	clientAddr *net.UDPAddr,
-	){
-		success := true
-		var explanation error
-		defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
+){
+	success := true
+	var explanation error
+	defer gossiper.sendValidationToClient(&success, &explanation, clientAddr)
 
-		explanation = chain.CancelMatch(request.Identifier)
-		if explanation != nil{
-			success = false
-			return
-		}
+	cancel, explanation := chain.CancelMatch(request.Identifier)
+	if explanation != nil{
+		success = false
+		return
+	}
+	rasp := &message.RaspMessage{Cancel: &cancel}
+	err := chain.ReceiveRaspCancel(cancel)
+	if err != nil {
+		fmt.Println("error cancelling match", cancel.Identifier, err.Error())
+	}
+	if cancel.Destination != nil {
+		gossiper.sendPrivateMessage("", *cancel.Destination, rasp)
+	} else {
+		rumor := gossiper.createRaspRumour(rasp)
+		go gossiper.rumormonger(rumor, gossiper.gossipAddr)
+	}
 }
 
 func (gossiper *Gossiper) handleGetPlayersRequest(

@@ -41,6 +41,13 @@ type RaspDefence struct {
 	SignedMove  Signature
 }
 
+type RaspCancel struct {
+	Identifier  Uid
+	Destination *string
+	Origin      string
+	Signature   Signature
+}
+
 type CreateMatchRequest struct {
 	Destination *string
 	Bet         Bet
@@ -74,10 +81,7 @@ type StateResponse struct {
 }
 
 func ReceiveRaspRequest(request RaspRequest) {
-	destination := "open"
-	if request.Destination != nil {
-		destination = *request.Destination
-	}
+	destination := destinationToString(request.Destination)
 	fmt.Printf(
 		"RECEIVED RASP REQUEST: Attacker %s, Defender %s, Bet %d, UID %s\n",
 		request.Origin,
@@ -185,7 +189,7 @@ func ReceiveRaspResponse(
 		SignedSpecial: signature,
 	}
 	publishAction(action)
-	go waitForDefenceTimeout(response.Identifier, gossiperKey)
+	go waitForDefenceTimeout(response.Identifier)
 
 	attack = &RaspAttack{
 		Destination: response.Origin,
@@ -199,16 +203,9 @@ func ReceiveRaspResponse(
 	return
 }
 
-func waitForDefenceTimeout(identifier Uid, privateKey *rsa.PrivateKey) {
+func waitForDefenceTimeout(identifier Uid) {
 	time.Sleep(attackerPatience)
-	if match, exists := getState(identifier); exists && match.Stage < Defence {
-		cancel, err := createCancel(match, privateKey)
-		if err != nil {
-			fmt.Println("cannot send cancel for,", identifier, err.Error())
-			return
-		}
-		publishAction(cancel)
-	}
+	CancelMatch(identifier)
 }
 
 func createReveal(
@@ -243,19 +240,59 @@ func createReveal(
 func createCancel(
 	match *Match,
 	key *rsa.PrivateKey,
-) (action GameAction, err error) {
+) (rasp RaspCancel, action GameAction, err error) {
 	signature, err := SignCancel(key, match.Identifier)
 	if err != nil {
 		return
+	}
+	rasp = RaspCancel{
+		Identifier: match.Identifier,
+		Destination: match.Defender,
+		Origin: match.Attacker,
+		Signature: signature,
 	}
 	action = GameAction{
 		Type:          Cancel,
 		Identifier:    match.Identifier,
 		Attacker:      match.Attacker,
-		Defender:      *match.Defender,
+		Defender:      destinationToString(match.Defender),
 		Bet:           match.Bet,
 		SignedSpecial: signature,
 	}
+	return
+}
+
+func ReceiveRaspCancel(cancel RaspCancel) (err error) {
+	destination := destinationToString(cancel.Destination)
+	fmt.Printf(
+		"RECEIVED RASP CANCEL: Attacker %s, Defender %s, UID %s\n",
+		cancel.Origin,
+		destination,
+		cancel.Identifier,
+	)
+	match, exists := getState(cancel.Identifier)
+	if !exists {
+		err = errors.New(fmt.Sprintf(
+			"match %s does not exist",
+			cancel.Identifier,
+		))
+		return
+	}
+	if match.Stage > Spawn {
+		err = errors.New(fmt.Sprintf(
+			"match %s is already in stage %s",
+			cancel.Identifier,
+			stageToString(match.Stage),
+		))
+	}
+
+	raspState.Lock()
+	delete(raspState.proposed, cancel.Identifier)
+	delete(raspState.pending, cancel.Identifier)
+	delete(raspState.accepted, cancel.Identifier)
+	raspState.finished[cancel.Identifier] = struct{}{}
+	raspState.Unlock()
+
 	return
 }
 
