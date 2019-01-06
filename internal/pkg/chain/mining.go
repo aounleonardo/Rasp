@@ -11,15 +11,16 @@ var zeroHash = make([]byte, 2)
 var first = true
 
 func Mine() {
-	for hasNoPendingTransactions() {
+	var txs = make([]TxPublish, 0)
+	for len(txs) == 0 {
 		select {
 		case <-stopMining:
 			return
 		default:
 			time.Sleep(time.Second)
+			txs = getNewTransactions()
 		}
 	}
-	txs := getNewTransactions()
 	blockchain.RLock()
 	newBlock := Block{
 		PrevHash:     blockchain.longest,
