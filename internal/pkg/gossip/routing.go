@@ -63,5 +63,5 @@ func (gossiper *Gossiper) sendRouteRumor(peer *net.UDPAddr) {
 }
 
 func isRouteRumor(rumour *message.RumorMessage) bool {
-	return len(rumour.Text) == 0 && rumour.RaspRequest == nil
+	return len(rumour.Text) == 0 && rumour.Rasp == nil
 }

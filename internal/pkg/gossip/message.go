@@ -65,16 +65,16 @@ func (gossiper *Gossiper) createClientRumor(text string) *message.RumorMessage {
 }
 
 func (gossiper *Gossiper) createRaspRumour(
-	request *chain.RaspRequest,
+	rasp *message.RaspMessage,
 ) *message.RumorMessage {
 	gossiper.upsertOrigin(gossiper.Name)
 	gossiper.wants.RLock()
 	id := gossiper.wants.m[gossiper.Name]
 	msg := &message.RumorMessage{
-		Origin:      gossiper.Name,
-		ID:          id,
-		Text:        "",
-		RaspRequest: request,
+		Origin: gossiper.Name,
+		ID:     id,
+		Text:   "",
+		Rasp:   rasp,
 	}
 	gossiper.wants.RUnlock()
 
@@ -107,8 +107,16 @@ func (gossiper *Gossiper) memorizeRumor(rumor *message.RumorMessage) {
 	)
 	messageOrdering.Unlock()
 
-	if rumor.RaspRequest != nil && rumor.Origin != gossiper.Name {
-		chain.ReceiveRaspRequest(*rumor.RaspRequest)
+	if rumor.Rasp != nil && rumor.Origin != gossiper.Name {
+		switch {
+		case rumor.Rasp.Request != nil:
+			chain.ReceiveRaspRequest(*rumor.Rasp.Request)
+		case rumor.Rasp.Cancel != nil:
+			err := chain.ReceiveRaspCancel(*rumor.Rasp.Cancel)
+			if err != nil {
+				fmt.Println("error receiving rasp cancel", err.Error())
+			}
+		}
 	}
 }
 
@@ -186,6 +194,12 @@ func (gossiper *Gossiper) receiveRaspMessage(
 		}
 	case rasp.Defence != nil:
 		chain.ReceiveRaspDefence(*rasp.Defence)
+	case rasp.Cancel != nil:
+		err := chain.ReceiveRaspCancel(*rasp.Cancel)
+		if err != nil {
+			fmt.Println("error receiving cancel", *rasp.Cancel, err.Error())
+			return
+		}
 	}
 	if raspToSend != nil {
 		err := gossiper.sendPrivateMessage("", origin, raspToSend)

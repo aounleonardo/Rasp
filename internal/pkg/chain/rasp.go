@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/dedis/onet/log"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 )
 
 const attackerPatience = 3 * time.Second
@@ -206,7 +206,7 @@ func CreateMatch(
 			newMatch.Bet,
 			newMatch.Identifier,
 			*newMatch.AttackMove,
-			)
+		)
 
 	} else {
 		fmt.Printf(
@@ -216,7 +216,7 @@ func CreateMatch(
 			newMatch.Bet,
 			newMatch.Identifier,
 			*newMatch.AttackMove,
-			)
+		)
 
 	}
 
@@ -296,15 +296,17 @@ func AcceptMatch(
 	return
 }
 
-func CancelMatch(id Uid) (err error){
+func CancelMatch(id Uid) (rasp RaspCancel, err error) {
 	match, exists := getState(id)
-	if !exists{
-		err = errors.New(fmt.Sprintf("match %s is being canceled but does not exist", id))
+	if !exists || match.Stage >= Defence {
+		err = errors.New(fmt.Sprintf(
+			"error match %s is being canceled but does not exist",
+			id,
+		))
 	}
-	cancel ,err := createCancel(match, gossiperKey)
+	rasp, cancel, err := createCancel(match, gossiperKey)
 	publishAction(cancel)
 	return
-
 }
 
 func GetPlayers(players *PlayersResponse) {
@@ -390,14 +392,40 @@ func RaspStateUpdateUnsafe(newLedger ledger) {
 			delete(raspState.accepted, x)
 			delete(raspState.ongoing, x)
 			raspState.finished[x] = struct{}{}
-			if match.Stage == Reveal{
+			if match.Stage == Reveal {
 				raspState.matches[x].AttackMove = match.AttackMove
 				raspState.matches[x].Nonce = match.Nonce
 				raspState.matches[x].DefenceMove = match.DefenceMove
-				}
+			}
 		} else if myMatch.Stage > Spawn {
 			delete(raspState.finished, x)
 			raspState.ongoing[x] = struct{}{}
 		}
+	}
+}
+
+func stageToString(stage Stage) string {
+	switch stage {
+	case Spawn:
+		return "Spawn"
+	case Attack:
+		return "Attack"
+	case Defence:
+		return "Defence"
+	case Reveal:
+		return "Reveal"
+	case Cancel:
+		return "Cancel"
+	default:
+		fmt.Println("error unrecognized stage", stage)
+		return ""
+	}
+}
+
+func destinationToString(destination *string) string {
+	if destination != nil {
+		return *destination
+	} else {
+		return "open"
 	}
 }

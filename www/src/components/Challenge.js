@@ -71,6 +71,7 @@ class Challenge extends Component {
         return (
             <React.Fragment>
                 <div style={styles.infoContainer}>
+                    <Icon src={"attacker"} />
                     <div style={styles.info}>
                         {Attacker}
                     </div>
@@ -84,6 +85,7 @@ class Challenge extends Component {
                     />
                 </div>
                 <div style={styles.infoContainer}>
+                    <Icon src={"bet"} />
                     <div style={styles.info}>
                         {Bet}
                     </div>
@@ -92,6 +94,7 @@ class Challenge extends Component {
                     </div>
                 </div>
                 <div style={styles.infoContainer}>
+                    <Icon src={"defender"} />
                     <div style={styles.info}>
                         {Defender || (
                             <Move
@@ -217,13 +220,19 @@ class Challenge extends Component {
 
 export default Challenge;
 
+const Icon = ({src}) => (
+    <div style={styles.iconContainer}>
+        <div style={styles.icon(src)} />
+    </div>
+);
+
 const styles = {
     challenge: (primary) => ({
         display: 'flex',
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        height: 80,
+        height: 100,
         backgroundColor: (primary) ? colors.beige : colors.white,
     }),
     infoContainer: {
@@ -233,14 +242,30 @@ const styles = {
         height: '100%',
         alignItems: 'center',
     },
+    iconContainer: {
+        display: 'flex',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    icon: (src) => ({
+        backgroundImage: `url('/${src}.png')`,
+        backgroundColor: "rgba(255,255,255,.5)",
+        backgroundSize: '30px 30px',
+        backgroundRepeat: 'no-repeat',
+        width: 30,
+        height: 30,
+    }),
     info: {
         display: 'flex',
         flex: 1,
         alignItems: 'center',
-        fontSize: 16,
+        justifyContent: 'center',
+        fontSize: 22,
         fontWeight: 'bold',
         fontFamily: "Helvetica",
         color: colors.blue,
+        textAlign: 'center',
         textTransform: 'uppercase',
     },
     action: (type) => ({
